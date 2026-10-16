@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:human-verification": "node --test src/utils/humanVerification.test.js",
     "dev": "vite",
     "build": "vite build",
     "test:time": "node --test src/utils/systemTime.test.js src/utils/reports.test.js",

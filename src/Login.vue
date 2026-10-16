@@ -1,12 +1,39 @@
 ﻿<script setup>
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import AppAlert from './components/AppAlert.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import HumanVerificationWidget from '@/components/HumanVerificationWidget.vue'
+import { useTheme } from '@/composables/useTheme'
+import { loginProof, parseHumanVerificationConfig, requiresHumanVerification } from './utils/humanVerification.js'
 import http from './utils/http'
 import { getCookieValue, expireCookie } from './utils/csrf'
 
 const username = ref('')
 const password = ref('')
+const { resolvedTheme } = useTheme()
+const verificationConfig = ref(null)
+const verificationLoading = ref(true)
+const verificationError = ref('')
+const verificationToken = ref('')
+const verificationWidget = ref(null)
+const verificationRequired = computed(() => requiresHumanVerification(verificationConfig.value))
+const canLogin = computed(() => !!verificationConfig.value && !verificationLoading.value
+  && !verificationError.value && (!verificationRequired.value || !!verificationToken.value))
+
+async function loadVerificationConfig() {
+  verificationLoading.value = true
+  verificationError.value = ''
+  verificationToken.value = ''
+  verificationConfig.value = null
+  try {
+    const response = await http.get('/api/auth/human-verification', { timeout: 10000 })
+    verificationConfig.value = parseHumanVerificationConfig(response.data)
+  } catch {
+    verificationError.value = '登录验证配置加载失败，请检查网络或联系管理员。'
+  } finally {
+    verificationLoading.value = false
+  }
+}
 const totpToken = ref('')
 const totpInputRef = ref(null)
 const isLoggingIn = ref(false)
@@ -37,6 +64,7 @@ function getCsrfHeaders() {
 const usernameInputRef = ref(null)
 
 onMounted(() => {
+  loadVerificationConfig()
   if (getCookieValue('csrf_token')) {
     expireCookie('csrf_token')
   }
@@ -54,15 +82,19 @@ function onCardEnter() {
 }
 
 async function handleLogin() {
-  if (isLoggingIn.value) return
+  if (isLoggingIn.value || !canLogin.value) return
 
+  const proof = loginProof(verificationConfig.value, verificationToken.value)
+  verificationToken.value = ''
   isLoggingIn.value = true
+  let navigating = false
   try {
     const response = await http.post(
       '/api/login',
       {
         username: username.value,
         password: password.value,
+        ...proof,
       },
       {
         validateStatus: () => true,
@@ -71,6 +103,7 @@ async function handleLogin() {
 
     if (response.status === 200) {
       localStorage.setItem('username', username.value)
+      navigating = true
       window.location.href = '/'
       return
     }
@@ -87,6 +120,7 @@ async function handleLogin() {
     openLoginError('登录失败', '请检查网络连接后重试。')
   } finally {
     isLoggingIn.value = false
+    if (!navigating && !isTotpRequired.value) verificationWidget.value?.reset()
   }
 }
 
@@ -220,9 +254,23 @@ function backToLogin() {
             </div>
 
             <div class="card-actions items-center gap-6">
+              <p v-if="verificationLoading" class="text-sm opacity-70" role="status">正在加载登录验证配置…</p>
+              <div v-else-if="verificationError" class="flex flex-col gap-2">
+                <p class="text-sm text-error" role="alert">{{ verificationError }}</p>
+                <button type="button" class="btn btn-outline btn-sm self-start" @click="loadVerificationConfig">重试</button>
+              </div>
+              <HumanVerificationWidget
+                v-else-if="verificationRequired"
+                ref="verificationWidget"
+                class="w-full"
+                :config="verificationConfig"
+                :theme="resolvedTheme"
+                :busy="isLoggingIn"
+                @token="verificationToken = $event"
+              />
               <button
                 class="btn btn-neutral mt-2 w-full"
-                :disabled="isLoggingIn"
+                :disabled="isLoggingIn || !canLogin"
                 @click="handleLogin"
               >
                 {{ isLoggingIn ? '登录中...' : '登录' }}

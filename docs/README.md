@@ -10,6 +10,7 @@
 | --- | --- |
 | [Web 控制台功能指南](FEATURES.md) | 功能入口、交互约束与配置示例 |
 | [前端开发指南](maintenance-guide.md) | 路由、组件、HTTP 与开发检查 |
+| [登录人机验证](HUMAN_VERIFICATION.md) | 可选小组件、配套部署、错误恢复及开发验证 |
 
 ## 主题与诊断
 

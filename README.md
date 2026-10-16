@@ -85,6 +85,7 @@ docs/             使用与开发文档
 | `pnpm test:reports` | 单独运行报告工具测试，已包含在 `test:time` 中 |
 | `pnpm test:targets` | 扫描目标校验测试 |
 | `pnpm test:theme` | 主题工具测试 |
+| `pnpm test:human-verification` | 登录验证配置、脚本加载和组件适配器测试 |
 | `pnpm build` | 生产构建 |
 | `pnpm preview` | 本地预览构建产物 |
 
