@@ -4,6 +4,7 @@ import { computed, markRaw, onMounted, ref } from 'vue'
 import ApexMaps from 'vue-apexmaps'
 import 'apexmaps/apexmaps.css'
 import AssetTags from '../components/AssetTags.vue'
+import OsFingerprint from '@/components/OsFingerprint.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useTheme } from '@/composables/useTheme'
 import http from '../utils/http'
@@ -567,6 +568,7 @@ onMounted(() => {
               <dl class="mt-4 grid grid-cols-[7rem_1fr] gap-x-3 gap-y-3 text-sm">
                 <dt class="opacity-60">首次发现</dt><dd>{{ formatTime(summary.first_seen_at) }}</dd>
                 <dt class="opacity-60">最近发现</dt><dd>{{ formatTime(summary.last_seen_at) }}</dd>
+                <dt class="opacity-60">推测操作系统</dt><dd><OsFingerprint :value="summary.os" /></dd>
               </dl>
             </div>
           </div>
@@ -586,7 +588,7 @@ onMounted(() => {
           <div v-else class="overflow-x-auto">
             <table class="table table-zebra">
               <thead>
-                <tr><th>端口</th><th>协议 / 服务</th><th>Banner</th><th>首次发现</th><th>最近发现</th><th>来源</th><th></th></tr>
+                <tr><th>端口</th><th>协议 / 服务</th><th>Banner</th><th>系统线索</th><th>首次发现</th><th>最近发现</th><th>来源</th><th></th></tr>
               </thead>
               <tbody>
                 <tr v-for="port in ports" :key="port.port">
@@ -596,6 +598,7 @@ onMounted(() => {
                     <div v-if="port.service_stale" class="mt-1 text-xs text-warning">服务信息早于最近端口观察</div>
                   </td>
                   <td class="max-w-xs truncate" :title="port.banner">{{ port.banner || '-' }}</td>
+                  <td><OsFingerprint :value="port.os" /></td>
                   <td class="whitespace-nowrap">{{ formatTime(port.first_seen_at) }}</td>
                   <td class="whitespace-nowrap">{{ formatTime(port.last_seen_at) }}</td>
                   <td>

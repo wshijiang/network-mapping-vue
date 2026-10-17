@@ -2,6 +2,8 @@
 import { formatDateTime as formatSystemDateTime } from '@/utils/systemTime'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import AssetTags from './components/AssetTags.vue'
+import OsFingerprint from './components/OsFingerprint.vue'
+import { osCsvHeaders, osCsvValues } from './utils/osDetection'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import http from './utils/http'
 import { formatLocation } from './utils/location'
@@ -43,6 +45,7 @@ const generationMessage = computed(() => ({
 const examples = [
   'ip IN 192.168.1.0/24 AND port IN (80, 443)',
   'service = "https" AND banner ~ "nginx"',
+  'os.family = "windows" AND os.confidence = "medium"',
   'service = "smtps" AND tls.self_signed = true',
   'tls.not_after < "2026-10-01T00:00:00Z"',
   'domain = "www.example.com" AND port = 443',
@@ -218,7 +221,7 @@ function exportCurrentPage() {
   exporting.value = true
   try {
     const header = [
-      'IP', '端口', '协议', '服务', 'Banner', '网页标题', 'TLS 模式', 'TLS 版本',
+      'IP', '端口', '协议', '服务', 'Banner', ...osCsvHeaders, '网页标题', 'TLS 模式', 'TLS 版本',
       'TLS 密码套件', '证书主体', '证书签发者', '证书名称', '证书序列号',
       '证书生效时间', '证书失效时间', '证书 SHA-256 指纹', '是否自签名',
       'ASN / AS 组织', '位置', '扫描时间', '标签',
@@ -229,6 +232,7 @@ function exportCurrentPage() {
       item.protocol,
       item.service,
       item.banner,
+      ...osCsvValues(item.os, formatTime),
       item.title,
       item.tls_mode,
       item.tls_version,
@@ -354,7 +358,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
         <div v-if="searchResult.items.length === 0" class="py-12 text-center opacity-60">没有匹配的资产。</div>
         <div v-else class="overflow-x-auto">
           <table class="table table-zebra table-sm">
-            <thead><tr><th>IP</th><th>端口</th><th>协议</th><th>服务</th><th>Banner</th><th>网页 / TLS</th><th>ASN / AS 组织</th><th>位置</th><th>扫描时间</th></tr></thead>
+            <thead><tr><th>IP</th><th>端口</th><th>协议</th><th>服务</th><th>Banner</th><th>系统线索</th><th>网页 / TLS</th><th>ASN / AS 组织</th><th>位置</th><th>扫描时间</th></tr></thead>
             <tbody>
               <tr v-for="(item, index) in searchResult.items" :key="`${item.ip_address}-${item.port}-${item.scan_time}-${index}`">
                 <td><div class="flex min-w-max items-center gap-2"><a class="link whitespace-nowrap font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer" title="查看资产详情">{{ item.ip_address }}</a><AssetTags :tags="item.tags || []" :limit="3" size="xs" /></div></td>
@@ -362,6 +366,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
                 <td>{{ item.protocol ?? '-' }}</td>
                 <td>{{ item.service ?? '-' }}</td>
                 <td class="max-w-xs truncate" :title="item.banner">{{ item.banner ?? '-' }}</td>
+                <td><OsFingerprint :value="item.os" /></td>
                 <td class="min-w-64 max-w-sm">
                   <div v-if="item.title || item.tls_subject || item.tls_version" class="space-y-1">
                     <div v-if="item.title" class="truncate font-medium" :title="item.title">{{ item.title }}</div>
@@ -427,7 +432,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
         </div>
         <div class="rounded-lg border border-base-300 p-3">
           <p class="font-medium">支持字段</p>
-          <p class="mt-1 break-words font-mono text-xs opacity-70">ip, domain, asn, isp, org, country, city, tag, tag.id, tag.kind, tag.category, port, protocol, service, banner, title, http.body, tls.mode, tls.version, tls.cipher, tls.subject, tls.issuer, tls.san, tls.serial, tls.not_before, tls.not_after, tls.fingerprint, tls.self_signed, source, scanner, first_seen, last_seen</p>
+          <p class="mt-1 break-words font-mono text-xs opacity-70">ip, domain, asn, isp, org, country, city, tag, tag.id, tag.kind, tag.category, port, protocol, service, banner, os.family, os.distribution, os.version, os.confidence, os.status, os.score, title, http.body, tls.mode, tls.version, tls.cipher, tls.subject, tls.issuer, tls.san, tls.serial, tls.not_before, tls.not_after, tls.fingerprint, tls.self_signed, source, scanner, first_seen, last_seen</p>
         </div>
       </div>
 

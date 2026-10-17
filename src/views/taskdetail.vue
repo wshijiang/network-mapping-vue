@@ -3,6 +3,7 @@ import { formatDateTime as formatSystemDateTime } from '@/utils/systemTime'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http from '@/utils/http'
+import OsFingerprint from '@/components/OsFingerprint.vue'
 import { formatLocation } from '@/utils/location'
 import { routingLocation, routingSummary } from '@/utils/scanRouting'
 import { isProjectionPending, projectionMessage } from '@/utils/projectionStatus'
@@ -159,7 +160,8 @@ function severityBadge(severity) {
 function scheduleRefresh() {
   window.clearTimeout(refreshTimer)
   refreshTimer = undefined
-  if (isUnmounted || (!refreshableStatuses.has(currentExecution.value?.status) && !isProjectionPending(projectionStatus.value))) return
+  const osPending = resultByIp.value.some((row) => row.ports.some((port) => port.os?.status === 'pending'))
+  if (isUnmounted || (!refreshableStatuses.has(currentExecution.value?.status) && !isProjectionPending(projectionStatus.value) && !osPending)) return
   refreshTimer = window.setTimeout(() => loadTask({ silent: true }), 30000)
 }
 
@@ -480,13 +482,14 @@ onBeforeUnmount(() => {
               </div>
               <div class="overflow-x-auto">
                 <table class="table table-sm">
-                  <thead><tr><th>端口</th><th>协议</th><th>服务</th><th>Banner</th><th>扫描时间</th></tr></thead>
+                  <thead><tr><th>端口</th><th>协议</th><th>服务</th><th>Banner</th><th>系统线索</th><th>扫描时间</th></tr></thead>
                   <tbody>
                     <tr v-for="port in row.ports" :key="port.port">
                       <td>{{ port.port }}</td>
                       <td>{{ port.protocol || '-' }}</td>
                       <td>{{ port.service || '-' }}</td>
                       <td class="max-w-72 truncate" :title="port.banner || ''">{{ port.banner || '-' }}</td>
+                      <td><OsFingerprint :value="port.os" /></td>
                       <td class="whitespace-nowrap">{{ formatTime(port.scan_time) }}</td>
                     </tr>
                   </tbody>

@@ -123,3 +123,16 @@ Nuclei 结果只展示结构化字段；引用链接使用 `rel="noopener norefe
 3. 检查重复提交、请求取消、轮询清理及未保存变更处理。
 4. 检查主题、窄屏、键盘操作和焦点状态。
 5. 运行相关工具测试及 `pnpm build`；手动验证受影响页面，并在提交说明中记录结果。
+
+## 操作系统结果组件
+
+`OsFingerprint.vue` 统一展示服务环境与宿主机推断。`utils/osDetection.js` 集中管理名称、
+状态和 CSV 字段，`Search.vue`、`AssetDetail.vue`、`taskdetail.vue` 复用该组件。
+
+`os` 可以缺失；`pending`、`unknown`、`conflict` 不能显示为已确认系统，也不能将冲突时
+保留的候选家族导出为确定结论。文本证据使用 Vue 插值转义，禁止通过 `v-html` 渲染返回片段。
+时间使用现有业务时区工具。置信度只展示分级，不把规则得分转换为百分比。
+
+接口联调核对空状态、未知、冲突、证据过期、服务环境与宿主机标签，以及 CSV 列对齐。
+执行 `pnpm test:os`、`node --test src/utils/*.test.js` 和 `pnpm build`。
+后端字段与权限约束见[识别维护说明](https://github.com/wshijiang/network-mapping/blob/main/docs/OS_DETECTION_DEVELOPMENT.md)。

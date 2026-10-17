@@ -14,6 +14,7 @@
     "test:targets": "node src/utils/scanTargets.test.js",
     "test:projection": "node --test src/utils/projectionStatus.test.js",
     "test:monitor": "node --test src/utils/monitorRules.test.js",
+    "test:os": "node --test src/utils/osDetection.test.js src/components/OsFingerprint.test.js",
     "test:notifications": "node --test src/utils/notifications.test.js src/views/Notifications.test.js",
     "test:health": "node --test src/utils/healthAlerts.test.js src/views/Health.test.js",
     "test:theme": "node --test src/utils/theme.test.js",

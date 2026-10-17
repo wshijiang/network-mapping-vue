@@ -29,6 +29,7 @@ jobs:
         run: |
           node --test src/utils/*.test.js src/views/Notifications.test.js
           pnpm test:targets
+          pnpm test:os
           pnpm build
           test -f dist/index.html && test -f dist/login.html && test -f dist/search.html && test -f dist/asset.html && test -d dist/assets
       - name: Save frontend build
