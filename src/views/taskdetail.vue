@@ -161,8 +161,8 @@ function severityBadge(severity) {
 function scheduleRefresh() {
   window.clearTimeout(refreshTimer)
   refreshTimer = undefined
-  const osPending = resultByIp.value.some((row) => row.ports.some((port) => port.os?.status === 'pending'))
-  if (isUnmounted || (!refreshableStatuses.has(currentExecution.value?.status) && !isProjectionPending(projectionStatus.value) && !osPending)) return
+  const inferencePending = resultByIp.value.some((row) => row.ports.some((port) => port.os?.status === 'pending' || port.web?.status === 'pending'))
+  if (isUnmounted || (!refreshableStatuses.has(currentExecution.value?.status) && !isProjectionPending(projectionStatus.value) && !inferencePending)) return
   refreshTimer = window.setTimeout(() => loadTask({ silent: true }), 30000)
 }
 

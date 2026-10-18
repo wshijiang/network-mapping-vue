@@ -14,6 +14,9 @@
 `pending` 隐藏组件明细；旧服务端缺少字段时显示“暂无识别结果”。证据始终通过 Vue 文本插值
 转义，不使用 `v-html` 或执行资源 URL。
 
+任务详情在当前页仍有 `web.status = pending` 的端点时每 30 秒自动刷新，即使扫描执行和
+端点投影已经完成；Web 结果完成后，不再仅因 Web 识别而继续轮询。离开页面会清理定时器。
+
 当前结果针对 IP 端点，无法代表该 IP 上所有域名。页面引用 JS/CSS 不代表运行时使用，
 置信度是规则分级。支持范围及未来采集能力以
 [服务端说明](https://github.com/wshijiang/network-mapping/blob/main/docs/WEB_DETECTION.md)为准。
@@ -38,6 +41,7 @@ pnpm build
 ```
 
 SSR 测试验证证据文本转义、本地图标路径、未知技术回退、版本冲突、截断和过期提示及 pending 状态。
+任务详情生命周期测试覆盖 Web 等待识别时的刷新、识别完成后停止刷新及离开页面时清理定时器。
 本仓库没有独立 MkDocs 配置，文档入口维护在 `docs/README.md`，后端专题同时加入其 MkDocs 导航。
 
 ## 扩展技术目录

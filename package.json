@@ -22,7 +22,7 @@
     "preview": "vite preview",
     "test:routing": "node --test src/utils/scanRouting.test.js",
     "test:open-api": "node --test src/utils/openApi.test.js",
-    "test:web": "node --test src/utils/webDetection.test.js src/components/WebTechnologies.test.js"
+    "test:web": "node --test src/utils/webDetection.test.js src/components/WebTechnologies.test.js src/views/taskdetail.test.js"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
