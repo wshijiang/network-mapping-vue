@@ -209,7 +209,7 @@ onMounted(loadConfiguration)
         </div>
         <div class="mt-4 grid gap-4 lg:grid-cols-3">
           <div class="space-y-4">
-            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-2`">{{ tr("扫描模式") }}</label></legend><select :id="`${formFieldId}-2`" v-model="form.service_detection.strategy" class="select select-bordered w-full"><option value="standard">standard</option><option value="adaptive">adaptive</option><option value="exhaustive">exhaustive</option></select></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-2`">{{ tr("服务识别策略") }}</label></legend><select :id="`${formFieldId}-2`" v-model="form.service_detection.strategy" class="select select-bordered w-full"><option value="standard">standard</option><option value="adaptive">adaptive</option><option value="exhaustive">exhaustive</option></select></fieldset>
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-3`">{{ tr("每端点最大探针数") }}</label></legend><input :id="`${formFieldId}-3`" v-model.number="form.service_detection.max_probes_per_endpoint" type="number" min="1" max="32" class="input input-bordered w-full" /></fieldset>
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-4`">{{ tr("置信度阈值") }}</label></legend><input :id="`${formFieldId}-4`" v-model.number="form.service_detection.confidence_threshold" type="number" min="1" max="100" class="input input-bordered w-full" /></fieldset>
           </div>

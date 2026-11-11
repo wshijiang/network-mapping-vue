@@ -559,6 +559,7 @@
   "数据起始时间": "Data start time",
   "数据结束时间（不含）": "Data end time (exclusive)",
   "扫描模式": "Scan mode",
+  "服务识别策略": "Service detection strategy",
   "端口发现": "Port discovery",
   "服务识别": "Service detection",
   "仅 DNS": "DNS only",

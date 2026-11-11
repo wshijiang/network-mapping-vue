@@ -8,11 +8,6 @@ import http from '@/utils/http'
 
 const scanProfiles = [
   {
-    value: 'legacy',
-    get title() { return tr("兼容模式") },
-    get description() { return tr("发现开放端口，并在扫描端启用时尝试识别服务；服务识别失败不影响端口结果。") }
-  },
-  {
     value: 'port_only',
     get title() { return tr("仅端口扫描") },
     get description() { return tr("只发现开放端口，不启动 zgrab2 服务识别。") }
@@ -30,8 +25,8 @@ const scanProfiles = [
 ]
 
 const alerts = ref([])
-const defaultScanProfile = ref('legacy')
-const savedScanProfile = ref('legacy')
+const defaultScanProfile = ref('port_only')
+const savedScanProfile = ref('port_only')
 const loading = ref(false)
 const saving = ref(false)
 const hasUnsavedChanges = computed(() => defaultScanProfile.value !== savedScanProfile.value)
@@ -47,7 +42,7 @@ function closeAlert(id) {
 function applySettings(data) {
   const profile = scanProfiles.some((item) => item.value === data?.defaultScanProfile)
     ? data.defaultScanProfile
-    : 'legacy'
+    : 'port_only'
   defaultScanProfile.value = profile
   savedScanProfile.value = profile
 }
