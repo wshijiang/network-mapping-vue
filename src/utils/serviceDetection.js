@@ -15,29 +15,19 @@ export const udpServices = [
   { value: 'enip_udp', label: 'EtherNet/IP UDP' },
   { value: 'bacnet', label: 'BACnet/IP' }
 ]
-export const passiveServices = [
+// Retired passive-UDP protocols; kept only so historical results and old
+// scanner capabilities still render a friendly label.
+const retiredPassiveServices = [
   { value: 'opcua_pubsub', label: 'OPC UA UADP' },
   { value: 'enip_io', label: 'EtherNet/IP I/O' }
 ]
-const protocols = [...nativeServices, ...udpServices, ...passiveServices]
+const protocols = [...nativeServices, ...udpServices, ...retiredPassiveServices]
 export function automaticServiceRequirements(profile) {
   if (profile === 'udp_inventory') return udpServices.map(service => service.value)
-  if (profile === 'udp_passive') return passiveServices.map(service => service.value)
   return []
 }
 
 export function automaticProbeOptions(profile, values = {}) {
-  if (profile === 'udp_passive') {
-    const options = {
-      passive_bind: (values.passiveBind || '').trim(),
-      passive_window_seconds: Number(values.passiveWindow ?? 10)
-    }
-    if (values.passiveGroup?.trim()) {
-      options.passive_group = values.passiveGroup.trim()
-      options.passive_interface = options.passive_bind
-    }
-    return options
-  }
   if (!['service_inventory', 'vulnerability_scan'].includes(profile)) return {}
   const options = {}
   if (values.serverName?.trim()) options.server_name = values.serverName.trim()

@@ -5,7 +5,8 @@ test('service inventory is automatic and UDP requirements follow the transport p
   assert.deepEqual(automaticServiceRequirements('service_inventory'), [])
   assert.deepEqual(automaticServiceRequirements('vulnerability_scan'), [])
   assert.deepEqual(automaticServiceRequirements('udp_inventory'), ['dns_udp', 'enip_udp', 'bacnet'])
-  assert.deepEqual(automaticServiceRequirements('udp_passive'), ['opcua_pubsub', 'enip_io'])
+  // The retired passive profile has no automatic requirements anymore.
+  assert.deepEqual(automaticServiceRequirements('udp_passive'), [])
 })
 test('advanced parameters configure automatic detection without selecting protocols', () => {
   assert.deepEqual(automaticProbeOptions('service_inventory'), {})
@@ -14,9 +15,7 @@ test('advanced parameters configure automatic detection without selecting protoc
     modbusUnitId: 0, s7Tsap: 512, mqttVersion: 5
   }), {server_name: 'probe.internal', tls_ca_pem: 'CA', doh_path: '/custom-dns', modbus_unit_id: 0, s7_tsap: 512, mqtt_version: 5})
   assert.deepEqual(automaticProbeOptions('udp_inventory', {mqttVersion: 5}), {})
-  assert.deepEqual(automaticProbeOptions('udp_passive', {
-    passiveBind: ' 192.0.2.1 ', passiveGroup: '239.0.0.1', passiveWindow: 10
-  }), {passive_bind: '192.0.2.1', passive_window_seconds: 10, passive_group: '239.0.0.1', passive_interface: '192.0.2.1'})
+  assert.deepEqual(automaticProbeOptions('udp_passive', {}), {})
 })
 test('explicit native services exclude legacy and partially capable nodes', () => {
   assert.equal(supportsRequiredServices({}, []), true)
