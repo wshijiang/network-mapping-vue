@@ -4229,5 +4229,6 @@
   "支持 HTTP、HTTPS、SOCKS5 和 SOCKS5H，切换为跟随全局或直连可清除已保存地址。": "Supports HTTP, HTTPS, SOCKS5 and SOCKS5H. Switching to Follow global or Direct clears the saved URL.",
   "“继承 LLM 全局”使用上方 LLM 全局代理；“跟随平台全局”使用系统设置中的全局网络代理。": "\"Inherit LLM global\" uses the LLM global proxy above; \"Follow platform global\" uses the global network proxy in system settings.",
   "仅用于测试连接，不保存。支持 HTTP 和 HTTPS 地址。": "Used only for the connection test and not saved. Supports HTTP and HTTPS URLs.",
-  "测试目标必须是有效的 HTTP 或 HTTPS 地址，且不能包含凭据或片段。": "The test target must be a valid HTTP or HTTPS URL without credentials or a fragment."
+  "测试目标必须是有效的 HTTP 或 HTTPS 地址，且不能包含凭据或片段。": "The test target must be a valid HTTP or HTTPS URL without credentials or a fragment.",
+  "无法连接测试目标，请检查目标地址或代理出口。": "Could not reach the test target. Check the target URL or the proxy egress."
 }

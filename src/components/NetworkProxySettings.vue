@@ -42,7 +42,8 @@ const proxyErrors = {
   get source_timeout() { return tr("测试目标连接超时。") },
   get source_tls_error() { return tr("测试目标的 TLS 证书校验失败。") },
   get source_transport() { return tr("无法连接测试目标。") },
-  get proxy_test_url_invalid() { return tr("测试目标必须是有效的 HTTP 或 HTTPS 地址，且不能包含凭据或片段。") }
+  get proxy_test_url_invalid() { return tr("测试目标必须是有效的 HTTP 或 HTTPS 地址，且不能包含凭据或片段。") },
+  get proxy_test_target_unreachable() { return tr("无法连接测试目标，请检查目标地址或代理出口。") }
 }
 function proxyReason(code) { return proxyErrors[code] || tr("操作失败，请稍后重试。") }
 function showAlert(type, title, description = '') { alert.value = { type, title, description } }
