@@ -1,7 +1,7 @@
 <script setup>
 import { tr } from '../i18n/index.js'
 
-import { nativeServices, udpServices, passiveServices } from '@/utils/serviceDetection'
+import { nativeServices, udpServices } from '@/utils/serviceDetection'
 import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -298,7 +298,7 @@ onBeforeUnmount(() => window.clearInterval(refreshTimer))
                   <p class="font-medium">{{ tr("原生服务探测") }}</p>
                   <p class="mt-1 text-xs opacity-60">{{ tr("每端点协议预算：") }}{{ scannerDetail.scan_capabilities?.max_service_probes ?? tr("未声明") }}</p>
                   <div class="mt-2 flex flex-wrap gap-2">
-                    <span v-for="service in [...nativeServices, ...udpServices, ...passiveServices]" :key="service.value" class="badge badge-outline badge-sm" :class="scannerDetail.scan_capabilities?.service_protocols?.includes(service.value) ? 'badge-success' : 'badge-ghost'">{{ service.label }} · {{ scannerDetail.scan_capabilities?.service_protocols?.includes(service.value) ? tr("已支持") : tr("未声明") }}</span>
+                    <span v-for="service in [...nativeServices, ...udpServices]" :key="service.value" class="badge badge-outline badge-sm" :class="scannerDetail.scan_capabilities?.service_protocols?.includes(service.value) ? 'badge-success' : 'badge-ghost'">{{ service.label }} · {{ scannerDetail.scan_capabilities?.service_protocols?.includes(service.value) ? tr("已支持") : tr("未声明") }}</span>
                   </div>
                 </div>
                 <div class="text-xs opacity-60">{{ tr("检测时间：") }}{{ formatDate(scannerDetail.network_capabilities_updated_at) }}</div>

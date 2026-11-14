@@ -204,12 +204,12 @@ onMounted(loadConfiguration)
 
       <section class="card bg-base-100 card-border border-base-300 p-4">
         <div class="flex items-start justify-between gap-3">
-          <div><h3 class="font-semibold">{{ tr("服务识别（zgrab2）") }}</h3><p class="mt-1 text-xs opacity-60">{{ tr("远程开启不能突破节点本地的服务识别授权。") }}</p></div>
+          <div><h3 class="font-semibold">{{ tr("服务识别（zgrab2）") }}</h3><p class="mt-1 text-xs opacity-60">{{ tr("远程开启不能突破节点本地的服务识别授权。关闭后该节点不再领取需要服务识别的任务。") }}</p></div>
           <input v-model="form.service_detection.enabled" type="checkbox" class="toggle" />
         </div>
         <div class="mt-4 grid gap-4 lg:grid-cols-3">
           <div class="space-y-4">
-            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-2`">{{ tr("扫描模式") }}</label></legend><select :id="`${formFieldId}-2`" v-model="form.service_detection.strategy" class="select select-bordered w-full"><option value="standard">standard</option><option value="adaptive">adaptive</option><option value="exhaustive">exhaustive</option></select></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-2`">{{ tr("服务识别策略") }}</label></legend><select :id="`${formFieldId}-2`" v-model="form.service_detection.strategy" class="select select-bordered w-full"><option value="standard">standard</option><option value="adaptive">adaptive</option><option value="exhaustive">exhaustive</option></select></fieldset>
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-3`">{{ tr("每端点最大探针数") }}</label></legend><input :id="`${formFieldId}-3`" v-model.number="form.service_detection.max_probes_per_endpoint" type="number" min="1" max="32" class="input input-bordered w-full" /></fieldset>
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-4`">{{ tr("置信度阈值") }}</label></legend><input :id="`${formFieldId}-4`" v-model.number="form.service_detection.confidence_threshold" type="number" min="1" max="100" class="input input-bordered w-full" /></fieldset>
           </div>
@@ -227,7 +227,7 @@ onMounted(loadConfiguration)
 
       <section class="grid gap-5 xl:grid-cols-2">
         <div class="card bg-base-100 card-border border-base-300 p-4">
-          <div class="flex items-center justify-between"><h3 class="font-semibold">{{ tr("DNS 查询") }}</h3><input v-model="form.dns.enabled" type="checkbox" class="toggle" /></div>
+          <div class="flex items-center justify-between"><div><h3 class="font-semibold">{{ tr("DNS 查询") }}</h3><p class="mt-1 text-xs opacity-60">{{ tr("远程开启不能突破节点本地的 DNS 授权。关闭后该节点不再领取 DNS 任务。") }}</p></div><input v-model="form.dns.enabled" type="checkbox" class="toggle" /></div>
           <div class="mt-4 space-y-4">
             <div><span class="label-text">{{ tr("记录类型") }}</span><div class="mt-2 flex flex-wrap gap-x-5 gap-y-1"><label v-for="type in dnsRecordTypes" :key="type" class="label cursor-pointer justify-start gap-2"><input type="checkbox" class="checkbox checkbox-sm" :checked="form.dns.record_types.includes(type)" @change="toggleList(form.dns.record_types, type, $event.target.checked)" /><span>{{ type }}</span></label></div></div>
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-10`">{{ tr("查询超时（秒）") }}</label></legend><input :id="`${formFieldId}-10`" v-model.number="form.dns.query_timeout_seconds" type="number" min="1" max="60" class="input input-bordered w-full" /></fieldset>
@@ -235,7 +235,7 @@ onMounted(loadConfiguration)
         </div>
 
         <div class="card bg-base-100 card-border border-base-300 p-4">
-          <div class="flex items-center justify-between"><div><h3 class="font-semibold">{{ tr("漏洞扫描（Nuclei）") }}</h3><p class="mt-1 text-xs opacity-60">{{ tr("本机未授权时远程开启不会生效。") }}</p></div><input v-model="form.nuclei.enabled" type="checkbox" class="toggle" /></div>
+          <div class="flex items-center justify-between"><div><h3 class="font-semibold">{{ tr("漏洞扫描（Nuclei）") }}</h3><p class="mt-1 text-xs opacity-60">{{ tr("本机未授权时远程开启不会生效。关闭后该节点不再领取漏洞扫描任务。") }}</p></div><input v-model="form.nuclei.enabled" type="checkbox" class="toggle" /></div>
           <label class="label mt-3 cursor-pointer justify-start gap-2"><input v-model="form.nuclei.port_fallback" type="checkbox" class="checkbox checkbox-sm" /><span>{{ tr("未知服务按端口回退选择模板") }}</span></label>
           <div class="mt-3"><span class="label-text">{{ tr("严重级别") }}</span><div class="mt-2 flex flex-wrap gap-x-4"><label v-for="severity in ['info', 'low', 'medium', 'high', 'critical']" :key="severity" class="label cursor-pointer justify-start gap-2"><input type="checkbox" class="checkbox checkbox-sm" :checked="form.nuclei.severities.includes(severity)" @change="toggleList(form.nuclei.severities, severity, $event.target.checked)" /><span>{{ severity }}</span></label></div></div>
           <div class="mt-4 grid gap-4 sm:grid-cols-2">

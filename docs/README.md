@@ -15,7 +15,7 @@ Web 控制台提供扫描管理、资产搜索、分析报告及运维界面。�
 
 [更新日志](CHANGELOG.md)按阶段记录已实现变更与明确标注的规划；[服务探测分批计划](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_DETECTION_ROADMAP.md)区分当前交付与后续批次。
 
-[服务协议识别与部署](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md)列出当前已实现协议、证据及边界。创建页默认自动识别全部已实现 TCP 服务，UDP 主动/被动任务自动识别各自支持的协议，无需逐项选择；非标准端口覆盖仍受扫描器策略和预算限制。TLS、DoH 与工业参数集中在 daisyUI 折叠高级设置，沿用明暗主题和现有布局。
+[服务协议识别与部署](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md)列出当前已实现协议、证据及边界。创建页默认自动识别全部已实现 TCP 服务，UDP 任务自动识别其支持的协议，无需逐项选择；非标准端口覆盖仍受扫描器策略和预算限制。TLS、DoH 与工业参数集中在 daisyUI 折叠高级设置，沿用明暗主题和现有布局。
 
 [DNS 扩展计划](https://github.com/wshijiang/network-mapping/blob/main/docs/DNS_DOH_DOT_VNC_PLAN.md)与[工业协议计划](https://github.com/wshijiang/network-mapping/blob/main/docs/INDUSTRIAL_SERVICE_DETECTION_PLAN.md)保留设计记录；实际交付范围以当前支持矩阵为准。
 
