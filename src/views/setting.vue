@@ -4,6 +4,7 @@ import { tr } from '../i18n/index.js'
 import { computed, inject, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import GeneralSettings from '@/components/GeneralSettings.vue'
+import NetworkProxySettings from '@/components/NetworkProxySettings.vue'
 import ConfigCheckPanel from '@/components/ConfigCheckPanel.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
@@ -13,6 +14,8 @@ const isAdmin = inject('isAdmin', ref(false))
 const alerts = ref([])
 const generalSettings = ref(null)
 const generalDirty = ref(false)
+const networkProxy = ref(null)
+const networkProxyDirty = ref(false)
 
 const listenConfig = ref({
   host: '',
@@ -111,6 +114,8 @@ const customClientIpHeaderError = computed(() => {
 })
 const hasUnsavedChanges = computed(() => (
   generalDirty.value
+  ||
+  networkProxyDirty.value
   ||
   showSecuritySave.value
   || showSessionSave.value
@@ -327,6 +332,7 @@ async function saveTrustedProxySettings() {
 
 async function saveAllSettings() {
   if (generalDirty.value && !await generalSettings.value?.save()) return false
+  if (networkProxyDirty.value && !await networkProxy.value?.save()) return false
   if (showSecuritySave.value) saveSecurityConfig()
   if (showSessionSave.value && !await saveSessionSettings()) return false
   if (showTrustedProxySave.value && !await saveTrustedProxySettings()) return false
@@ -365,6 +371,7 @@ onMounted(() => {
     <div class="grid grid-cols-1 gap-5">
       <ConfigCheckPanel endpoint="/api/config/check" />
       <GeneralSettings ref="generalSettings" @dirty="generalDirty = $event" />
+      <NetworkProxySettings v-if="isAdmin" ref="networkProxy" @dirty="networkProxyDirty = $event" />
       <div class="card bg-base-100 card-border border-base-300 p-4">
         <div class="mb-3 flex items-start justify-between gap-3">
           <div>
