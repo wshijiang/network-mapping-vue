@@ -380,6 +380,11 @@ async function handleLogout() {
                     <span class="whitespace-nowrap">{{ tr("请求日志") }}</span>
                   </router-link>
                 </li>
+                <li v-if="isAdmin">
+                  <router-link class="sidebar-submenu-item" exact-active-class="active" to="/logs/syslog">
+                    <span class="whitespace-nowrap">{{ tr("Syslog 转发") }}</span>
+                  </router-link>
+                </li>
               </ul>
             </Transition>
           </li>

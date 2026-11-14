@@ -24,6 +24,7 @@ const router = createRouter({
     },
     { path: '/audit', component: () => import('../views/AuditLog.vue'), meta: { title: '审计日志' } },
     { path: '/requests', component: () => import('../views/Requests.vue'), meta: { title: '请求日志' } },
+    { path: '/logs/syslog', component: () => import('../views/SyslogForwarding.vue'), meta: { title: 'Syslog 转发' } },
     { path: '/reports', component: () => import('../views/reports.vue'), meta: { title: '报告中心' } },
     { path: '/reports/:id', component: () => import('../views/reportdetail.vue'), meta: { title: '报告详情' } },
     { path: '/health', component: () => import('../views/Health.vue'), meta: { title: '健康告警' } },
