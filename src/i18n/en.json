@@ -4227,5 +4227,7 @@
   "局部“指定代理”或“直接连接”会覆盖全局；“跟随全局”表示使用全局代理。保存只对之后领取的发现作业生效。": "A local custom proxy or direct connection overrides the global setting; Follow global uses the global proxy. Changes apply to discovery jobs claimed after saving.",
   "支持 HTTP、HTTPS、SOCKS5 与 SOCKS5H，适用于邮件和机器人。SOCKS5H 由代理解析目标域名。失败时不会回退直连。局部“指定代理”或“直接连接”会覆盖全局。": "Supports HTTP, HTTPS, SOCKS5 and SOCKS5H for email and bots. SOCKS5H resolves the destination at the proxy. Failures never fall back to direct connections. A local custom proxy or direct connection overrides the global setting.",
   "支持 HTTP、HTTPS、SOCKS5 和 SOCKS5H，切换为跟随全局或直连可清除已保存地址。": "Supports HTTP, HTTPS, SOCKS5 and SOCKS5H. Switching to Follow global or Direct clears the saved URL.",
-  "“继承 LLM 全局”使用上方 LLM 全局代理；“跟随平台全局”使用系统设置中的全局网络代理。": "\"Inherit LLM global\" uses the LLM global proxy above; \"Follow platform global\" uses the global network proxy in system settings."
+  "“继承 LLM 全局”使用上方 LLM 全局代理；“跟随平台全局”使用系统设置中的全局网络代理。": "\"Inherit LLM global\" uses the LLM global proxy above; \"Follow platform global\" uses the global network proxy in system settings.",
+  "仅用于测试连接，不保存。支持 HTTP 和 HTTPS 地址。": "Used only for the connection test and not saved. Supports HTTP and HTTPS URLs.",
+  "测试目标必须是有效的 HTTP 或 HTTPS 地址，且不能包含凭据或片段。": "The test target must be a valid HTTP or HTTPS URL without credentials or a fragment."
 }

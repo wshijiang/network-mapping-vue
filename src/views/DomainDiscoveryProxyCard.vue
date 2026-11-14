@@ -1,6 +1,7 @@
 <script setup>
 import { tr } from '../i18n/index.js'
 import { computed, inject, onMounted, ref, useId } from 'vue'
+import AppAlert from '@/components/AppAlert.vue'
 import { formatDateTime } from '../i18n/time.js'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
@@ -12,8 +13,7 @@ const loading = ref(false)
 const saving = ref(false)
 const testing = ref(false)
 const clearing = ref(false)
-const error = ref('')
-const notice = ref('')
+const alert = ref(null)
 const form = ref({
   proxy_mode: 'system',
   proxy_url: '',
@@ -28,6 +28,8 @@ const hasUnsavedChanges = computed(() => form.value.proxy_mode !== saved.value.p
 const customUrlRequired = computed(() => form.value.proxy_mode === 'custom' && !form.value.proxy_configured && !form.value.proxy_url.trim())
 const canSave = computed(() => hasUnsavedChanges.value && !saving.value && !loading.value && !clearing.value && !customUrlRequired.value)
 const canTest = computed(() => !testing.value && !loading.value && !saving.value && !clearing.value && !customUrlRequired.value)
+
+function showAlert(type, title, description = '') { alert.value = { type, title, description } }
 
 function applySettings(data) {
   form.value = {
@@ -44,15 +46,14 @@ function applySettings(data) {
 async function load() {
   if (!isAdmin.value) return
   loading.value = true
-  error.value = ''
+  alert.value = null
   try {
     const response = await http.get('/api/domain-discovery/settings')
     if (response.data?.success !== true || !response.data?.data) throw new Error('invalid settings response')
     applySettings(response.data.data)
   } catch (e) {
-    error.value = e.response?.status === 403
-      ? tr("仅管理员可以管理域名发现代理设置。")
-      : tr("代理设置加载失败")
+    if (e.response?.status === 403) showAlert('error', tr("仅管理员可以管理域名发现代理设置。"))
+    else showAlert('error', tr("代理设置加载失败"))
   } finally {
     loading.value = false
   }
@@ -61,8 +62,7 @@ async function load() {
 async function save() {
   if (!canSave.value) return false
   saving.value = true
-  error.value = ''
-  notice.value = ''
+  alert.value = null
   try {
     const custom = form.value.proxy_mode === 'custom'
     const response = await http.put('/api/domain-discovery/settings', {
@@ -72,15 +72,15 @@ async function save() {
     })
     if (response.data?.success !== true || !response.data?.data) throw new Error('invalid settings response')
     applySettings(response.data.data)
-    notice.value = tr("域名发现代理设置已保存")
+    showAlert('success', tr("域名发现代理设置已保存"))
     return true
   } catch (e) {
     if (e.response?.status === 409) {
-      error.value = tr("配置已被其他管理员更新，请重新加载后再保存。")
       await load()
+      showAlert('error', tr("配置已被其他管理员更新，请重新加载后再保存。"))
     } else {
       const code = e.response?.data?.code
-      error.value = code ? discoveryReason(code) : tr("代理设置保存失败")
+      showAlert('error', tr("代理设置保存失败"), code ? discoveryReason(code) : '')
     }
     return false
   } finally {
@@ -91,8 +91,7 @@ async function save() {
 async function test() {
   if (!canTest.value) return
   testing.value = true
-  error.value = ''
-  notice.value = ''
+  alert.value = null
   try {
     const custom = form.value.proxy_mode === 'custom'
     const response = await http.post('/api/domain-discovery/settings/test', {
@@ -101,13 +100,14 @@ async function test() {
     })
     const data = response.data?.data
     if (data?.ok === true) {
-      notice.value = tr("连接正常（{0} ms）", [Number(data.latency_ms) || 0])
+      showAlert('success', tr("连接正常（{0} ms）", [Number(data.latency_ms) || 0]))
     } else {
-      error.value = tr("连接失败：{0}", [discoveryReason(data?.code)])
+      showAlert('error', tr("连接失败：{0}", [discoveryReason(data?.code)]))
     }
   } catch (e) {
     const code = e.response?.data?.code
-    error.value = code ? tr("连接失败：{0}", [discoveryReason(code)]) : tr("代理连接测试失败")
+    if (code) showAlert('error', tr("连接失败：{0}", [discoveryReason(code)]))
+    else showAlert('error', tr("代理连接测试失败"))
   } finally {
     testing.value = false
   }
@@ -117,8 +117,7 @@ async function clearCredentials() {
   if (clearing.value || !form.value.proxy_configured) return
   if (!window.confirm(tr("确定清除已保存的代理地址和认证信息吗？"))) return
   clearing.value = true
-  error.value = ''
-  notice.value = ''
+  alert.value = null
   try {
     const response = await http.post('/api/domain-discovery/settings/clear', {
       expected_revision: form.value.revision,
@@ -126,10 +125,10 @@ async function clearCredentials() {
     })
     if (response.data?.success !== true || !response.data?.data) throw new Error('invalid settings response')
     applySettings(response.data.data)
-    notice.value = tr("已清除保存的代理地址和认证信息")
+    showAlert('success', tr("已清除保存的代理地址和认证信息"))
   } catch (e) {
     const code = e.response?.data?.code
-    error.value = code ? discoveryReason(code) : tr("清除代理地址失败")
+    showAlert('error', tr("清除代理地址失败"), code ? discoveryReason(code) : '')
   } finally {
     clearing.value = false
   }
@@ -166,8 +165,7 @@ onMounted(load)
         </button>
       </div>
     </div>
-    <div v-if="error" class="alert alert-error text-sm" role="alert">{{ error }}</div>
-    <div v-if="notice" class="alert alert-success text-sm" role="status">{{ notice }}</div>
+    <AppAlert v-if="alert" v-bind="alert" @close="alert = null" />
     <div v-if="loading" class="skeleton h-20" role="status" :aria-label="tr('读取代理设置')"></div>
     <fieldset v-else class="space-y-3" :disabled="saving || clearing">
       <label class="form-control w-full" :for="`${formFieldId}-mode`">

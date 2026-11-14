@@ -1,6 +1,7 @@
 <script setup>
 import { tr } from '../i18n/index.js'
 import { computed, onMounted, ref, useId, watch } from 'vue'
+import AppAlert from '@/components/AppAlert.vue'
 import { formatDateTime } from '../i18n/time.js'
 import http from '@/utils/http'
 
@@ -10,8 +11,7 @@ const loading = ref(false)
 const saving = ref(false)
 const testing = ref(false)
 const clearing = ref(false)
-const error = ref('')
-const notice = ref('')
+const alert = ref(null)
 const testUrl = ref('https://example.com/')
 const form = ref({
   proxy_mode: 'system',
@@ -42,11 +42,10 @@ const proxyErrors = {
   get source_timeout() { return tr("测试目标连接超时。") },
   get source_tls_error() { return tr("测试目标的 TLS 证书校验失败。") },
   get source_transport() { return tr("无法连接测试目标。") },
-  get proxy_test_url_invalid() { return tr("测试目标必须是有效的 HTTPS 地址，且不能包含凭据或片段。") },
-  get proxy_test_dns_failed() { return tr("无法解析测试目标域名。") },
-  get proxy_test_url_not_public() { return tr("测试目标必须解析到公网地址。") }
+  get proxy_test_url_invalid() { return tr("测试目标必须是有效的 HTTP 或 HTTPS 地址，且不能包含凭据或片段。") }
 }
 function proxyReason(code) { return proxyErrors[code] || tr("操作失败，请稍后重试。") }
+function showAlert(type, title, description = '') { alert.value = { type, title, description } }
 
 const hasUnsavedChanges = computed(() => form.value.proxy_mode !== savedMode.value
   || (form.value.proxy_mode === 'custom' && form.value.proxy_url.trim() !== ''))
@@ -72,15 +71,14 @@ function applySettings(data) {
 
 async function load() {
   loading.value = true
-  error.value = ''
+  alert.value = null
   try {
     const response = await http.get('/api/config/network-proxy')
     if (response.data?.success !== true || !response.data?.data) throw new Error('invalid settings response')
     applySettings(response.data.data)
   } catch (e) {
-    error.value = e.response?.status === 403
-      ? tr("仅管理员可以管理全局网络代理。")
-      : tr("网络代理配置加载失败")
+    if (e.response?.status === 403) showAlert('error', tr("仅管理员可以管理全局网络代理。"))
+    else showAlert('error', tr("网络代理配置加载失败"))
   } finally {
     loading.value = false
   }
@@ -89,8 +87,7 @@ async function load() {
 async function save() {
   if (!canSave.value) return false
   saving.value = true
-  error.value = ''
-  notice.value = ''
+  alert.value = null
   try {
     const custom = form.value.proxy_mode === 'custom'
     const response = await http.put('/api/config/network-proxy', {
@@ -100,15 +97,15 @@ async function save() {
     })
     if (response.data?.success !== true || !response.data?.data) throw new Error('invalid settings response')
     applySettings(response.data.data)
-    notice.value = tr("网络代理设置已保存")
+    showAlert('success', tr("网络代理设置已保存"))
     return true
   } catch (e) {
     if (e.response?.status === 409) {
-      error.value = proxyReason('settings_revision_conflict')
       await load()
+      showAlert('error', tr("网络代理设置保存失败"), proxyReason('settings_revision_conflict'))
     } else {
       const code = e.response?.data?.code
-      error.value = code ? proxyReason(code) : tr("网络代理设置保存失败")
+      showAlert('error', tr("网络代理设置保存失败"), code ? proxyReason(code) : '')
     }
     return false
   } finally {
@@ -120,8 +117,7 @@ async function clearCredentials() {
   if (clearing.value || !form.value.proxy_configured) return
   if (!window.confirm(tr("确定清除已保存的代理地址和认证信息吗？"))) return
   clearing.value = true
-  error.value = ''
-  notice.value = ''
+  alert.value = null
   try {
     const response = await http.post('/api/config/network-proxy/clear', {
       expected_revision: form.value.revision,
@@ -129,10 +125,10 @@ async function clearCredentials() {
     })
     if (response.data?.success !== true || !response.data?.data) throw new Error('invalid settings response')
     applySettings(response.data.data)
-    notice.value = tr("已清除保存的代理地址和认证信息")
+    showAlert('success', tr("已清除保存的代理地址和认证信息"))
   } catch (e) {
     const code = e.response?.data?.code
-    error.value = code ? proxyReason(code) : tr("清除代理地址失败")
+    showAlert('error', tr("清除代理地址失败"), code ? proxyReason(code) : '')
   } finally {
     clearing.value = false
   }
@@ -141,8 +137,7 @@ async function clearCredentials() {
 async function test() {
   if (!canTest.value) return
   testing.value = true
-  error.value = ''
-  notice.value = ''
+  alert.value = null
   try {
     const custom = form.value.proxy_mode === 'custom'
     const response = await http.post('/api/config/network-proxy/test', {
@@ -152,15 +147,16 @@ async function test() {
     })
     const data = response.data?.data
     if (data?.ok === true) {
-      notice.value = data.http_status
+      showAlert('success', data.http_status
         ? tr("连接正常（{0} ms，HTTP {1}）", [Number(data.latency_ms) || 0, data.http_status])
-        : tr("连接正常（{0} ms）", [Number(data.latency_ms) || 0])
+        : tr("连接正常（{0} ms）", [Number(data.latency_ms) || 0]))
     } else {
-      error.value = tr("连接失败：{0}", [proxyReason(data?.code)])
+      showAlert('error', tr("连接失败：{0}", [proxyReason(data?.code)]))
     }
   } catch (e) {
     const code = e.response?.data?.code
-    error.value = code ? tr("连接失败：{0}", [proxyReason(code)]) : tr("代理连接测试失败")
+    if (code) showAlert('error', tr("连接失败：{0}", [proxyReason(code)]))
+    else showAlert('error', tr("代理连接测试失败"))
   } finally {
     testing.value = false
   }
@@ -203,8 +199,7 @@ onMounted(load)
       </div>
     </div>
 
-    <div v-if="error" class="alert alert-error text-sm" role="alert">{{ error }}</div>
-    <div v-if="notice" class="alert alert-success text-sm" role="status">{{ notice }}</div>
+    <AppAlert v-if="alert" v-bind="alert" @close="alert = null" />
     <div v-if="!form.available && form.config_error" class="alert alert-warning text-sm" role="alert">
       {{ tr("已保存的全局代理当前不可用：{0}", [proxyReason(form.config_error)]) }}
     </div>
@@ -252,7 +247,7 @@ onMounted(load)
           class="input input-bordered w-full"
           placeholder="https://example.com/"
         />
-        <span class="label-text-alt opacity-60">{{ tr("仅用于测试连接，不保存。必须是 HTTPS 地址；直接连接和系统代理模式下解析结果必须为公网地址。") }}</span>
+        <span class="label-text-alt opacity-60">{{ tr("仅用于测试连接，不保存。支持 HTTP 和 HTTPS 地址。") }}</span>
       </fieldset>
 
       <p class="text-xs opacity-60">{{ tr("局部“指定代理”或“直接连接”会覆盖全局；局部“沿用系统”表示跟随全局。保存只对之后领取的任务生效。") }}</p>
