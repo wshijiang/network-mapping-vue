@@ -5,9 +5,10 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 
 import AppAlert from '@/components/AppAlert.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ChartCsvExport from '@/components/ChartCsvExport.vue'
+import SystemDateTimeInput from '@/components/SystemDateTimeInput.vue'
 import { useChartTheme } from '@/composables/useChartTheme'
 import { renderChartTooltip } from '@/utils/chartTooltip'
-import { formatDateTime as formatSystemDateTime, formatTime as formatSystemClock } from '../i18n/time.js'
+import { formatDateTime as formatSystemDateTime, formatTime as formatSystemClock, localToIso } from '../i18n/time.js'
 import http from '@/utils/http'
 
 const ApexChart = defineAsyncComponent(() => import('vue3-apexcharts/core'))
@@ -372,11 +373,95 @@ const volumeTooltipOptions = useChartTheme(() => ({
   }
 }))
 
+// ---- 历史日志回填 ----
+
+const backfillMode = ref('days')
+const backfillDays = ref(7)
+const backfillStart = ref('')
+const backfillEnd = ref('')
+const backfillJobs = ref([])
+const backfillCreating = ref(false)
+const backfillCanceling = ref('')
+
+const backfillStatusLabels = {
+  get queued() { return { text: tr("排队中"), class: 'badge-warning' } },
+  get running() { return { text: tr("执行中"), class: 'badge-info' } },
+  get succeeded() { return { text: tr("已完成"), class: 'badge-success' } },
+  get failed() { return { text: tr("失败"), class: 'badge-error' } },
+  get cancelled() { return { text: tr("已取消"), class: 'badge-ghost' } }
+}
+
+async function loadJobs() {
+  try {
+    const response = await http.get('/api/syslog/backfill')
+    if (response.data?.success === true) backfillJobs.value = response.data.data || []
+  } catch (error) {
+    console.error('load syslog backfill jobs failed', error)
+  }
+}
+
+async function createBackfill() {
+  if (backfillCreating.value) return
+  const payload = {}
+  if (backfillMode.value === 'days') {
+    payload.days = backfillDays.value
+  } else {
+    if (!backfillStart.value || !backfillEnd.value) {
+      pushAlert('error', tr("无法下发回填"), tr("自定义时间段必须填写开始与结束时间。"))
+      return
+    }
+    try {
+      payload.start = localToIso(backfillStart.value)
+      payload.end = localToIso(backfillEnd.value)
+    } catch (error) {
+      pushAlert('error', tr("无法下发回填"), error.message || tr("时间格式无效。"))
+      return
+    }
+  }
+  backfillCreating.value = true
+  try {
+    const response = await http.post('/api/syslog/backfill', payload)
+    if (response.data?.success === true) {
+      pushAlert('success', tr("回填任务已下发"), tr("任务将由服务端后台执行，可在下方查看进度。"))
+      loadJobs()
+    } else {
+      pushAlert('error', tr("回填任务下发失败"), response.data?.message || tr("请稍后重试。"))
+    }
+  } catch (error) {
+    pushAlert('error', tr("回填任务下发失败"), error.response?.data?.message || tr("请检查网络连接后重试。"))
+  } finally {
+    backfillCreating.value = false
+  }
+}
+
+async function cancelBackfill(job) {
+  if (backfillCanceling.value) return
+  if (!window.confirm(tr("确定取消该回填任务？"))) return
+  backfillCanceling.value = job.id
+  try {
+    const response = await http.post(`/api/syslog/backfill/${job.id}/cancel`)
+    if (response.data?.success === true) {
+      pushAlert('success', tr("已请求取消"), tr("执行中的任务会在当前批次结束后停止。"))
+      loadJobs()
+    } else {
+      pushAlert('error', tr("取消失败"), response.data?.message || tr("任务可能已结束。"))
+    }
+  } catch (error) {
+    pushAlert('error', tr("取消失败"), error.response?.data?.message || tr("请检查网络连接后重试。"))
+  } finally {
+    backfillCanceling.value = ''
+  }
+}
+
 onMounted(() => {
   load()
   loadStatus()
   loadStats()
-  statusTimer = setInterval(() => loadStatus({ silent: true }), 10000)
+  loadJobs()
+  statusTimer = setInterval(() => {
+    loadStatus({ silent: true })
+    loadJobs()
+  }, 10000)
 })
 onBeforeUnmount(() => {
   if (statusTimer) clearInterval(statusTimer)
@@ -689,6 +774,75 @@ onBeforeUnmount(() => {
             <ApexChart v-if="trend.length" type="area" height="240" :options="sourceOptions" :series="sourceSeries" />
           </div>
         </template>
+      </section>
+
+      <!-- 历史日志回填 -->
+      <section class="card mt-5 border border-base-300 bg-base-100 p-5 shadow-sm">
+        <h2 class="font-semibold">{{ tr("历史日志回填") }}</h2>
+        <p class="mt-1 text-xs text-base-content/60">
+          {{ tr("手动下发任务，把数据库留存的审计事件、IP 访问日志与扫描器诊断重发到已启用的目标；默认最近 7 天，最长 31 天。需先启用转发；回填不计入实时统计。") }}
+        </p>
+        <div class="mt-4 flex flex-wrap items-end gap-3">
+          <label class="form-control">
+            <div class="label py-1"><span class="label-text">{{ tr("范围方式") }}</span></div>
+            <select v-model="backfillMode" class="select select-bordered">
+              <option value="days">{{ tr("最近 N 天") }}</option>
+              <option value="range">{{ tr("自定义时间段") }}</option>
+            </select>
+          </label>
+          <label v-if="backfillMode === 'days'" class="form-control">
+            <div class="label py-1"><span class="label-text">{{ tr("天数") }}</span></div>
+            <input v-model.number="backfillDays" type="number" min="1" max="31" class="input input-bordered w-28" />
+          </label>
+          <template v-else>
+            <label class="form-control">
+              <div class="label py-1"><span class="label-text">{{ tr("开始时间") }}</span></div>
+              <SystemDateTimeInput v-model="backfillStart" class="input input-bordered" :aria-label="tr(&quot;开始时间&quot;)" />
+            </label>
+            <label class="form-control">
+              <div class="label py-1"><span class="label-text">{{ tr("结束时间") }}</span></div>
+              <SystemDateTimeInput v-model="backfillEnd" class="input input-bordered" :aria-label="tr(&quot;结束时间&quot;)" />
+            </label>
+          </template>
+          <button type="button" class="btn btn-primary" :disabled="backfillCreating || !settings.enabled" @click="createBackfill">
+            <span v-if="backfillCreating" class="loading loading-spinner loading-sm" />
+            {{ tr("下发回填任务") }}
+          </button>
+        </div>
+        <p v-if="!settings.enabled" class="mt-2 text-xs text-warning">{{ tr("转发未启用，启用后才能下发回填任务。") }}</p>
+        <EmptyState v-if="!backfillJobs.length" class="mt-4" :title="tr(&quot;暂无回填任务&quot;)" :message="tr(&quot;下发任务后此处会显示执行进度。&quot;)" />
+        <div v-else class="mt-4 overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>{{ tr("下发时间") }}</th>
+                <th>{{ tr("范围") }}</th>
+                <th>{{ tr("状态") }}</th>
+                <th>{{ tr("处理 / 发送 / 失败") }}</th>
+                <th>{{ tr("错误") }}</th>
+                <th class="text-right">{{ tr("操作") }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="job in backfillJobs" :key="job.id">
+                <td class="whitespace-nowrap text-sm">{{ formatTime(job.createdAt) }}</td>
+                <td class="whitespace-nowrap text-sm">{{ formatTime(job.rangeStart) }} ～ {{ formatTime(job.rangeEnd) }}</td>
+                <td><span class="badge" :class="(backfillStatusLabels[job.status] || {}).class">{{ (backfillStatusLabels[job.status] || { text: job.status }).text }}</span></td>
+                <td class="whitespace-nowrap text-sm">{{ job.processedCount }} / {{ job.sentCount }} / <span :class="{ 'text-error': job.failedCount > 0 }">{{ job.failedCount }}</span></td>
+                <td class="max-w-56 text-sm"><span class="block truncate" :title="job.lastError || ''">{{ job.lastError || '--' }}</span></td>
+                <td class="text-right">
+                  <button
+                    v-if="job.status === 'queued' || job.status === 'running'"
+                    type="button"
+                    class="btn btn-ghost btn-xs text-error"
+                    :disabled="!!backfillCanceling"
+                    @click="cancelBackfill(job)"
+                  >{{ tr("取消") }}</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </template>
 
