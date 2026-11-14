@@ -1,6 +1,6 @@
 <script setup>
 import { tr } from '../i18n/index.js'
-import { computed, inject, onMounted, ref, useId } from 'vue'
+import { computed, inject, ref, useId, watch } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import { formatDateTime } from '../i18n/time.js'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
@@ -135,7 +135,7 @@ async function clearCredentials() {
 }
 
 useUnsavedChanges(hasUnsavedChanges, save)
-onMounted(load)
+watch(isAdmin, (value) => { if (value) load() }, { immediate: true })
 </script>
 
 <template>
