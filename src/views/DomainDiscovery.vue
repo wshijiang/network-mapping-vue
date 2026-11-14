@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http from '@/utils/http'
 import IntelLookup from '@/components/IntelLookup.vue'
+import DomainDiscoveryProxyCard from './DomainDiscoveryProxyCard.vue'
 import { formatDateTime } from '../i18n/time.js'
 import { relationLabels, discoveryStatuses, discoveryReason, canVerify, selectPage } from '@/utils/domainDiscovery'
 const route = useRoute(), router = useRouter()
@@ -110,6 +111,7 @@ onBeforeUnmount(() => { disposed = true; requestVersion++; requests.abort(); cle
       <div class="flex flex-wrap gap-5 text-sm"><label class="flex items-center gap-2"><input v-model="includeRelated" type="checkbox" class="checkbox checkbox-sm" />{{ tr("补充完整证书与关联域名") }}</label><label class="flex items-center gap-2"><input v-model="refresh" type="checkbox" class="checkbox checkbox-sm" />{{ tr("重新查询（不复用近期结果）") }}</label></div>
       <p class="text-xs opacity-60">{{ tr("输入子域时只查询该子域及其后代。证书共同出现不代表同一组织或服务存活；通配证书不展开为实际主机。刷新受冷却和配额限制。") }}</p>
     </form>
+    <DomainDiscoveryProxyCard />
     <section class="card border border-base-300 bg-base-100 p-4 space-y-3">
       <div class="flex flex-wrap items-center gap-3"><h2 class="font-semibold">{{ tr("发现历史") }}</h2><button class="btn btn-ghost btn-sm" @click="loadJobs">{{ tr("刷新") }}</button></div>
       <label for="discovery-job" class="text-sm">{{ tr("我的发现作业（最近 100 条）") }}</label>
