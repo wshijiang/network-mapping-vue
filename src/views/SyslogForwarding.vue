@@ -211,7 +211,7 @@ function removeTarget(index) {
 
 // ---- 状态 ----
 
-const status = ref({ enabled: false, queue: { capacity: 0, enqueueDrops: 0 }, targets: [] })
+const status = ref({ enabled: false, queue: { capacity: 0, enqueueDrops: 0 }, proxy: { mode: 'direct', endpoint: null, remoteDns: false }, targets: [] })
 const statusLoading = ref(false)
 let statusTimer = null
 
@@ -586,6 +586,12 @@ onBeforeUnmount(() => {
             <p class="mt-1 text-xs text-base-content/60">
               {{ tr("最多 10 个目标，各自独立选择协议与端口。状态每 10 秒刷新；UDP 为无连接协议，状态反映最近发送结果。") }}
             </p>
+            <p class="mt-2 text-xs">
+              <span class="badge badge-outline badge-sm mr-1">{{ tr("代理") }}</span>
+              <template v-if="status.proxy?.mode === 'socks5'">SOCKS5 {{ status.proxy.endpoint }}{{ status.proxy.remoteDns ? tr("（代理侧解析域名）") : "" }} · {{ tr("仅 TCP/TLS 生效，UDP 直连") }}</template>
+              <template v-else>{{ tr("直连（全局代理非 SOCKS5 或未配置，已自动回退）") }}</template>
+            </p>
+            <p class="mt-1 text-xs text-base-content/60">{{ tr("跟随设置页的全局网络代理，仅 SOCKS5（socks5/socks5h）生效，其余自动回退直连；UDP 目标始终直连。") }}</p>
           </div>
           <div class="flex items-center gap-2">
             <span v-if="statusLoading" class="loading loading-spinner loading-sm" />
