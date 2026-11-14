@@ -4346,5 +4346,6 @@
   "（代理侧解析域名）": " (proxy-side DNS)",
   "仅 TCP/TLS 生效，UDP 直连": "applies to TCP/TLS only; UDP is direct",
   "直连（全局代理非 SOCKS5 或未配置，已自动回退）": "Direct (global proxy is not SOCKS5 or not configured; automatically fell back)",
-  "跟随设置页的全局网络代理，仅 SOCKS5（socks5/socks5h）生效，其余自动回退直连；UDP 目标始终直连。": "Follows the global network proxy in Settings; only SOCKS5 (socks5/socks5h) is used, anything else falls back to direct; UDP targets are always direct."
+  "跟随设置页的全局网络代理，仅 SOCKS5（socks5/socks5h）生效，其余自动回退直连；UDP 目标始终直连。": "Follows the global network proxy in Settings; only SOCKS5 (socks5/socks5h) is used, anything else falls back to direct; UDP targets are always direct.",
+  "保存将应用本页全部修改：全局设置、服务器列表与通知策略。": "Saving applies all changes on this page: global settings, server list and notification policy."
 }

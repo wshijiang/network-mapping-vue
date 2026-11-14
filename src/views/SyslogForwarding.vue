@@ -1,7 +1,7 @@
 <script setup>
 import { tr } from '../i18n/index.js'
 
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ChartCsvExport from '@/components/ChartCsvExport.vue'
@@ -12,6 +12,8 @@ import { formatDateTime as formatSystemDateTime, formatTime as formatSystemClock
 import http from '@/utils/http'
 
 const ApexChart = defineAsyncComponent(() => import('vue3-apexcharts/core'))
+
+const formFieldId = useId()
 
 const alerts = ref([])
 const loading = ref(false)
@@ -532,30 +534,30 @@ onBeforeUnmount(() => {
           <h2 class="font-semibold">{{ tr("全局设置") }}</h2>
           <label class="label cursor-pointer gap-2">
             <span class="label-text">{{ tr("启用转发") }}</span>
-            <input v-model="settings.enabled" type="checkbox" class="toggle toggle-primary" />
+            <input v-model="settings.enabled" type="checkbox" class="toggle toggle-neutral" />
           </label>
         </div>
         <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <label class="form-control w-full">
-            <div class="label py-1"><span class="label-text">{{ tr("Facility") }}</span></div>
-            <select v-model="settings.facility" class="select select-bordered w-full">
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-facility`">{{ tr("Facility") }}</label></legend>
+            <select :id="`${formFieldId}-facility`" v-model="settings.facility" class="select select-bordered w-full">
               <option v-for="item in facilityOptions" :key="item" :value="item">{{ item }}</option>
             </select>
-          </label>
-          <label class="form-control w-full">
-            <div class="label py-1"><span class="label-text">{{ tr("应用名") }}</span></div>
-            <input v-model="settings.appName" type="text" maxlength="48" class="input input-bordered w-full" />
-          </label>
-          <label class="form-control w-full">
-            <div class="label py-1"><span class="label-text">{{ tr("系统日志最低级别") }}</span></div>
-            <select v-model="settings.minLevel" class="select select-bordered w-full">
+          </fieldset>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-app-name`">{{ tr("应用名") }}</label></legend>
+            <input :id="`${formFieldId}-app-name`" v-model="settings.appName" type="text" maxlength="48" class="input input-bordered w-full" />
+          </fieldset>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-min-level`">{{ tr("系统日志最低级别") }}</label></legend>
+            <select :id="`${formFieldId}-min-level`" v-model="settings.minLevel" class="select select-bordered w-full">
               <option v-for="item in levelOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
             </select>
-          </label>
-          <label class="form-control w-full">
-            <div class="label py-1"><span class="label-text">{{ tr("队列容量") }}</span></div>
-            <input v-model.number="settings.queueCapacity" type="number" min="1024" max="100000" class="input input-bordered w-full" />
-          </label>
+          </fieldset>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-queue-capacity`">{{ tr("队列容量") }}</label></legend>
+            <input :id="`${formFieldId}-queue-capacity`" v-model.number="settings.queueCapacity" type="number" min="1024" max="100000" class="input input-bordered w-full" />
+          </fieldset>
         </div>
         <div class="mt-4 flex flex-wrap gap-x-8 gap-y-3">
           <label class="label cursor-pointer gap-2">
@@ -595,7 +597,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="flex items-center gap-2">
             <span v-if="statusLoading" class="loading loading-spinner loading-sm" />
-            <button type="button" class="btn btn-primary btn-sm" @click="openAddTarget">{{ tr("添加服务器") }}</button>
+            <button type="button" class="btn btn-neutral btn-sm" @click="openAddTarget">{{ tr("添加服务器") }}</button>
           </div>
         </div>
         <EmptyState v-if="!settings.targets.length" class="mt-4" :title="tr(&quot;尚未配置服务器&quot;)" :message="tr(&quot;点击“添加服务器”配置第一台远程 syslog 服务器。&quot;)" />
@@ -649,30 +651,30 @@ onBeforeUnmount(() => {
         <p v-if="status.queue.enqueueDrops > 0" class="mt-3 text-xs text-warning">
           {{ tr("入队丢弃累计：{0}（队列容量 {1}）", [status.queue.enqueueDrops, status.queue.capacity]) }}
         </p>
-      </section>
 
-      <!-- 通知策略 -->
-      <section class="card mt-5 border border-base-300 bg-base-100 p-5 shadow-sm">
+        <div class="divider"></div>
+
+        <!-- 通知策略 -->
         <h2 class="font-semibold">{{ tr("通知策略") }}</h2>
         <p class="mt-1 text-xs text-base-content/60">{{ tr("三条规则可独立开启；命中后经健康告警渠道通知管理员（邮件与已配置的通知渠道）。") }}</p>
         <div class="mt-4 grid gap-4 sm:grid-cols-3">
-          <label class="form-control">
-            <div class="label py-1"><span class="label-text">{{ tr("统计窗口（分钟）") }}</span></div>
-            <input v-model.number="settings.alerts.windowMinutes" type="number" min="1" max="60" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <div class="label py-1"><span class="label-text">{{ tr("告警冷却（秒）") }}</span></div>
-            <input v-model.number="settings.alerts.cooldownSeconds" type="number" min="60" max="604800" class="input input-bordered" />
-          </label>
-          <label class="form-control">
-            <div class="label py-1"><span class="label-text">{{ tr("失败率最小样本数") }}</span></div>
-            <input v-model.number="settings.alerts.failureRate.minSamples" type="number" min="1" max="100000" class="input input-bordered" />
-          </label>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-alert-window`">{{ tr("统计窗口（分钟）") }}</label></legend>
+            <input :id="`${formFieldId}-alert-window`" v-model.number="settings.alerts.windowMinutes" type="number" min="1" max="60" class="input input-bordered w-full" />
+          </fieldset>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-alert-cooldown`">{{ tr("告警冷却（秒）") }}</label></legend>
+            <input :id="`${formFieldId}-alert-cooldown`" v-model.number="settings.alerts.cooldownSeconds" type="number" min="60" max="604800" class="input input-bordered w-full" />
+          </fieldset>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-alert-min-samples`">{{ tr("失败率最小样本数") }}</label></legend>
+            <input :id="`${formFieldId}-alert-min-samples`" v-model.number="settings.alerts.failureRate.minSamples" type="number" min="1" max="100000" class="input input-bordered w-full" />
+          </fieldset>
         </div>
         <div class="mt-4 space-y-3">
           <div class="flex flex-wrap items-center gap-3 rounded-box border border-base-300 p-3">
             <label class="label cursor-pointer gap-2">
-              <input v-model="settings.alerts.failureRate.enabled" type="checkbox" class="toggle toggle-sm toggle-primary" />
+              <input v-model="settings.alerts.failureRate.enabled" type="checkbox" class="toggle toggle-sm toggle-neutral" />
               <span class="label-text font-medium">{{ tr("整体失败率") }}</span>
             </label>
             <label class="label gap-2">
@@ -686,7 +688,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="flex flex-wrap items-center gap-3 rounded-box border border-base-300 p-3">
             <label class="label cursor-pointer gap-2">
-              <input v-model="settings.alerts.latencyP95.enabled" type="checkbox" class="toggle toggle-sm toggle-primary" />
+              <input v-model="settings.alerts.latencyP95.enabled" type="checkbox" class="toggle toggle-sm toggle-neutral" />
               <span class="label-text font-medium">{{ tr("发送耗时 P95") }}</span>
             </label>
             <label class="label gap-2">
@@ -700,7 +702,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="flex flex-wrap items-center gap-3 rounded-box border border-base-300 p-3">
             <label class="label cursor-pointer gap-2">
-              <input v-model="settings.alerts.latencyP99.enabled" type="checkbox" class="toggle toggle-sm toggle-primary" />
+              <input v-model="settings.alerts.latencyP99.enabled" type="checkbox" class="toggle toggle-sm toggle-neutral" />
               <span class="label-text font-medium">{{ tr("发送耗时 P99") }}</span>
             </label>
             <label class="label gap-2">
@@ -713,21 +715,22 @@ onBeforeUnmount(() => {
             </label>
           </div>
         </div>
-      </section>
 
-      <!-- 保存栏 -->
-      <section class="card mt-5 border border-base-300 bg-base-100 p-5 shadow-sm">
+        <div class="divider"></div>
+
+        <!-- 保存 -->
         <div class="flex flex-wrap items-end gap-3">
-          <label class="form-control grow">
-            <div class="label py-1"><span class="label-text">{{ tr("变更原因（可选）") }}</span></div>
-            <input v-model="changeReason" type="text" maxlength="500" class="input input-bordered w-full" :placeholder="tr(&quot;例如：接入主 SIEM 平台&quot;)" />
-          </label>
-          <button type="button" class="btn btn-primary" :disabled="saving || !dirty" @click="save">
+          <fieldset class="fieldset grow">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-change-reason`">{{ tr("变更原因（可选）") }}</label></legend>
+            <input :id="`${formFieldId}-change-reason`" v-model="changeReason" type="text" maxlength="500" class="input input-bordered w-full" :placeholder="tr(&quot;例如：接入主 SIEM 平台&quot;)" />
+          </fieldset>
+          <button type="button" class="btn btn-neutral" :disabled="saving || !dirty" @click="save">
             <span v-if="saving" class="loading loading-spinner loading-sm" />
             {{ tr("保存配置") }}
           </button>
         </div>
-        <p v-if="dirty" class="mt-2 text-xs text-warning">{{ tr("有未保存的修改。") }}</p>
+        <p class="mt-2 text-xs text-base-content/60">{{ tr("保存将应用本页全部修改：全局设置、服务器列表与通知策略。") }}</p>
+        <p v-if="dirty" class="mt-1 text-xs text-warning">{{ tr("有未保存的修改。") }}</p>
       </section>
 
       <!-- 统计 -->
@@ -737,18 +740,27 @@ onBeforeUnmount(() => {
             <h2 class="font-semibold">{{ tr("转发统计") }}</h2>
             <p class="mt-1 text-xs text-base-content/60">{{ tr("百分位为区间内最差分钟值；发送耗时指本地写入完成耗时。") }}</p>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <select v-model="statsWindow" class="select select-bordered select-sm" @change="loadStats">
-              <option v-for="item in windowOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
-            <select v-model="statsGranularity" class="select select-bordered select-sm" @change="loadStats">
-              <option v-for="item in granularityOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
-            <select v-model="statsTarget" class="select select-bordered select-sm" @change="loadStats">
-              <option value="">{{ tr("全部目标") }}</option>
-              <option v-for="target in settings.targets" :key="target.id" :value="target.id">{{ target.name }}</option>
-            </select>
-            <span v-if="statsLoading" class="loading loading-spinner loading-sm" />
+          <div class="flex flex-wrap items-end justify-end gap-2">
+            <fieldset class="fieldset min-w-0 w-36">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-stats-window`">{{ tr("时间范围") }}</label></legend>
+              <select :id="`${formFieldId}-stats-window`" v-model="statsWindow" class="select select-bordered select-sm w-full" @change="loadStats">
+                <option v-for="item in windowOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+              </select>
+            </fieldset>
+            <fieldset class="fieldset min-w-0 w-32">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-stats-granularity`">{{ tr("时间粒度") }}</label></legend>
+              <select :id="`${formFieldId}-stats-granularity`" v-model="statsGranularity" class="select select-bordered select-sm w-full" @change="loadStats">
+                <option v-for="item in granularityOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+              </select>
+            </fieldset>
+            <fieldset class="fieldset min-w-0 w-40">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-stats-target`">{{ tr("目标") }}</label></legend>
+              <select :id="`${formFieldId}-stats-target`" v-model="statsTarget" class="select select-bordered select-sm w-full" @change="loadStats">
+                <option value="">{{ tr("全部目标") }}</option>
+                <option v-for="target in settings.targets" :key="target.id" :value="target.id">{{ target.name }}</option>
+              </select>
+            </fieldset>
+            <span v-if="statsLoading" class="loading loading-spinner loading-sm mb-2" />
           </div>
         </div>
 
@@ -813,32 +825,35 @@ onBeforeUnmount(() => {
         <p class="mt-1 text-xs text-base-content/60">
           {{ tr("手动下发任务，把数据库留存的审计事件、IP 访问日志与扫描器诊断重发到已启用的目标；默认最近 7 天，最长 31 天。需先启用转发；回填不计入实时统计。") }}
         </p>
-        <div class="mt-4 flex flex-wrap items-end gap-3">
-          <label class="form-control">
-            <div class="label py-1"><span class="label-text">{{ tr("范围方式") }}</span></div>
-            <select v-model="backfillMode" class="select select-bordered">
+        <div class="mt-4 flex flex-wrap items-start gap-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-backfill-mode`">{{ tr("范围方式") }}</label></legend>
+            <select :id="`${formFieldId}-backfill-mode`" v-model="backfillMode" class="select select-bordered">
               <option value="days">{{ tr("最近 N 天") }}</option>
               <option value="range">{{ tr("自定义时间段") }}</option>
             </select>
-          </label>
-          <label v-if="backfillMode === 'days'" class="form-control">
-            <div class="label py-1"><span class="label-text">{{ tr("天数") }}</span></div>
-            <input v-model.number="backfillDays" type="number" min="1" max="31" class="input input-bordered w-28" />
-          </label>
+          </fieldset>
+          <fieldset v-if="backfillMode === 'days'" class="fieldset">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-backfill-days`">{{ tr("天数") }}</label></legend>
+            <input :id="`${formFieldId}-backfill-days`" v-model.number="backfillDays" type="number" min="1" max="31" class="input input-bordered w-28" />
+          </fieldset>
           <template v-else>
-            <label class="form-control">
-              <div class="label py-1"><span class="label-text">{{ tr("开始时间") }}</span></div>
-              <SystemDateTimeInput v-model="backfillStart" class="input input-bordered" :aria-label="tr(&quot;开始时间&quot;)" />
-            </label>
-            <label class="form-control">
-              <div class="label py-1"><span class="label-text">{{ tr("结束时间") }}</span></div>
-              <SystemDateTimeInput v-model="backfillEnd" class="input input-bordered" :aria-label="tr(&quot;结束时间&quot;)" />
-            </label>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-backfill-start`">{{ tr("开始时间") }}</label></legend>
+              <SystemDateTimeInput :id="`${formFieldId}-backfill-start`" v-model="backfillStart" class="input input-bordered" :aria-label="tr(&quot;开始时间&quot;)" />
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-backfill-end`">{{ tr("结束时间") }}</label></legend>
+              <SystemDateTimeInput :id="`${formFieldId}-backfill-end`" v-model="backfillEnd" class="input input-bordered" :aria-label="tr(&quot;结束时间&quot;)" />
+            </fieldset>
           </template>
-          <button type="button" class="btn btn-primary" :disabled="backfillCreating || !settings.enabled" @click="createBackfill">
-            <span v-if="backfillCreating" class="loading loading-spinner loading-sm" />
-            {{ tr("下发回填任务") }}
-          </button>
+          <fieldset class="fieldset ml-auto">
+            <legend class="fieldset-legend invisible" aria-hidden="true">{{ tr("范围方式") }}</legend>
+            <button type="button" class="btn btn-neutral" :disabled="backfillCreating || !settings.enabled" @click="createBackfill">
+              <span v-if="backfillCreating" class="loading loading-spinner loading-sm" />
+              {{ tr("下发回填任务") }}
+            </button>
+          </fieldset>
         </div>
         <p v-if="!settings.enabled" class="mt-2 text-xs text-warning">{{ tr("转发未启用，启用后才能下发回填任务。") }}</p>
         <EmptyState v-if="!backfillJobs.length" class="mt-4" :title="tr(&quot;暂无回填任务&quot;)" :message="tr(&quot;下发任务后此处会显示执行进度。&quot;)" />
@@ -882,52 +897,52 @@ onBeforeUnmount(() => {
       <div class="modal-box w-[calc(100vw-2rem)] max-w-lg">
         <h3 class="text-lg font-bold">{{ targetDraftIndex === -1 ? tr("添加服务器") : tr("编辑服务器") }}</h3>
         <div v-if="targetDraft" class="mt-4 space-y-4">
-          <label class="form-control w-full">
-            <div class="label py-1"><span class="label-text">{{ tr("名称") }}</span></div>
-            <input v-model="targetDraft.name" type="text" maxlength="64" class="input input-bordered w-full" :placeholder="tr(&quot;例如：主 SIEM&quot;)" />
-          </label>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend"><label :for="`${formFieldId}-target-name`">{{ tr("名称") }}</label></legend>
+            <input :id="`${formFieldId}-target-name`" v-model="targetDraft.name" type="text" maxlength="64" class="input input-bordered w-full" :placeholder="tr(&quot;例如：主 SIEM&quot;)" />
+          </fieldset>
           <div class="grid gap-4 sm:grid-cols-3">
-            <label class="form-control sm:col-span-2">
-              <div class="label py-1"><span class="label-text">{{ tr("地址（IP 或主机名）") }}</span></div>
-              <input v-model="targetDraft.host" type="text" class="input input-bordered w-full" placeholder="10.0.0.5" />
-            </label>
-            <label class="form-control">
-              <div class="label py-1"><span class="label-text">{{ tr("端口") }}</span></div>
-              <input v-model.number="targetDraft.port" type="number" min="1" max="65535" class="input input-bordered w-full" />
-            </label>
+            <fieldset class="fieldset sm:col-span-2">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-target-host`">{{ tr("地址（IP 或主机名）") }}</label></legend>
+              <input :id="`${formFieldId}-target-host`" v-model="targetDraft.host" type="text" class="input input-bordered w-full" placeholder="10.0.0.5" />
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-target-port`">{{ tr("端口") }}</label></legend>
+              <input :id="`${formFieldId}-target-port`" v-model.number="targetDraft.port" type="number" min="1" max="65535" class="input input-bordered w-full" />
+            </fieldset>
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
-            <label class="form-control w-full">
-              <div class="label py-1"><span class="label-text">{{ tr("协议") }}</span></div>
-              <select v-model="targetDraft.protocol" class="select select-bordered w-full" @change="onDraftProtocolChange">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-target-protocol`">{{ tr("协议") }}</label></legend>
+              <select :id="`${formFieldId}-target-protocol`" v-model="targetDraft.protocol" class="select select-bordered w-full" @change="onDraftProtocolChange">
                 <option v-for="item in protocolOptions" :key="item.value" :value="item.value">{{ item.label }}（{{ tr("默认端口") }} {{ item.defaultPort }}）</option>
               </select>
-            </label>
+            </fieldset>
             <label class="label cursor-pointer justify-start gap-2 self-end pb-3">
-              <input v-model="targetDraft.enabled" type="checkbox" class="toggle toggle-sm toggle-primary" />
+              <input v-model="targetDraft.enabled" type="checkbox" class="toggle toggle-sm toggle-neutral" />
               <span class="label-text">{{ tr("启用该目标") }}</span>
             </label>
           </div>
-          <div class="form-control">
-            <div class="label py-1"><span class="label-text">{{ tr("日志类型") }}</span></div>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">{{ tr("日志类型") }}</legend>
             <div class="flex flex-wrap gap-x-5 gap-y-2">
               <label v-for="key in ['system', 'audit', 'access', 'scanner']" :key="key" class="label cursor-pointer gap-2">
                 <input type="checkbox" class="checkbox checkbox-sm" :checked="targetDraft.sources.includes(key)" @change="toggleDraftSource(key)" />
                 <span class="label-text">{{ sourceLabels[key] }}</span>
               </label>
             </div>
-            <div class="label py-1"><span class="label-text-alt text-base-content/50">{{ tr("默认全部；取消勾选的类型不会发往该服务器。") }}</span></div>
-          </div>
+            <p class="text-xs text-base-content/50">{{ tr("默认全部；取消勾选的类型不会发往该服务器。") }}</p>
+          </fieldset>
           <template v-if="targetDraft.protocol === 'tls'">
-            <label class="form-control w-full">
-              <div class="label py-1"><span class="label-text">{{ tr("自定义 CA 文件（可选，PEM/DER）") }}</span></div>
-              <input v-model="targetDraft.tls.caFile" type="text" class="input input-bordered w-full" :placeholder="tr(&quot;留空使用系统根证书&quot;)" />
-            </label>
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend"><label :for="`${formFieldId}-target-ca`">{{ tr("自定义 CA 文件（可选，PEM/DER）") }}</label></legend>
+              <input :id="`${formFieldId}-target-ca`" v-model="targetDraft.tls.caFile" type="text" class="input input-bordered w-full" :placeholder="tr(&quot;留空使用系统根证书&quot;)" />
+            </fieldset>
             <div class="grid gap-4 sm:grid-cols-2">
-              <label class="form-control w-full">
-                <div class="label py-1"><span class="label-text">{{ tr("TLS 服务器名（可选）") }}</span></div>
-                <input v-model="targetDraft.tls.serverName" type="text" class="input input-bordered w-full" />
-              </label>
+              <fieldset class="fieldset w-full">
+                <legend class="fieldset-legend"><label :for="`${formFieldId}-target-tls-name`">{{ tr("TLS 服务器名（可选）") }}</label></legend>
+                <input :id="`${formFieldId}-target-tls-name`" v-model="targetDraft.tls.serverName" type="text" class="input input-bordered w-full" />
+              </fieldset>
               <label class="label cursor-pointer justify-start gap-2 self-end pb-3">
                 <input v-model="targetDraft.tls.verify" type="checkbox" class="toggle toggle-sm" />
                 <span class="label-text">{{ tr("校验证书") }}</span>
@@ -938,7 +953,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="modal-action">
           <form method="dialog"><button class="btn btn-ghost">{{ tr("取消") }}</button></form>
-          <button type="button" class="btn btn-primary" @click="confirmTarget">{{ tr("确定") }}</button>
+          <button type="button" class="btn btn-neutral" @click="confirmTarget">{{ tr("确定") }}</button>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop"><button>close</button></form>
