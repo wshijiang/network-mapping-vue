@@ -146,7 +146,8 @@ function openAddTarget() {
     port: 514,
     protocol: 'udp',
     enabled: true,
-    tls: { caFile: '', verify: true, serverName: '' }
+    tls: { caFile: '', verify: true, serverName: '' },
+    sources: ['system', 'audit', 'access', 'scanner']
   }
   targetDialog.value?.showModal()
 }
@@ -162,6 +163,19 @@ function onDraftProtocolChange() {
   if (option) targetDraft.value.port = option.defaultPort
 }
 
+function toggleDraftSource(key) {
+  const list = targetDraft.value.sources
+  const index = list.indexOf(key)
+  if (index >= 0) list.splice(index, 1)
+  else list.push(key)
+}
+
+function sourcesLabel(target) {
+  const list = target.sources || ['system', 'audit', 'access', 'scanner']
+  if (list.length === 4) return tr("全部")
+  return list.map((key) => sourceLabels[key] || key).join('、')
+}
+
 function confirmTarget() {
   const draft = targetDraft.value
   if (!draft.name.trim() || !draft.host.trim()) {
@@ -170,6 +184,10 @@ function confirmTarget() {
   }
   if (!Number.isInteger(draft.port) || draft.port < 1 || draft.port > 65535) {
     pushAlert('error', tr("无法保存服务器"), tr("端口必须为 1～65535。"))
+    return
+  }
+  if (!draft.sources.length) {
+    pushAlert('error', tr("无法保存服务器"), tr("至少选择一种日志类型。"))
     return
   }
   if (targetDraftIndex.value === -1) {
@@ -577,6 +595,7 @@ onBeforeUnmount(() => {
                 <th>{{ tr("名称") }}</th>
                 <th>{{ tr("地址") }}</th>
                 <th>{{ tr("协议") }}</th>
+                <th>{{ tr("日志类型") }}</th>
                 <th>{{ tr("状态") }}</th>
                 <th>{{ tr("已发送 / 失败 / 丢弃") }}</th>
                 <th>{{ tr("最近成功") }}</th>
@@ -592,6 +611,7 @@ onBeforeUnmount(() => {
                 </td>
                 <td class="whitespace-nowrap font-mono text-sm">{{ target.host }}:{{ target.port }}</td>
                 <td><span class="badge badge-outline uppercase">{{ target.protocol }}</span></td>
+                <td class="max-w-44 text-sm">{{ sourcesLabel(target) }}</td>
                 <td><span class="badge" :class="stateBadge(target).class">{{ stateBadge(target).text }}</span></td>
                 <td class="whitespace-nowrap text-sm">
                   {{ statusById[target.id]?.sent ?? 0 }} /
@@ -876,6 +896,16 @@ onBeforeUnmount(() => {
               <input v-model="targetDraft.enabled" type="checkbox" class="toggle toggle-sm toggle-primary" />
               <span class="label-text">{{ tr("启用该目标") }}</span>
             </label>
+          </div>
+          <div class="form-control">
+            <div class="label py-1"><span class="label-text">{{ tr("日志类型") }}</span></div>
+            <div class="flex flex-wrap gap-x-5 gap-y-2">
+              <label v-for="key in ['system', 'audit', 'access', 'scanner']" :key="key" class="label cursor-pointer gap-2">
+                <input type="checkbox" class="checkbox checkbox-sm" :checked="targetDraft.sources.includes(key)" @change="toggleDraftSource(key)" />
+                <span class="label-text">{{ sourceLabels[key] }}</span>
+              </label>
+            </div>
+            <div class="label py-1"><span class="label-text-alt text-base-content/50">{{ tr("默认全部；取消勾选的类型不会发往该服务器。") }}</span></div>
           </div>
           <template v-if="targetDraft.protocol === 'tls'">
             <label class="form-control w-full">

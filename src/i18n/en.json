@@ -4334,5 +4334,8 @@
   "已请求取消": "Cancellation requested",
   "执行中的任务会在当前批次结束后停止。": "A running job stops after its current batch.",
   "取消失败": "Cancellation failed",
-  "任务可能已结束。": "The job may have already finished."
+  "任务可能已结束。": "The job may have already finished.",
+  "日志类型": "Log types",
+  "至少选择一种日志类型。": "Select at least one log type.",
+  "默认全部；取消勾选的类型不会发往该服务器。": "All by default; unchecked types are not sent to this server."
 }
