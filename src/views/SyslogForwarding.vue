@@ -154,7 +154,12 @@ function openAddTarget() {
 
 function openEditTarget(index) {
   targetDraftIndex.value = index
-  targetDraft.value = JSON.parse(JSON.stringify(settings.value.targets[index]))
+  const draft = JSON.parse(JSON.stringify(settings.value.targets[index]))
+  // 兼容旧文档：缺失 sources 时按全部类型处理，避免复选框渲染报错。
+  if (!Array.isArray(draft.sources) || !draft.sources.length) {
+    draft.sources = ['system', 'audit', 'access', 'scanner']
+  }
+  targetDraft.value = draft
   targetDialog.value?.showModal()
 }
 

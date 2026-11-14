@@ -4337,5 +4337,9 @@
   "任务可能已结束。": "The job may have already finished.",
   "日志类型": "Log types",
   "至少选择一种日志类型。": "Select at least one log type.",
-  "默认全部；取消勾选的类型不会发往该服务器。": "All by default; unchecked types are not sent to this server."
+  "默认全部；取消勾选的类型不会发往该服务器。": "All by default; unchecked types are not sent to this server.",
+  "测试失败": "Test failed",
+  "请检查网络连接后点击“重新加载”。": "Check your network connection, then click Reload.",
+  "Facility": "Facility",
+  "确定": "OK"
 }
