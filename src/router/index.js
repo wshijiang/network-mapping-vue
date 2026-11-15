@@ -12,6 +12,8 @@ const router = createRouter({
     { name: 'scanner-configuration', path: '/scanner/:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})/configuration', component: () => import('../views/ScannerConfiguration.vue'), meta: { title: '扫描器配置' } },
     { name: 'scanner-detail', path: '/scanner/:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})', component: () => import('../views/ScannerDetail.vue'), meta: { title: '扫描器详情' } },
     { path: '/scanner', component: () => import('../views/Scanner.vue'), meta: { title: '扫描器' } },
+    { path: '/data', redirect: '/data/import' },
+    { path: '/data/import', component: () => import('../views/DataImport.vue'), meta: { title: '数据导入' } },
     {
       path: '/analysis',
       component: () => import('../views/AnalysisLayout.vue'),
