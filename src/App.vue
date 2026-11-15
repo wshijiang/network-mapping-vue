@@ -27,6 +27,7 @@ const maintenanceStatus = ref(null)
 const activeMenuGroup = computed(() => {
   const path = route.path
   if (path === '/create_scan' || path === '/task' || path.startsWith('/task/')) return 'task'
+  if (path === '/data' || path.startsWith('/data/')) return 'data'
   if (path === '/analysis' || path.startsWith('/analysis/')) return 'analysis'
   if (path === '/audit' || path === '/requests' || path.startsWith('/requests/')) return 'logs'
   if (path === '/llm' || path.startsWith('/llm/')) return 'llm'
@@ -34,6 +35,7 @@ const activeMenuGroup = computed(() => {
   return null
 })
 const taskMenuOpen = ref(activeMenuGroup.value === 'task')
+const dataMenuOpen = ref(activeMenuGroup.value === 'data')
 const analysisMenuOpen = ref(activeMenuGroup.value === 'analysis')
 const logsMenuOpen = ref(activeMenuGroup.value === 'logs')
 const llmMenuOpen = ref(activeMenuGroup.value === 'llm')
@@ -48,6 +50,7 @@ watch(
   () => route.path,
   () => {
     if (activeMenuGroup.value === 'task') taskMenuOpen.value = true
+    if (activeMenuGroup.value === 'data') dataMenuOpen.value = true
     if (activeMenuGroup.value === 'analysis') analysisMenuOpen.value = true
     if (activeMenuGroup.value === 'logs') logsMenuOpen.value = true
     if (activeMenuGroup.value === 'llm') llmMenuOpen.value = true
@@ -111,6 +114,15 @@ function toggleTaskMenu() {
     return
   }
   taskMenuOpen.value = !taskMenuOpen.value
+}
+
+function toggleDataMenu() {
+  if (!drawerOpen.value) {
+    drawerOpen.value = true
+    dataMenuOpen.value = true
+    return
+  }
+  dataMenuOpen.value = !dataMenuOpen.value
 }
 
 function toggleLogsMenu() {
@@ -418,9 +430,47 @@ async function handleLogout() {
 
           <li v-if="isAdmin">
             <router-link active-class="active" exact-active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;数据备份&quot;)" to="/admin/backups">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 12a9 3 0 0 0 5 2.69"/><path d="M21 9.3V5"/><path d="M3 5v14a9 3 0 0 0 6.47 2.88"/><path d="M12 12v4h4"/><path d="M13 20a5 5 0 0 0 9-3 4.5 4.5 0 0 0-4.5-4.5c-1.33 0-2.54.54-3.41 1.41L12 16"/></svg>
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("数据备份") }}</span>
             </router-link>
+          </li>
+
+          <li v-if="isAdmin">
+            <button
+              type="button"
+              class="is-drawer-close:tooltip is-drawer-close:tooltip-right bg-transparent hover:bg-base-200 focus-visible:bg-base-200"
+              :data-tip="tr(&quot;数据管理&quot;)"
+              :class="{ active: isParentMenuActive('data', dataMenuOpen) }"
+              :aria-current="isParentMenuActive('data', dataMenuOpen) ? 'true' : undefined"
+              :aria-expanded="drawerOpen && dataMenuOpen"
+              aria-controls="data-submenu"
+              @click="toggleDataMenu"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><path d="m14.305 19.53.923-.382"/><path d="m15.228 16.852-.923-.383"/><path d="m16.852 15.228-.383-.923"/><path d="m16.852 20.772-.383.924"/><path d="m19.148 15.228.383-.923"/><path d="m19.53 21.696-.382-.924"/><path d="m20.772 16.852.924-.383"/><path d="m20.772 19.148.924.383"/><path d="M21 10.5V5"/><path d="M3 12a9 3 0 0 0 7.599 2.963"/><path d="M3 5v14a9 3 0 0 0 8.148 2.987"/><circle cx="18" cy="18" r="3"/><ellipse cx="12" cy="5" rx="9" ry="3"/></svg>
+              <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("数据管理") }}</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="ml-auto size-3.5 transition-transform duration-200 ease-out is-drawer-close:hidden"
+                :class="dataMenuOpen ? 'rotate-90' : 'rotate-0'"
+              >
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+            <Transition name="sidebar-submenu">
+              <ul v-if="dataMenuOpen" id="data-submenu" class="overflow-hidden py-1 is-drawer-close:hidden">
+                <li>
+                  <router-link class="sidebar-submenu-item" exact-active-class="active" to="/data/import">
+                    <span class="whitespace-nowrap">{{ tr("导入") }}</span>
+                  </router-link>
+                </li>
+              </ul>
+            </Transition>
           </li>
 
           <li>
