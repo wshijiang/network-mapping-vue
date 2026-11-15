@@ -11,6 +11,7 @@
     "test:reports": "node --test src/utils/reports.test.js src/views/reports.test.js",
     "test:charts": "node --test src/utils/chartCsv.test.js",
     "test:data-import": "node --test src/utils/csvHeader.test.js src/utils/dataImport.test.js",
+    "test:federation": "node --test src/utils/federation.test.js",
     "test:statistics": "node --test src/utils/statistics.test.js src/utils/statisticsCache.test.js",
     "test:targets": "node src/utils/scanTargets.test.js",
     "test:projection": "node --test src/utils/projectionStatus.test.js",

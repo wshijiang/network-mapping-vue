@@ -469,6 +469,11 @@ async function handleLogout() {
                     <span class="whitespace-nowrap">{{ tr("导入") }}</span>
                   </router-link>
                 </li>
+                <li>
+                  <router-link class="sidebar-submenu-item" exact-active-class="active" to="/data/federation">
+                    <span class="whitespace-nowrap">{{ tr("联测") }}</span>
+                  </router-link>
+                </li>
               </ul>
             </Transition>
           </li>
