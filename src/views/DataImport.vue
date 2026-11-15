@@ -249,6 +249,7 @@ const page = ref(1)
 const pageSize = ref(20)
 const statusFilter = ref('')
 let refreshTimer = null
+let listRequestSeq = 0
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 const pageNumbers = computed(() => Array.from({ length: totalPages.value }, (_, index) => index + 1))
@@ -264,27 +265,39 @@ function schedulePolling() {
 }
 
 async function loadTasks({ silent = false } = {}) {
-  if (listLoading.value) return
+  // 背景轮询不与在途请求叠加；用户发起的刷新（翻页/筛选/操作后）始终发起，并以序号取代旧请求，
+  // 避免在途请求用旧筛选条件覆盖新选择。
+  if (silent && listLoading.value) return
+  const seq = ++listRequestSeq
   listLoading.value = true
   try {
     const params = { limit: pageSize.value, offset: (page.value - 1) * pageSize.value }
     if (statusFilter.value) params.status = statusFilter.value
     const response = await http.get('/api/data-import/tasks', { params })
+    if (seq !== listRequestSeq) return
     const data = response.data?.data
     if (response.data?.success !== true || !Array.isArray(data?.items)) {
       throw new Error(tr('服务器未返回有效数据，请稍后重试。'))
     }
-    tasks.value = data.items
     total.value = Number(data.total) || 0
+    // 删除末页最后一条后旧 offset 会取空：收敛页码并重取该页，而非展示空状态。
+    if (page.value > totalPages.value) {
+      page.value = totalPages.value
+      listLoading.value = false
+      return loadTasks({ silent })
+    }
+    tasks.value = data.items
     initialLoadFailed.value = false
-    if (page.value > totalPages.value) page.value = totalPages.value
   } catch (error) {
+    if (seq !== listRequestSeq) return
     console.error('load data-import tasks failed', error)
     initialLoadFailed.value = tasks.value.length === 0
     if (!silent) pushAlert('error', tr('加载导入任务失败'), errorMessage(error, tr('请稍后重试。')))
   } finally {
-    listLoading.value = false
-    schedulePolling()
+    if (seq === listRequestSeq) {
+      listLoading.value = false
+      schedulePolling()
+    }
   }
 }
 
