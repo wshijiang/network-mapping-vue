@@ -967,6 +967,10 @@ onBeforeUnmount(() => {
           </template>
         </div>
         <div class="modal-action">
+          <button v-if="targetDraft" type="button" class="btn btn-outline mr-auto" :disabled="!!testingId" @click="testTarget(targetDraft)">
+            <span v-if="testingId === targetDraft.id" class="loading loading-spinner loading-xs" />
+            {{ tr("测试连接") }}
+          </button>
           <form method="dialog"><button class="btn btn-ghost">{{ tr("取消") }}</button></form>
           <button type="button" class="btn btn-neutral" @click="confirmTarget">{{ tr("确定") }}</button>
         </div>
