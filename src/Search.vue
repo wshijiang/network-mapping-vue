@@ -312,7 +312,7 @@ onBeforeUnmount(() => {
     <LanguageSelect />
           <ThemeToggle />
     <a class="link" target="_blank" href="/">{{ tr("仪表盘") }}</a>
-    <a class="link" target="_blank" rel="noopener noreferrer" href="https://github.com/wshijiang/network-mapping/blob/dev/docs/SEARCH_SYNTAX.md">{{ tr("搜索文档") }}</a>
+    <a class="link" target="_blank" rel="noopener noreferrer" href="https://docs.abdc.world/s/SEARCH_SYNTAX/">{{ tr("搜索文档") }}</a>
   </nav>
 
   <main class="bg-base-200 min-h-screen px-4 py-24">
@@ -437,7 +437,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="modal-action">
-        <a class="btn btn-ghost" target="_blank" rel="noopener noreferrer" href="https://github.com/wshijiang/network-mapping/blob/dev/docs/SEARCH_SYNTAX.md">{{ tr("查看完整文档") }}</a>
+        <a class="btn btn-ghost" target="_blank" rel="noopener noreferrer" href="https://docs.abdc.world/s/SEARCH_SYNTAX/">{{ tr("查看完整文档") }}</a>
         <button type="button" class="btn btn-neutral" @click="closeSyntaxDialog">{{ tr("知道了") }}</button>
       </div>
     </div>
