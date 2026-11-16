@@ -1,8 +1,8 @@
-# Web 技术标签图标
+# 技术标签图标
 
-[Web 技术栈展示](WEB_DETECTION.md) · [文档中心](README.md)
+[技术栈展示](WEB_DETECTION.md) · [文档中心](README.md)
 
-搜索页、资产详情和任务详情共用 `WebTechnologies.vue`。摘要中的前三项和展开后的所有组件均通过 `WebTechnologyLabel.vue` 在文字前显示本地 SVG，保留名称、明确版本和版本冲突提示。图标为装饰，使用空 `alt` 和 `aria-hidden`，屏幕阅读器仍读取文字。图标底色固定为白色，适配明暗主题中的品牌颜色。
+搜索页、资产详情和任务详情共用 `WebTechnologies.vue`。摘要中的前三项和展开后的所有组件均通过 `WebTechnologyLabel.vue` 在文字前显示本地 SVG，保留名称、明确版本和版本冲突提示。图标为装饰，使用空 `alt` 和 `aria-hidden`，屏幕阅读器仍读取文字。图标背景透明，不再添加白色底色；彩色品牌图标沿用 SVG 自身填充。单色标记（Express、Next.js 的黑色填充，以及通用服务器/存储符号的 `currentColor` 描边经 `<img>` 渲染为黑色）在暗色主题下通过 `style.css` 的 `:root[data-theme="dark"] .tech-icon-mono { filter: invert(1) }` 反色保持可见，不恢复全局白底；`WebTechnologyLabel.vue` 按解析后的图标（含通用回退）自动附加 `tech-icon-mono` 类。
 
 ## 来源与覆盖
 

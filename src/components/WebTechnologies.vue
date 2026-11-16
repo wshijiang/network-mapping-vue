@@ -6,7 +6,7 @@ import { webLabel } from '@/utils/webDetection'
 import { formatDateTime } from '../i18n/time.js'
 import WebTechnologyLabel from '@/components/WebTechnologyLabel.vue'
 
-const props = defineProps({ value: { type: Object, default: null } })
+const props = defineProps({ value: { type: Object, default: null }, compact: { type: Boolean, default: false } })
 const label = computed(() => webLabel(props.value))
 const technologies = computed(() => ['identified', 'partial'].includes(props.value?.status) && Array.isArray(props.value?.technologies) ? props.value.technologies.slice(0, 64) : [])
 const confidence = { get high() { return tr("高") }, get medium() { return tr("中") }, get low() { return tr("低") } }
@@ -14,7 +14,14 @@ const usage = { get referenced_resource() { return tr("页面引用资源") }, g
 </script>
 
 <template>
-  <details v-if="value && value.status !== 'not_web'" class="min-w-32 text-xs">
+  <template v-if="compact">
+    <span v-if="technologies.length" class="flex flex-nowrap items-center gap-2 text-xs">
+      <WebTechnologyLabel v-for="technology in technologies.slice(0, 3)" :key="technology.id" :technology="technology" />
+      <span v-if="technologies.length > 3" class="shrink-0">{{ tr("等") }} {{ technologies.length }} {{ tr("项") }}</span>
+    </span>
+    <span v-else class="text-xs opacity-50">-</span>
+  </template>
+  <details v-else-if="value && value.status !== 'not_web'" class="min-w-32 text-xs">
     <summary class="cursor-pointer leading-6">
       <span v-if="technologies.length" class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 align-middle">
         <WebTechnologyLabel v-for="technology in technologies.slice(0, 3)" :key="technology.id" :technology="technology" />

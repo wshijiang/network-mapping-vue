@@ -483,7 +483,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="overflow-x-auto">
                 <table class="table table-sm">
-                  <thead><tr><th>{{ tr("端口") }}</th><th>{{ tr("协议") }}</th><th>{{ tr("服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("Web 技术栈") }}</th><th>{{ tr("扫描时间") }}</th></tr></thead>
+                  <thead><tr><th>{{ tr("端口") }}</th><th>{{ tr("协议") }}</th><th>{{ tr("服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("技术栈") }}</th><th>{{ tr("扫描时间") }}</th></tr></thead>
                   <tbody>
                     <tr v-for="port in row.ports" :key="`${port.protocol || 'unknown'}:${port.port}`">
                       <td>{{ port.port }}</td>

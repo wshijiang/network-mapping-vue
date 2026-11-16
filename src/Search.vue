@@ -2,13 +2,10 @@
 import { formatDateTime as formatCsvDateTime } from './utils/systemTime.js'
 import { tr } from './i18n/index.js'
 
-import ServiceLabel from '@/components/ServiceLabel.vue'
+import SearchResultsTable from '@/components/SearchResultsTable.vue'
+import { formatNetworkOwner } from './utils/searchFormat'
 import { formatDateTime as formatSystemDateTime } from './i18n/time.js'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import AssetTags from './components/AssetTags.vue'
-import IntelEvidence from './components/IntelEvidence.vue'
-import WebTechnologies from '@/components/WebTechnologies.vue'
-import OsFingerprint from './components/OsFingerprint.vue'
 import { webCsvHeaders, webCsvValues } from './utils/webDetection'
 import { osCsvHeaders, osCsvValues } from './utils/osDetection'
 import ThemeToggle from '@/components/ThemeToggle.vue'
@@ -246,20 +243,6 @@ function formatTime(timestamp) {
   return formatSystemDateTime(new Date(timestamp))
 }
 
-function formatNetworkOwner(item) {
-  const asn = item.asn ? (/^AS/i.test(item.asn) ? item.asn : `AS${item.asn}`) : ''
-  return [asn, item.as_org || item.isp].filter(Boolean).join(' · ') || '-'
-}
-
-function certificateStatus(item) {
-  if (!item.tls_subject && !item.tls_not_after && !item.tls_version) return null
-  if (item.tls_not_after && Number(item.tls_not_after) <= Date.now()) {
-    return { get text() { return tr("证书已过期") }, class: 'badge-error' }
-  }
-  if (item.tls_self_signed === true) return { get text() { return tr("自签名") }, class: 'badge-warning' }
-  return { text: item.tls_version || 'TLS', class: 'badge-success' }
-}
-
 function csvCell(value) {
   const text = String(value ?? '')
   const safeText = /^[\s]*[=+\-@]/.test(text) ? `'${text}` : text
@@ -344,7 +327,7 @@ onBeforeUnmount(() => {
   </nav>
 
   <main class="bg-base-200 min-h-screen px-4 py-24">
-    <div class="mx-auto w-full max-w-5xl">
+    <div class="mx-auto w-full max-w-[1600px]">
       <h1 class="mb-5 text-center text-3xl font-semibold md:text-4xl">Network-Mapping Search</h1>
 
       <div ref="searchBoxRef" class="relative mx-auto max-w-2xl">
@@ -420,36 +403,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div v-if="searchResult.items.length === 0" class="py-12 text-center opacity-60">{{ tr("没有匹配的资产。") }}</div>
-        <div v-else class="overflow-x-auto">
-          <table class="table table-zebra table-sm">
-            <thead><tr><th>IP</th><th>{{ tr("端口") }}</th><th>{{ tr("协议") }}</th><th>{{ tr("服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("Web 技术栈") }}</th><th>{{ tr("网页 / TLS") }}</th><th>{{ tr("ASN / AS 组织") }}</th><th>{{ tr("位置") }}</th><th>{{ tr("扫描时间") }}</th></tr></thead>
-            <tbody>
-              <tr v-for="(item, index) in searchResult.items" :key="`${item.ip_address}-${item.port}-${item.scan_time}-${index}`">
-                <td><div class="flex min-w-max items-center gap-2"><a class="link whitespace-nowrap font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer" :title="tr(&quot;查看资产详情&quot;)">{{ item.ip_address }}</a><AssetTags :tags="item.tags || []" :limit="3" size="xs" /><IntelEvidence :intel="item.intel" :label="tr(&quot;端点情报&quot;)" /><span v-if="originLabel(item)" class="badge badge-outline badge-xs" :title="(item.federation_sources || []).join(', ')">{{ originLabel(item) }}</span></div></td>
-                <td>{{ item.port ?? '-' }}</td>
-                <td>{{ item.protocol ?? '-' }}</td>
-                <td><ServiceLabel :service="item.service" :data="item.data" /></td>
-                <td class="max-w-xs truncate" :title="item.banner">{{ item.banner ?? '-' }}</td>
-                <td><OsFingerprint :value="item.os" /></td>
-                <td><WebTechnologies :value="item.web" /></td>
-                <td class="min-w-64 max-w-sm">
-                  <div v-if="item.title || item.tls_subject || item.tls_version" class="space-y-1">
-                    <div v-if="item.title" class="truncate font-medium" :title="item.title">{{ item.title }}</div>
-                    <div v-if="certificateStatus(item)" class="flex flex-wrap items-center gap-1">
-                      <span class="badge badge-sm" :class="certificateStatus(item).class">{{ certificateStatus(item).text }}</span>
-                      <span v-if="item.tls_mode" class="badge badge-ghost badge-sm">{{ item.tls_mode }}</span>
-                    </div>
-                    <div v-if="item.tls_subject" class="truncate font-mono text-xs opacity-70" :title="item.tls_subject">{{ item.tls_subject }}</div>
-                  </div>
-                  <span v-else>-</span>
-                </td>
-                <td>{{ formatNetworkOwner(item) }}</td>
-                <td>{{ formatLocation(item) }}</td>
-                <td class="whitespace-nowrap">{{ formatTime(item.scan_time) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <SearchResultsTable v-else :items="searchResult.items" />
         <div v-if="searchResult.total > PAGE_SIZE" class="mt-5 flex flex-wrap items-center justify-end gap-2">
           <span v-if="searchResult.total > MAX_RESULT_WINDOW" class="mr-auto text-xs opacity-60">{{ tr("最多可浏览前") }} {{ MAX_RESULT_WINDOW }} {{ tr("条结果。") }}</span>
           <button class="btn btn-sm" :disabled="loading || offset === 0" @click="previousPage">{{ tr("上一页") }}</button>

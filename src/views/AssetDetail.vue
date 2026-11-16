@@ -594,7 +594,7 @@ onMounted(() => {
           <div v-else class="overflow-x-auto">
             <table class="table table-zebra">
               <thead>
-                <tr><th>{{ tr("端口") }}</th><th>{{ tr("协议 / 服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("Web 技术栈") }}</th><th>{{ tr("首次发现") }}</th><th>{{ tr("最近发现") }}</th><th>{{ tr("来源") }}</th><th></th></tr>
+                <tr><th>{{ tr("端口") }}</th><th>{{ tr("协议 / 服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("技术栈") }}</th><th>{{ tr("首次发现") }}</th><th>{{ tr("最近发现") }}</th><th>{{ tr("来源") }}</th><th></th></tr>
               </thead>
               <tbody>
                 <tr v-for="port in ports" :key="`${port.protocol || 'unknown'}:${port.port}`">

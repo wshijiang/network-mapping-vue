@@ -5,15 +5,18 @@ import { computed } from 'vue'
 import { osLabel, osConfidence } from '@/utils/osDetection'
 import { formatDateTime } from '../i18n/time.js'
 
-const props = defineProps({ value: { type: Object, default: null } })
+const props = defineProps({ value: { type: Object, default: null }, compact: { type: Boolean, default: false } })
 const label = computed(() => osLabel(props.value))
 const confidence = computed(() => osConfidence(props.value))
+const compactLabel = computed(() => props.value?.status === 'identified' && props.value?.family ? osLabel(props.value) : '-')
+const compactTitle = computed(() => compactLabel.value === '-' ? '' : compactLabel.value + (confidence.value ? ` · ${tr("置信度")}${confidence.value}` : ''))
 const evidence = computed(() => props.value?.evidence?.slice(0, 32) || [])
 const evidenceTime = computed(() => props.value?.observed_at == null ? '' : formatDateTime(new Date(props.value.observed_at)))
 </script>
 
 <template>
-  <details v-if="value" class="min-w-28 text-xs">
+  <span v-if="compact" class="block truncate text-xs" :class="compactLabel === '-' ? 'opacity-50' : ''" :title="compactTitle">{{ compactLabel }}</span>
+  <details v-else-if="value" class="min-w-28 text-xs">
     <summary class="cursor-pointer leading-6" :class="value.status === 'conflict' ? 'text-warning' : ''">
       <span>{{ label }}</span>
       <span v-if="confidence" class="ml-1 opacity-60">{{ tr("置信度") }}{{ confidence }}</span>
