@@ -15,7 +15,12 @@ const evidenceTime = computed(() => props.value?.observed_at == null ? '' : form
 </script>
 
 <template>
-  <span v-if="compact" class="block truncate text-xs" :class="compactLabel === '-' ? 'opacity-50' : ''" :title="compactTitle">{{ compactLabel }}</span>
+  <template v-if="compact">
+    <div v-if="compactLabel !== '-'" class="tooltip tooltip-bottom block max-w-full" :data-tip="compactTitle">
+      <span class="block truncate text-xs">{{ compactLabel }}</span>
+    </div>
+    <span v-else class="block text-xs opacity-50">-</span>
+  </template>
   <details v-else-if="value" class="min-w-28 text-xs">
     <summary class="cursor-pointer leading-6" :class="value.status === 'conflict' ? 'text-warning' : ''">
       <span>{{ label }}</span>

@@ -15,7 +15,7 @@ const usage = { get referenced_resource() { return tr("页面引用资源") }, g
 
 <template>
   <template v-if="compact">
-    <span v-if="technologies.length" class="flex flex-nowrap items-center gap-2 text-xs">
+    <span v-if="technologies.length" class="flex flex-wrap items-center gap-2 text-xs">
       <WebTechnologyLabel v-for="technology in technologies.slice(0, 3)" :key="technology.id" :technology="technology" />
       <span v-if="technologies.length > 3" class="shrink-0">{{ tr("等") }} {{ technologies.length }} {{ tr("项") }}</span>
     </span>

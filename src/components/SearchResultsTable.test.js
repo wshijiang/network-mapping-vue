@@ -40,32 +40,36 @@ test('search results table renders fixed columns, compact cells and the tech bad
         os: { status: 'unknown' }, web: { status: 'not_web' }, scan_time: '2026-01-15T01:00:00Z', tags: [],
       },
     ]
-    const html = await renderToString(createSSRApp(component, { items, forceCollapse: true }))
+    const html = await renderToString(createSSRApp(component, { items }))
 
     // Eleven fixed columns and eleven sortable headers.
     assert.equal((html.match(/<col /g) || []).length, 11)
     assert.equal((html.match(/aria-sort=/g) || []).length, 11)
     assert.match(html, /table-fixed/)
 
-    // Collapsed tech badge (soft primary) plus the full list for screen readers.
-    assert.match(html, /badge badge-soft badge-primary/)
-    assert.match(html, /nginx 共5条/)
-    for (const name of ['jQuery', 'Vue', 'React', 'Bootstrap']) assert.match(html, new RegExp(name))
+    // Tech chips render fully with icons. The "共N条" badge only appears when the
+    // chips overflow the column, so at rest (SSR) it is absent.
+    assert.match(html, /nginx\.svg/)
+    for (const name of ['nginx', 'jQuery', 'Vue', 'React', 'Bootstrap']) assert.match(html, new RegExp(name))
+    assert.doesNotMatch(html, /共5条/)
+    assert.doesNotMatch(html, /badge badge-soft badge-primary/)
 
     // Compact OS shows the identified label; unknown OS and non-web tech show a dash.
     assert.match(html, /Linux · Ubuntu/)
     assert.doesNotMatch(html, /<details|<summary/)
     assert.doesNotMatch(html, /未识别到组件|非 Web 服务|未知|暂无识别结果/)
 
-    // Scan time is date-only with a short UTC offset badge naming the IANA zone.
+    // Scan time is date-only with a short UTC offset badge naming the IANA zone
+    // through a daisyUI tooltip.
     assert.match(html, /2026-01-15/)
     assert.match(html, /UTC\+8/)
-    assert.match(html, /title="Asia\/Shanghai"/)
+    assert.match(html, /data-tip="Asia\/Shanghai"/)
     assert.doesNotMatch(html, /09:00:00/)
 
-    // IPv4 stays a full link; the IPv6 address is exposed via the title tooltip.
+    // IPv4 stays a full link; the IPv6 address is exposed via a daisyUI tooltip.
     assert.match(html, /192\.168\.1\.10/)
-    assert.match(html, /title="2001:db8::1"/)
+    assert.match(html, /data-tip="2001:db8::1"/)
+    assert.match(html, /tooltip tooltip-bottom/)
 
     // Column header renamed from "Web 技术栈" to "技术栈".
     assert.match(html, /技术栈/)

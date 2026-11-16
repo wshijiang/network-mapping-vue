@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
 import { tr } from '../i18n/index.js'
 import { formatDate, timeSettings, timezoneOffsetLabel } from '../i18n/time.js'
@@ -13,33 +13,35 @@ import AssetTags from '@/components/AssetTags.vue'
 import IntelEvidence from '@/components/IntelEvidence.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import TechStackCell from '@/components/TechStackCell.vue'
+import CellText from '@/components/CellText.vue'
 
 const props = defineProps({
   items: { type: Array, required: true },
-  forceCollapse: { type: Boolean, default: false },
 })
 
-// Single source of truth for <colgroup> and <thead>. Defaults sum to ~1496px;
-// the auto-fit pass scales them down to the container so there is no scrollbar
-// at rest. IP min 132 keeps a full IPv4 address visible.
+// Single source of truth for <colgroup> and <thead>. `natural` columns (port,
+// protocol, tech, scan time) keep a predictable width; the rest measure their
+// content and compete for surplus space, so overflowing columns widen while
+// sparse ones stay compact. Every minimum fits the header label plus chevron.
 const columns = [
-  { key: 'ip', label: 'IP', default: 170, min: 132 },
-  { key: 'port', label: tr("端口"), default: 64, min: 56 },
-  { key: 'protocol', label: tr("协议"), default: 64, min: 56 },
-  { key: 'service', label: tr("服务"), default: 110, min: 80 },
-  { key: 'banner', label: 'Banner', default: 160, min: 80 },
-  { key: 'os', label: tr("系统线索"), default: 140, min: 80 },
-  { key: 'tech', label: tr("技术栈"), default: 180, min: 96 },
-  { key: 'web', label: tr("网页 / TLS"), default: 200, min: 120 },
-  { key: 'asn', label: tr("ASN / AS 组织"), default: 150, min: 80 },
-  { key: 'location', label: tr("位置"), default: 130, min: 80 },
-  { key: 'scan_time', label: tr("扫描时间"), default: 128, min: 110 },
+  { key: 'ip', label: 'IP', default: 170, min: 140 },
+  { key: 'port', label: tr("端口"), default: 80, min: 80, natural: true },
+  { key: 'protocol', label: tr("协议"), default: 84, min: 84, natural: true },
+  { key: 'service', label: tr("服务"), default: 110, min: 96 },
+  { key: 'banner', label: 'Banner', default: 160, min: 110 },
+  { key: 'os', label: tr("系统线索"), default: 140, min: 112 },
+  { key: 'tech', label: tr("技术栈"), default: 180, min: 160, natural: true },
+  { key: 'web', label: tr("网页 / TLS"), default: 200, min: 130 },
+  { key: 'asn', label: tr("ASN / AS 组织"), default: 160, min: 150 },
+  { key: 'location', label: tr("位置"), default: 130, min: 96 },
+  { key: 'scan_time', label: tr("扫描时间"), default: 168, min: 160, natural: true },
 ]
 
 const wrapper = ref(null)
-const { widths, userResized, onPointerDown, onKeydown, resetColumn, resetAll } = useColumnResize(columns, wrapper)
+const { widths, totalWidth, needsScroll, userResized, refresh, onPointerDown, onKeydown, resetColumn, resetAll } = useColumnResize(columns, wrapper)
 const itemsRef = computed(() => props.items)
 const { pageSort, displayItems, toggle } = useTableSort(itemsRef)
+watch(itemsRef, () => refresh())
 
 function sortIcon(key) {
   if (pageSort.value.key !== key) return ChevronsUpDown
@@ -63,8 +65,8 @@ function rowKey(item) {
     <div v-if="userResized" class="mb-2 flex justify-end">
       <button type="button" class="btn btn-ghost btn-xs" @click="resetAll">{{ tr("重置列宽") }}</button>
     </div>
-    <div ref="wrapper" class="overflow-x-auto">
-      <table class="table table-zebra table-sm table-fixed w-full">
+    <div ref="wrapper" :class="needsScroll ? 'overflow-x-auto overflow-y-clip' : 'overflow-visible'">
+      <table class="table table-zebra table-sm table-fixed" :style="{ width: `${totalWidth}px` }">
         <colgroup>
           <col v-for="column in columns" :key="column.key" :style="{ width: `${widths[column.key]}px` }">
         </colgroup>
@@ -94,7 +96,9 @@ function rowKey(item) {
           <tr v-for="item in displayItems" :key="rowKey(item)">
             <td>
               <div class="space-y-1">
-                <a class="link block truncate font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer" :title="item.ip_address">{{ item.ip_address }}</a>
+                <div class="tooltip tooltip-bottom block max-w-full" :data-tip="item.ip_address">
+                  <a class="link block truncate font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer">{{ item.ip_address }}</a>
+                </div>
                 <div v-if="(item.tags || []).length || item.intel || originLabel(item)" class="flex flex-wrap items-center gap-1">
                   <AssetTags :tags="item.tags || []" :limit="3" size="xs" />
                   <IntelEvidence :intel="item.intel" :label="tr(&quot;端点情报&quot;)" />
@@ -103,28 +107,32 @@ function rowKey(item) {
               </div>
             </td>
             <td>{{ item.port ?? '-' }}</td>
-            <td><div class="truncate" :title="item.protocol">{{ item.protocol ?? '-' }}</div></td>
+            <td><CellText :text="item.protocol ?? '-'" /></td>
             <td class="service-cell"><ServiceLabel :service="item.service" :data="item.data" /></td>
-            <td><div class="truncate" :title="item.banner">{{ item.banner ?? '-' }}</div></td>
+            <td><CellText :text="item.banner ?? '-'" /></td>
             <td><OsFingerprint compact :value="item.os" /></td>
-            <td><TechStackCell :web="item.web" :force-collapse="forceCollapse" /></td>
+            <td><TechStackCell :web="item.web" /></td>
             <td>
               <div v-if="item.title || item.tls_subject || item.tls_version" class="space-y-1">
-                <div v-if="item.title" class="truncate font-medium" :title="item.title">{{ item.title }}</div>
+                <div v-if="item.title" class="tooltip tooltip-bottom block max-w-full" :data-tip="item.title">
+                  <div class="truncate font-medium">{{ item.title }}</div>
+                </div>
                 <div v-if="certificateStatus(item)" class="flex flex-wrap items-center gap-1">
                   <span class="badge badge-sm" :class="certificateStatus(item).class">{{ certificateStatus(item).text }}</span>
                   <span v-if="item.tls_mode" class="badge badge-ghost badge-sm">{{ item.tls_mode }}</span>
                 </div>
-                <div v-if="item.tls_subject" class="truncate font-mono text-xs opacity-70" :title="item.tls_subject">{{ item.tls_subject }}</div>
+                <div v-if="item.tls_subject" class="tooltip tooltip-bottom block max-w-full" :data-tip="item.tls_subject">
+                  <div class="truncate font-mono text-xs opacity-70">{{ item.tls_subject }}</div>
+                </div>
               </div>
               <span v-else>-</span>
             </td>
-            <td><div class="truncate" :title="formatNetworkOwner(item)">{{ formatNetworkOwner(item) }}</div></td>
-            <td><div class="truncate" :title="formatLocation(item)">{{ formatLocation(item) }}</div></td>
+            <td><CellText :text="formatNetworkOwner(item)" /></td>
+            <td><CellText :text="formatLocation(item)" /></td>
             <td class="whitespace-nowrap">
               <span v-if="item.scan_time" class="inline-flex items-center gap-1">
                 {{ formatDate(item.scan_time) }}
-                <span class="badge badge-ghost badge-xs" :title="timeSettings.timezone">{{ timezoneOffsetLabel(item.scan_time) }}</span>
+                <span class="tooltip tooltip-bottom badge badge-ghost badge-xs" :data-tip="timeSettings.timezone">{{ timezoneOffsetLabel(item.scan_time) }}</span>
               </span>
               <span v-else>-</span>
             </td>

@@ -1,18 +1,28 @@
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 const STORAGE_KEY = 'network_mapping_search_column_widths'
 const MAX_WIDTH = 600
+const MAX_CONTENT = 480
 
-// Column widths for a table-fixed results table. Before the user drags a
-// column, an auto-fit pass scales the default widths to the container so the
-// table never forces a horizontal scrollbar at rest. The first drag (or a
-// persisted layout) disables auto-fit; the overflow wrapper then acts as the
-// fallback scrollbar. All browser APIs are guarded for SSR.
+// Content-aware column widths for a table-fixed results table.
+//
+// `natural` columns (port, protocol, scan time, tech) keep a predictable width.
+// The remaining columns measure their real content need (the widest truncated
+// cell) and compete for the container width: surplus space goes to columns whose
+// content cannot fully display, while sparse columns stay near their minimum.
+// Every minimum still fits the header label plus sort chevron. The allocation
+// always sums to the container width when there is room for the minimums, so the
+// table fills the card without a spurious scrollbar; it only scrolls when the
+// user drags columns wider or the viewport is narrower than the minimums.
 export function useColumnResize(columns, wrapperRef) {
   const defaults = Object.fromEntries(columns.map((c) => [c.key, c.default]))
   const mins = Object.fromEntries(columns.map((c) => [c.key, c.min]))
   const widths = reactive({ ...defaults })
   const userResized = ref(false)
+  const containerWidth = ref(0)
+  const contentNeed = reactive({})
+  const totalWidth = computed(() => columns.reduce((sum, c) => sum + widths[c.key], 0))
+  const needsScroll = computed(() => totalWidth.value > containerWidth.value + 1)
   let observer = null
   let dragging = null
 
@@ -36,13 +46,65 @@ export function useColumnResize(columns, wrapperRef) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...widths })) } catch { /* ignore */ }
   }
 
+  // Widest content per measured column, read from the rendered cells. Truncated
+  // inner lines report their full scrollWidth, so the need is independent of the
+  // current column width and stable across resize passes.
+  function measureContent() {
+    const table = wrapperRef.value?.querySelector('table')
+    if (!table) return
+    const rows = table.querySelectorAll('tbody tr')
+    columns.forEach((c, index) => {
+      if (c.natural) return
+      let need = 0
+      for (const row of rows) {
+        const cell = row.children[index]
+        if (!cell) continue
+        let w = cell.scrollWidth
+        for (const line of cell.querySelectorAll('.truncate')) w = Math.max(w, line.scrollWidth)
+        need = Math.max(need, w)
+      }
+      contentNeed[c.key] = Math.min(MAX_CONTENT, Math.max(c.min, need))
+    })
+  }
+
+  function desiredFor(c) {
+    if (c.natural) return Math.max(c.min, c.default)
+    return Math.max(c.min, contentNeed[c.key] ?? c.default)
+  }
+
+  // Measure the stable parent width, not the wrapper's own clientWidth: the
+  // wrapper shrinks when its horizontal scrollbar appears, which would feed back
+  // into needsScroll and oscillate the overflow class.
+  function availableWidth() {
+    const el = wrapperRef.value
+    return el?.parentElement?.clientWidth ?? el?.clientWidth ?? 0
+  }
+
   function autoFit() {
     if (userResized.value || typeof window === 'undefined') return
     const el = wrapperRef.value
     if (!el) return
-    const totalDefault = columns.reduce((sum, c) => sum + c.default, 0)
-    const scale = Math.min(1, el.clientWidth / totalDefault)
-    for (const c of columns) widths[c.key] = Math.max(c.min, Math.round(c.default * scale))
+    containerWidth.value = availableWidth()
+    measureContent()
+    const desired = Object.fromEntries(columns.map((c) => [c.key, desiredFor(c)]))
+    const desiredSum = columns.reduce((s, c) => s + desired[c.key], 0)
+    const minSum = columns.reduce((s, c) => s + c.min, 0)
+    const available = containerWidth.value
+    if (available >= desiredSum) {
+      const surplus = available - desiredSum
+      for (const c of columns) widths[c.key] = Math.round(desired[c.key] + surplus * (desired[c.key] / desiredSum))
+    } else if (available >= minSum) {
+      const extra = available - minSum
+      const span = desiredSum - minSum
+      for (const c of columns) widths[c.key] = Math.round(c.min + extra * ((desired[c.key] - c.min) / span))
+    } else {
+      for (const c of columns) widths[c.key] = c.min
+    }
+  }
+
+  function refresh() {
+    if (typeof window === 'undefined') return
+    requestAnimationFrame(() => autoFit())
   }
 
   function resetColumn(key) {
@@ -95,9 +157,13 @@ export function useColumnResize(columns, wrapperRef) {
   onMounted(() => {
     loadPersisted()
     autoFit()
-    if (typeof ResizeObserver !== 'undefined' && wrapperRef.value) {
-      observer = new ResizeObserver(() => autoFit())
-      observer.observe(wrapperRef.value)
+    const observed = wrapperRef.value?.parentElement
+    if (typeof ResizeObserver !== 'undefined' && observed) {
+      observer = new ResizeObserver(() => {
+        containerWidth.value = availableWidth()
+        autoFit()
+      })
+      observer.observe(observed)
     }
   })
 
@@ -109,5 +175,5 @@ export function useColumnResize(columns, wrapperRef) {
     }
   })
 
-  return { widths, userResized, onPointerDown, onKeydown, resetColumn, resetAll }
+  return { widths, totalWidth, needsScroll, userResized, refresh, onPointerDown, onKeydown, resetColumn, resetAll }
 }
