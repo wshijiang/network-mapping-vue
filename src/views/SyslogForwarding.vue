@@ -5,6 +5,7 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, useId 
 import AppAlert from '@/components/AppAlert.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ChartCsvExport from '@/components/ChartCsvExport.vue'
+import NetworkProxySettings from '@/components/NetworkProxySettings.vue'
 import SystemDateTimeInput from '@/components/SystemDateTimeInput.vue'
 import { useChartTheme } from '@/composables/useChartTheme'
 import { renderChartTooltip } from '@/utils/chartTooltip'
@@ -246,7 +247,13 @@ async function testTarget(target) {
   if (testingId.value) return
   testingId.value = target.id
   try {
-    const response = await http.post('/api/syslog/test', { targetId: target.id })
+    // 直接提交当前表单值：未保存的新建/编辑中的服务器也能测试连接。
+    const response = await http.post('/api/syslog/test', {
+      host: target.host,
+      port: target.port,
+      protocol: target.protocol,
+      tls: target.tls
+    })
     const data = response.data?.data
     if (data?.success) {
       pushAlert('success', tr("测试成功"), tr("已向 {0} 发送测试消息，耗时 {1} ms。", [target.name, Number(data.latencyMs || 0).toFixed(1)]))
@@ -528,10 +535,10 @@ onBeforeUnmount(() => {
     />
 
     <template v-else-if="revision">
-      <!-- 全局设置 -->
+      <!-- Syslog 设置 + 网络代理 + 服务器列表 + 通知策略（同一卡片，分割线分隔） -->
       <section class="card border border-base-300 bg-base-100 p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 class="font-semibold">{{ tr("全局设置") }}</h2>
+          <h2 class="font-semibold">{{ tr("Syslog 设置") }}</h2>
           <label class="label cursor-pointer gap-2">
             <span class="label-text">{{ tr("启用转发") }}</span>
             <input v-model="settings.enabled" type="checkbox" class="toggle toggle-neutral" />
@@ -578,10 +585,15 @@ onBeforeUnmount(() => {
           </label>
         </div>
         <p class="mt-3 text-xs text-base-content/60">{{ tr("队列满时新消息被丢弃并计数，不会阻塞业务请求；转发失败不影响本地日志与审计。") }}</p>
-      </section>
 
-      <!-- 服务器列表 -->
-      <section class="card mt-5 border border-base-300 bg-base-100 p-5 shadow-sm">
+        <div class="divider"></div>
+
+        <!-- 网络代理：syslog 跟随该全局设置，仅 SOCKS5 生效 -->
+        <NetworkProxySettings />
+
+        <div class="divider"></div>
+
+        <!-- 服务器列表 -->
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-semibold">{{ tr("Syslog 服务器") }}</h2>
@@ -590,10 +602,10 @@ onBeforeUnmount(() => {
             </p>
             <p class="mt-2 text-xs">
               <span class="badge badge-outline badge-sm mr-1">{{ tr("代理") }}</span>
-              <template v-if="status.proxy?.mode === 'socks5'">SOCKS5 {{ status.proxy.endpoint }}{{ status.proxy.remoteDns ? tr("（代理侧解析域名）") : "" }} · {{ tr("仅 TCP/TLS 生效，UDP 直连") }}</template>
+              <template v-if="status.proxy?.mode === 'socks5'">SOCKS5 {{ status.proxy.endpoint }}{{ status.proxy.remoteDns ? tr("（代理侧解析域名）") : "" }} · {{ tr("TCP/TLS/UDP 均生效") }}</template>
               <template v-else>{{ tr("直连（全局代理非 SOCKS5 或未配置，已自动回退）") }}</template>
             </p>
-            <p class="mt-1 text-xs text-base-content/60">{{ tr("跟随设置页的全局网络代理，仅 SOCKS5（socks5/socks5h）生效，其余自动回退直连；UDP 目标始终直连。") }}</p>
+            <p class="mt-1 text-xs text-base-content/60">{{ tr("跟随上方网络代理设置，仅 SOCKS5（socks5/socks5h）生效，其余自动回退直连；UDP 经 SOCKS5 UDP ASSOCIATE 中继转发。") }}</p>
           </div>
           <div class="flex items-center gap-2">
             <span v-if="statusLoading" class="loading loading-spinner loading-sm" />
@@ -719,17 +731,20 @@ onBeforeUnmount(() => {
         <div class="divider"></div>
 
         <!-- 保存 -->
-        <div class="flex flex-wrap items-end gap-3">
+        <div class="flex flex-wrap items-start gap-3">
           <fieldset class="fieldset grow">
             <legend class="fieldset-legend"><label :for="`${formFieldId}-change-reason`">{{ tr("变更原因（可选）") }}</label></legend>
             <input :id="`${formFieldId}-change-reason`" v-model="changeReason" type="text" maxlength="500" class="input input-bordered w-full" :placeholder="tr(&quot;例如：接入主 SIEM 平台&quot;)" />
           </fieldset>
-          <button type="button" class="btn btn-neutral" :disabled="saving || !dirty" @click="save">
-            <span v-if="saving" class="loading loading-spinner loading-sm" />
-            {{ tr("保存配置") }}
-          </button>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend invisible" aria-hidden="true">{{ tr("变更原因（可选）") }}</legend>
+            <button type="button" class="btn btn-neutral" :disabled="saving || !dirty" @click="save">
+              <span v-if="saving" class="loading loading-spinner loading-sm" />
+              {{ tr("保存配置") }}
+            </button>
+          </fieldset>
         </div>
-        <p class="mt-2 text-xs text-base-content/60">{{ tr("保存将应用本页全部修改：全局设置、服务器列表与通知策略。") }}</p>
+        <p class="mt-2 text-xs text-base-content/60">{{ tr("保存将应用本页全部修改：Syslog 设置、服务器列表与通知策略；网络代理在其面板内单独保存。") }}</p>
         <p v-if="dirty" class="mt-1 text-xs text-warning">{{ tr("有未保存的修改。") }}</p>
       </section>
 
