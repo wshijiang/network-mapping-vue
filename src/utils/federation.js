@@ -112,7 +112,7 @@ export function validateSourceForm(form, limits = {}) {
   const name = (form.name || '').trim()
   if (!name || name.length > 64) errors.push('名称须为 1..64 字符')
   if (!['hunter', 'quake', 'fofa', 'shodan'].includes(form.kind)) errors.push('平台无效')
-  if (form.proxy_mode === 'custom' && !(form.proxy_url || '').trim()) errors.push('自定义代理须填写 URL')
+  if (form.proxy_mode === 'custom' && !(form.proxy_url || '').trim() && !form.proxy_configured) errors.push('自定义代理须填写 URL')
   const fields = form.fields || []
   if (!fields.length) errors.push('至少选择一个字段')
   const pageSize = Number(form.page_size)

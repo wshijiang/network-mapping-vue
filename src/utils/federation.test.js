@@ -55,6 +55,8 @@ test('source form validation', () => {
   assert.ok(validateSourceForm(base).valid)
   assert.ok(!validateSourceForm({ ...base, name: '' }).valid)
   assert.ok(!validateSourceForm({ ...base, proxy_mode: 'custom', proxy_url: '' }).valid)
+  assert.ok(validateSourceForm({ ...base, proxy_mode: 'custom', proxy_url: '', proxy_configured: true }).valid)
+  assert.ok(validateSourceForm({ ...base, proxy_mode: 'custom', proxy_url: 'socks5h://127.0.0.1:1080', proxy_configured: true }).valid)
   assert.ok(!validateSourceForm({ ...base, page_size: 0 }).valid)
   assert.ok(!validateSourceForm({ ...base, window_mode: 'custom', window_days: 61 }).valid)
   assert.ok(validateSourceForm({ ...base, window_mode: 'none', window_days: 61 }).valid) // none 不校验天数
