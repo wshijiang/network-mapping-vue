@@ -106,15 +106,12 @@ export function quotaSummary(kind, capabilities) {
   let low = false
   const details = []
   if (kind === 'hunter') {
-    const free = num(capabilities.rest_free_point)
-    const day = num(capabilities.day_free_point)
+    // Hunter API 消耗权益积分，额度展示只保留权益积分。
     const equity = num(capabilities.rest_equity_point)
-    if (free !== null) {
-      primary = day !== null ? `今日免费 ${free}/${day}` : `今日免费 ${free}`
-      low = free < 50
+    if (equity !== null) {
+      primary = `权益积分 ${equity}`
+      low = equity < 50
     }
-    if (equity !== null) details.push(`权益积分 ${equity}`)
-    if (capabilities.type) details.push(String(capabilities.type))
   } else if (kind === 'quake') {
     const credit = num(capabilities.credit)
     const persistent = num(capabilities.persistent_credit)
