@@ -4489,6 +4489,8 @@
   "数据源已禁用": "Data source disabled",
   "开启后搜索联合已启用的数据源查询，关闭后仅使用本地数据；下方策略控制触发时机、等待上限与入库条件。": "When enabled, searches federate the active data sources; when disabled, only local data is used. The rules below control trigger timing, wait limits and persistence.",
   "支持 HTTP、HTTPS、SOCKS5 与 SOCKS5H；失败时不会回退直连。": "Supports HTTP, HTTPS, SOCKS5 and SOCKS5H; no fallback to direct connection on failure.",
+  "联测已排队，等待执行…": "Federation queued; waiting to start…",
+  "联测完成，请刷新查看结果": "Federation complete; refresh to view results",
   "联测已开启": "Federation enabled",
   "联测已关闭": "Federation disabled",
   "关闭联测": "Disable federation",

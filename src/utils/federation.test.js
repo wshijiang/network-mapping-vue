@@ -66,6 +66,7 @@ test('source form validation', () => {
 
 test('search federation message', () => {
   assert.equal(federationMessage(null), '')
+  assert.match(federationMessage({ status: 'pending' }), /排队/)
   assert.match(federationMessage({ status: 'running' }), /联测进行中/)
   assert.match(federationMessage({ status: 'completed', merged_new: 3 }), /新增 3 个端点/)
   assert.match(federationMessage({ status: 'completed', merged_new: 0 }), /无新增/)

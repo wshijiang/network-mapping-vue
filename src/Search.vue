@@ -14,7 +14,7 @@ import { osCsvHeaders, osCsvValues } from './utils/osDetection'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import http from './utils/http'
 import { formatLocation } from './utils/location'
-import { federationMessage, originLabel } from './utils/federation.js'
+import { federationMessage, isRunActive, originLabel } from './utils/federation.js'
 
 const STORAGE_KEY = 'network_mapping_search_history'
 const MAX_HISTORY = 12
@@ -45,6 +45,7 @@ const federationText = computed(() => {
   const current = federation.value
   if (!current) return ''
   if (current.status === 'completed' || current.status === 'partial') {
+    if (!Number.isFinite(current.merged_new)) return tr('联测完成，请刷新查看结果')
     return current.merged_new > 0
       ? tr('联测完成，新增 {0} 个端点', [current.merged_new])
       : tr('联测完成，无新增端点')
@@ -55,20 +56,24 @@ const federationText = computed(() => {
 function scheduleFederationPoll() {
   clearTimeout(federationPollTimer)
   const current = federation.value
-  if (!current || current.status !== 'running' || !current.run_id) return
+  if (!current || !isRunActive(current.status) || !current.run_id) return
   const sequence = searchSequence
   federationPollTimer = setTimeout(async () => {
     try {
       const response = await http.get(`/api/federation/runs/${current.run_id}`)
       if (sequence !== searchSequence) return
       const run = response.data?.data
-      if (run && run.status !== 'running' && run.status !== 'pending') {
-        federation.value = { ...current, status: run.status }
+      if (run && !isRunActive(run.status)) {
+        // 轮询完成的 run 不含 merged_new；标注未知，由“刷新结果”获取真实数量。
+        federation.value = { ...current, status: run.status, merged_new: null }
       } else {
         scheduleFederationPoll()
       }
-    } catch {
-      // 轮询失败静默重试（管理员会话过期时停止）。
+    } catch (error) {
+      if (sequence !== searchSequence) return
+      // 会话失效时停止；其余瞬时错误继续轮询。
+      if (error?.response?.status === 401 || error?.response?.status === 403) return
+      scheduleFederationPoll()
     }
   }, 2000)
 }

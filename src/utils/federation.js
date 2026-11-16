@@ -138,6 +138,7 @@ export function validateSourceForm(form, limits = {}) {
 export function federationMessage(federation) {
   if (!federation) return ''
   const status = federation.status
+  if (status === 'pending') return '联测已排队，等待执行…'
   if (status === 'running') return '联测进行中，完成后将自动入库…'
   if (status === 'cached') return '联测结果来自冷却缓存'
   if (status === 'completed' || status === 'partial') {
