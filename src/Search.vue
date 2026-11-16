@@ -14,6 +14,7 @@ import { osCsvHeaders, osCsvValues } from './utils/osDetection'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import http from './utils/http'
 import { formatLocation } from './utils/location'
+import { federationMessage, isRunActive, originLabel } from './utils/federation.js'
 
 const STORAGE_KEY = 'network_mapping_search_history'
 const MAX_HISTORY = 12
@@ -37,7 +38,45 @@ const sortOrder = ref('desc')
 const syntaxDialogRef = ref(null)
 const tagCatalog = ref([])
 const autoGeneration = ref(null)
+const federation = ref(null)
+let federationPollTimer = null
 let searchSequence = 0
+const federationText = computed(() => {
+  const current = federation.value
+  if (!current) return ''
+  if (current.status === 'completed' || current.status === 'partial') {
+    if (!Number.isFinite(current.merged_new)) return tr('联测完成，请刷新查看结果')
+    return current.merged_new > 0
+      ? tr('联测完成，新增 {0} 个端点', [current.merged_new])
+      : tr('联测完成，无新增端点')
+  }
+  return tr(federationMessage(current))
+})
+
+function scheduleFederationPoll() {
+  clearTimeout(federationPollTimer)
+  const current = federation.value
+  if (!current || !isRunActive(current.status) || !current.run_id) return
+  const sequence = searchSequence
+  federationPollTimer = setTimeout(async () => {
+    try {
+      const response = await http.get(`/api/federation/runs/${current.run_id}`)
+      if (sequence !== searchSequence) return
+      const run = response.data?.data
+      if (run && !isRunActive(run.status)) {
+        // 轮询完成的 run 不含 merged_new；标注未知，由“刷新结果”获取真实数量。
+        federation.value = { ...current, status: run.status, merged_new: null }
+      } else {
+        scheduleFederationPoll()
+      }
+    } catch (error) {
+      if (sequence !== searchSequence) return
+      // 会话失效时停止；其余瞬时错误继续轮询。
+      if (error?.response?.status === 401 || error?.response?.status === 403) return
+      scheduleFederationPoll()
+    }
+  }, 2000)
+}
 const generationMessage = computed(() => ({
   get created() { return tr("已创建目标更新任务，扫描完成后可重新搜索。") },
   get existing() { return tr("该目标已有任务正在排队或执行。") },
@@ -124,6 +163,8 @@ async function runSearch(nextOffset = 0, generateIfNeeded = false) {
     if (generateIfNeeded) autoGeneration.value = response.data.auto_generation || null
     searchResult.value = response.data
     offset.value = nextOffset
+    federation.value = response.data.federation || null
+    scheduleFederationPoll()
   } catch (error) {
     if (sequence !== searchSequence) return
     searchResult.value = null
@@ -155,6 +196,8 @@ function doSearch() {
   pushHistory(query, 'advanced')
   showHistory.value = false
   autoGeneration.value = null
+  federation.value = null
+  clearTimeout(federationPollTimer)
   runSearch(0, true)
 }
 
@@ -233,7 +276,7 @@ function exportCurrentPage() {
       'IP', '端口', '协议', '服务', 'Banner', ...osCsvHeaders, ...webCsvHeaders, '网页标题', 'TLS 模式', 'TLS 版本',
       'TLS 密码套件', '证书主体', '证书签发者', '证书名称', '证书序列号',
       '证书生效时间', '证书失效时间', '证书 SHA-256 指纹', '是否自签名',
-      'ASN / AS 组织', '位置', '扫描时间', '标签',
+      'ASN / AS 组织', '位置', '扫描时间', '标签', '数据来源',
     ]
     const rows = searchResult.value.items.map((item) => [
       item.ip_address,
@@ -259,6 +302,7 @@ function exportCurrentPage() {
       formatLocation(item),
       formatTime(item.scan_time),
       (item.tags || []).map((tag) => tag.name).join('、'),
+      originLabel(item) ? `${originLabel(item)}(${(item.federation_sources || []).join('/')})` : '本地',
     ])
     const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')
     const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }))
@@ -285,7 +329,10 @@ onMounted(() => {
   document.addEventListener('mousedown', onDocumentClick)
 })
 
-onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick))
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', onDocumentClick)
+  clearTimeout(federationPollTimer)
+})
 </script>
 
 <template>
@@ -343,6 +390,12 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
         <a v-if="autoGeneration.task_id" :href="`/task/${autoGeneration.task_id}`" class="link whitespace-nowrap" target="_blank" rel="noopener">{{ tr("查看任务") }}</a>
       </div>
 
+      <div v-if="federationText" role="status" class="alert alert-info alert-soft mx-auto mt-3 max-w-2xl text-sm">
+        <span>{{ federationText }}</span>
+        <button v-if="['completed', 'partial'].includes(federation.status)" type="button" class="btn btn-outline btn-xs" @click="runSearch(offset)">{{ tr("刷新结果") }}</button>
+        <router-link v-if="federation.run_id" to="/data/federation" class="link whitespace-nowrap">{{ tr("联测记录") }}</router-link>
+      </div>
+
       <section v-if="searchResult" class="mt-10 rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 class="text-lg font-semibold">{{ tr("组合搜索结果") }}</h2>
@@ -372,7 +425,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
             <thead><tr><th>IP</th><th>{{ tr("端口") }}</th><th>{{ tr("协议") }}</th><th>{{ tr("服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("Web 技术栈") }}</th><th>{{ tr("网页 / TLS") }}</th><th>{{ tr("ASN / AS 组织") }}</th><th>{{ tr("位置") }}</th><th>{{ tr("扫描时间") }}</th></tr></thead>
             <tbody>
               <tr v-for="(item, index) in searchResult.items" :key="`${item.ip_address}-${item.port}-${item.scan_time}-${index}`">
-                <td><div class="flex min-w-max items-center gap-2"><a class="link whitespace-nowrap font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer" :title="tr(&quot;查看资产详情&quot;)">{{ item.ip_address }}</a><AssetTags :tags="item.tags || []" :limit="3" size="xs" /><IntelEvidence :intel="item.intel" :label="tr(&quot;端点情报&quot;)" /></div></td>
+                <td><div class="flex min-w-max items-center gap-2"><a class="link whitespace-nowrap font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer" :title="tr(&quot;查看资产详情&quot;)">{{ item.ip_address }}</a><AssetTags :tags="item.tags || []" :limit="3" size="xs" /><IntelEvidence :intel="item.intel" :label="tr(&quot;端点情报&quot;)" /><span v-if="originLabel(item)" class="badge badge-outline badge-xs" :title="(item.federation_sources || []).join(', ')">{{ originLabel(item) }}</span></div></td>
                 <td>{{ item.port ?? '-' }}</td>
                 <td>{{ item.protocol ?? '-' }}</td>
                 <td><ServiceLabel :service="item.service" :data="item.data" /></td>
