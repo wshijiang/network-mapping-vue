@@ -282,6 +282,13 @@ const policyRevision = ref(0)
 const policyLoading = ref(false)
 const policySaving = ref(false)
 
+// 保存按钮仅在策略相对已保存快照有变动时出现。
+const policyDirty = computed(
+  () =>
+    Boolean(policy.value && policySnapshot.value) &&
+    JSON.stringify(policy.value) !== JSON.stringify(policySnapshot.value),
+)
+
 async function loadPolicy() {
   policyLoading.value = true
   try {
@@ -545,6 +552,8 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
         </div>
       </div>
       <div v-if="policy">
+        <Transition name="policy-body">
+          <div v-if="policy.enabled" class="policy-body">
           <div class="divider my-3"></div>
           <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <fieldset class="fieldset min-w-0 w-full">
@@ -621,11 +630,15 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
           </div>
         </fieldset>
 
-        <div class="mt-4 flex justify-end">
-          <button type="button" class="btn btn-neutral btn-sm" :disabled="policySaving" @click="savePolicy">
-            {{ policySaving ? tr("保存中…") : tr("保存策略") }}
-          </button>
-        </div>
+          <Transition name="policy-save">
+            <div v-if="policyDirty" class="mt-4 flex justify-end">
+              <button type="button" class="btn btn-neutral btn-sm" :disabled="policySaving" @click="savePolicy">
+                {{ policySaving ? tr("保存中…") : tr("保存策略") }}
+              </button>
+            </div>
+          </Transition>
+          </div>
+        </Transition>
       </div>
       <p v-else class="mt-4 text-sm opacity-65">{{ policyLoading ? tr("加载中…") : tr("策略加载失败") }}</p>
     </section>
@@ -962,3 +975,45 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
     <form method="dialog" class="modal-backdrop"><button @click="detailRun = null">{{ tr("关闭") }}</button></form>
   </dialog>
 </template>
+
+<style scoped>
+/* 联测开关联动：策略表单随 enabled 展开/收起。 */
+.policy-body-enter-active,
+.policy-body-leave-active {
+  overflow: hidden;
+  transition: max-height 250ms ease, opacity 200ms ease;
+}
+
+.policy-body-enter-from,
+.policy-body-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.policy-body-enter-to,
+.policy-body-leave-from {
+  max-height: 64rem;
+  opacity: 1;
+}
+
+/* 保存策略按钮仅在策略有变动时淡入出现。 */
+.policy-save-enter-active,
+.policy-save-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.policy-save-enter-from,
+.policy-save-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .policy-body-enter-active,
+  .policy-body-leave-active,
+  .policy-save-enter-active,
+  .policy-save-leave-active {
+    transition: none;
+  }
+}
+</style>
