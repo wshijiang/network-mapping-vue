@@ -13,6 +13,9 @@ import {
   isRunActive,
   quotaSummary,
   runStatusMeta,
+  sourceErrorLabel,
+  sourceStatusMeta,
+  unsupportedReason,
   validateSourceForm,
   windowLabel,
 } from '@/utils/federation.js'
@@ -709,6 +712,7 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
             <option value="completed">{{ tr("已完成") }}</option>
             <option value="partial">{{ tr("部分完成") }}</option>
             <option value="failed">{{ tr("失败") }}</option>
+            <option value="unsupported">{{ tr("未查询") }}</option>
             <option value="cancelled">{{ tr("已取消") }}</option>
           </select>
           <button type="button" class="btn btn-ghost btn-sm" :disabled="runsLoading" @click="loadRuns">
@@ -939,13 +943,13 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
               <tr v-for="(source, index) in detailRun.sources || []" :key="index">
                 <td>{{ KIND_NAMES[source.kind] || source.kind }}</td>
                 <td>
-                  <span class="badge badge-xs" :class="source.status === 'completed' ? 'badge-success' : source.status === 'unsupported' ? 'badge-ghost' : 'badge-warning'">{{ source.status }}</span>
-                  <span v-if="source.error_code" class="ml-1 text-error">{{ source.error_code }}</span>
+                  <span class="badge badge-xs" :class="sourceStatusMeta(source.status).badgeClass">{{ tr(sourceStatusMeta(source.status).labelKey) }}</span>
+                  <span v-if="source.error_code" class="ml-1 text-xs text-error" :title="source.error_code">{{ tr(sourceErrorLabel(source.error_code)) }}</span>
                 </td>
                 <td>{{ source.window_days ? `${source.window_days}d` : tr('不指定') }} <span class="opacity-60">({{ source.time_filter }})</span></td>
                 <td>{{ source.fetched }} / {{ source.normalized }}</td>
                 <td>{{ source.duration_ms }}ms</td>
-                <td class="max-w-64 truncate font-mono" :title="source.platform_query">{{ source.platform_query || source.reason || '-' }}</td>
+                <td class="max-w-64 truncate font-mono" :title="source.platform_query || source.reason">{{ source.platform_query || (source.reason ? `${tr('不支持：')}${unsupportedReason(source.reason)}` : '-') }}</td>
               </tr>
             </tbody>
           </table>
