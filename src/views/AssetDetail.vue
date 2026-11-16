@@ -10,6 +10,7 @@ import AssetTags from '../components/AssetTags.vue'
 import IntelEvidence from '../components/IntelEvidence.vue'
 import WebTechnologies from '@/components/WebTechnologies.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
+import CellText from '@/components/CellText.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useTheme } from '@/composables/useTheme'
 import http from '../utils/http'
@@ -574,7 +575,7 @@ onMounted(() => {
               <dl class="mt-4 grid grid-cols-[7rem_1fr] gap-x-3 gap-y-3 text-sm">
                 <dt class="opacity-60">{{ tr("首次发现") }}</dt><dd>{{ formatTime(summary.first_seen_at) }}</dd>
                 <dt class="opacity-60">{{ tr("最近发现") }}</dt><dd>{{ formatTime(summary.last_seen_at) }}</dd>
-                <dt class="opacity-60">{{ tr("推测操作系统") }}</dt><dd><OsFingerprint :value="summary.os" /></dd>
+                <dt class="opacity-60">{{ tr("推测操作系统") }}</dt><dd><OsFingerprint compact :value="summary.os" /></dd>
               </dl>
             </div>
           </div>
@@ -594,7 +595,7 @@ onMounted(() => {
           <div v-else class="overflow-x-auto">
             <table class="table table-zebra">
               <thead>
-                <tr><th>{{ tr("端口") }}</th><th>{{ tr("协议 / 服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("Web 技术栈") }}</th><th>{{ tr("首次发现") }}</th><th>{{ tr("最近发现") }}</th><th>{{ tr("来源") }}</th><th></th></tr>
+                <tr><th>{{ tr("端口") }}</th><th>{{ tr("协议 / 服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("技术栈") }}</th><th>{{ tr("首次发现") }}</th><th>{{ tr("最近发现") }}</th><th>{{ tr("来源") }}</th><th></th></tr>
               </thead>
               <tbody>
                 <tr v-for="port in ports" :key="`${port.protocol || 'unknown'}:${port.port}`">
@@ -603,9 +604,9 @@ onMounted(() => {
                     <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" /></span></div>
                     <div v-if="port.service_stale" class="mt-1 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</div>
                   </td>
-                  <td class="max-w-xs truncate" :title="port.banner">{{ port.banner || '-' }}</td>
-                  <td><OsFingerprint :value="port.os" /></td>
-                  <td><WebTechnologies :value="port.web" /></td>
+                  <td class="max-w-xs"><CellText :text="port.banner || '-'" /></td>
+                  <td><OsFingerprint compact :value="port.os" /></td>
+                  <td><WebTechnologies compact :value="port.web" /></td>
                   <td class="whitespace-nowrap">{{ formatTime(port.first_seen_at) }}</td>
                   <td class="whitespace-nowrap">{{ formatTime(port.last_seen_at) }}</td>
                   <td>

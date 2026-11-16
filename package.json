@@ -16,7 +16,7 @@
     "test:targets": "node src/utils/scanTargets.test.js",
     "test:projection": "node --test src/utils/projectionStatus.test.js",
     "test:monitor": "node --test src/utils/monitorRules.test.js",
-    "test:os": "node --test src/utils/osDetection.test.js src/components/OsFingerprint.test.js",
+    "test:os": "node --test src/utils/osDetection.test.js src/components/OsFingerprint.test.js src/components/OsFingerprint.compact.test.js",
     "test:notifications": "node --test src/utils/notifications.test.js src/views/Notifications.test.js src/views/BotTemplateEditor.test.js src/views/NotificationTemplates.test.js src/views/MailTemplateEditor.test.js src/components/TemplateVariables.test.js",
     "test:health": "node --test src/utils/healthAlerts.test.js src/views/Health.test.js",
     "test:theme": "node --test src/utils/theme.test.js",
@@ -24,7 +24,8 @@
     "preview": "vite preview",
     "test:routing": "node --test src/utils/scanRouting.test.js",
     "test:open-api": "node --test src/utils/openApi.test.js",
-    "test:web": "node --test src/utils/webDetection.test.js src/components/WebTechnologies.test.js src/views/taskdetail.test.js",
+    "test:web": "node --test src/utils/webDetection.test.js src/components/WebTechnologies.test.js src/components/WebTechnologies.compact.test.js src/views/taskdetail.test.js",
+    "test:search": "node --test src/utils/tableSort.test.js src/composables/useTableSort.test.js src/components/AutoTooltip.test.js src/components/TechStackCell.test.js src/components/SearchResultsTable.test.js",
     "test:i18n": "node --test src/i18n/*.test.js"
   },
   "dependencies": {

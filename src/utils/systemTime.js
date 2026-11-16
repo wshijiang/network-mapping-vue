@@ -97,6 +97,22 @@ export function offsetLabel(offsetMilliseconds) {
   return `UTC${offsetMilliseconds >= 0 ? '+' : '-'}${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 }
 
+// Short UTC offset label for an instant in a named zone (e.g. "UTC+8",
+// "UTC-5", "UTC+5:45"). The offset is evaluated at the given instant so DST
+// transitions are respected; whole hours omit the minutes part.
+export function timezoneOffsetLabel(value = Date.now(), timezone = timeSettings.timezone) {
+  if (value === null || value === undefined || value === '') return ''
+  const p = parts(value, timezone)
+  if (!p) return ''
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second)
+  const offsetMinutes = Math.round((asUtc - new Date(value).getTime()) / 60_000)
+  const sign = offsetMinutes >= 0 ? '+' : '-'
+  const abs = Math.abs(offsetMinutes)
+  const hours = Math.floor(abs / 60)
+  const minutes = abs % 60
+  return `UTC${sign}${hours}${minutes ? `:${String(minutes).padStart(2, '0')}` : ''}`
+}
+
 export function addCalendarDays(key, days) {
   const date = new Date(`${key}T12:00:00Z`)
   date.setUTCDate(date.getUTCDate() + days)

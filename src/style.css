@@ -15,6 +15,25 @@
     --maintenance-label-text: #fde68a;
 }
 
+/* Monochrome tech icons (black fill or currentColor stroke rendered via <img>)
+   keep a transparent background but stay legible on the dark theme by inverting
+   only in dark mode. Colored brand icons are unaffected. */
+:root[data-theme="dark"] .tech-icon-mono {
+    filter: invert(1);
+}
+
+/* daisyUI tooltips fade/slide on show/hide (search results + asset detail). */
+.tooltip::before,
+.tooltip::after {
+    transition: opacity 150ms ease, transform 150ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+    .tooltip::before,
+    .tooltip::after {
+        transition: none;
+    }
+}
+
 html, body {
     background-color: var(--color-base-200);
     color: var(--color-base-content);

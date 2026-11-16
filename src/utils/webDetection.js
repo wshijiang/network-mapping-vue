@@ -13,7 +13,7 @@ export function technologyLabel(technology) {
   return `${technology.name || technology.id}${technology.version && !technology.version_conflict ? ` ${technology.version}` : ''}${technology.version_conflict ? tr("（版本冲突）") : ''}`
 }
 
-export const webCsvHeaders = ['Web 技术栈', 'Web 识别状态', 'Web 证据时间', 'Web 证据过期', 'Web 规则版本']
+export const webCsvHeaders = ['技术栈', 'Web 识别状态', 'Web 证据时间', 'Web 证据过期', 'Web 规则版本']
 export function webCsvValues(web, formatTime) {
   if (!web) return webCsvHeaders.map(() => '')
   const technologies = ['identified', 'partial'].includes(web.status) && Array.isArray(web.technologies) ? web.technologies : []

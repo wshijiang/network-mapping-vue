@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { addCalendarDays, applyTimeSettings, calendarDate, calendarMidnight, formatDateTime, localTimeCandidates, localToIso, mondayDate, toLocalInputValue } from './systemTime.js'
+import { addCalendarDays, applyTimeSettings, calendarDate, calendarMidnight, formatDateTime, localTimeCandidates, localToIso, mondayDate, timezoneOffsetLabel, toLocalInputValue } from './systemTime.js'
 import { reportCsv, reportPeriod } from './reports.js'
 
 test('Shanghai stays UTC+8 in both seasons and ignores host timezone', () => {
@@ -49,4 +49,15 @@ test('archived reports preserve timezone when global preferences change', () => 
   const report = { timezone: 'America/New_York', period_type: 'weekly', revision: 1, period_start: '2026-09-21T04:00:00Z', period_end: '2026-09-28T04:00:00Z', payload: {} }
   assert.equal(reportPeriod(report), '21/09/2026 至 28/09/2026（不含）')
   assert.ok(reportCsv(report).includes('"时区","America/New_York"'))
+})
+
+test('timezoneOffsetLabel gives a short DST-aware UTC offset per instant', () => {
+  assert.equal(timezoneOffsetLabel('2026-01-15T01:00:00Z', 'Asia/Shanghai'), 'UTC+8')
+  assert.equal(timezoneOffsetLabel('2026-07-15T01:00:00Z', 'Asia/Shanghai'), 'UTC+8')
+  assert.equal(timezoneOffsetLabel('2026-01-15T14:00:00Z', 'America/New_York'), 'UTC-5')
+  assert.equal(timezoneOffsetLabel('2026-07-15T13:00:00Z', 'America/New_York'), 'UTC-4')
+  assert.equal(timezoneOffsetLabel('2026-01-15T03:15:00Z', 'Asia/Kathmandu'), 'UTC+5:45')
+  assert.equal(timezoneOffsetLabel('2026-01-15T00:00:00Z', 'UTC'), 'UTC+0')
+  assert.equal(timezoneOffsetLabel('not-a-date', 'Asia/Shanghai'), '')
+  assert.equal(timezoneOffsetLabel(null, 'Asia/Shanghai'), '')
 })
