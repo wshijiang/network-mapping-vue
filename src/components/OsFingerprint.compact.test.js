@@ -25,7 +25,7 @@ test('compact OS summary shows only an identified label or a dash', async () => 
       status: 'identified', family: 'linux', distribution: 'ubuntu', version: '22.04', confidence: 'medium',
     } })
     assert.match(identified, /Linux · Ubuntu · 22\.04/)
-    assert.match(identified, /置信度中/) // confidence moved into the native title
+    assert.doesNotMatch(identified, /置信度/) // confidence lives in the hover tooltip, closed at rest
     assert.doesNotMatch(identified, /<details|<summary/)
 
     for (const value of [

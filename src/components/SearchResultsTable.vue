@@ -14,6 +14,7 @@ import IntelEvidence from '@/components/IntelEvidence.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import TechStackCell from '@/components/TechStackCell.vue'
 import CellText from '@/components/CellText.vue'
+import AutoTooltip from '@/components/AutoTooltip.vue'
 
 const props = defineProps({
   items: { type: Array, required: true },
@@ -96,9 +97,9 @@ function rowKey(item) {
           <tr v-for="item in displayItems" :key="rowKey(item)">
             <td>
               <div class="space-y-1">
-                <div class="tooltip tooltip-bottom block max-w-full" :data-tip="item.ip_address">
+                <AutoTooltip :content="item.ip_address">
                   <a class="link block truncate font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer">{{ item.ip_address }}</a>
-                </div>
+                </AutoTooltip>
                 <div v-if="(item.tags || []).length || item.intel || originLabel(item)" class="flex flex-wrap items-center gap-1">
                   <AssetTags :tags="item.tags || []" :limit="3" size="xs" />
                   <IntelEvidence :intel="item.intel" :label="tr(&quot;端点情报&quot;)" />
@@ -107,23 +108,23 @@ function rowKey(item) {
               </div>
             </td>
             <td>{{ item.port ?? '-' }}</td>
-            <td><CellText :text="item.protocol ?? '-'" /></td>
+            <td>{{ item.protocol ?? '-' }}</td>
             <td class="service-cell"><ServiceLabel :service="item.service" :data="item.data" /></td>
             <td><CellText :text="item.banner ?? '-'" /></td>
             <td><OsFingerprint compact :value="item.os" /></td>
             <td><TechStackCell :web="item.web" /></td>
             <td>
               <div v-if="item.title || item.tls_subject || item.tls_version" class="space-y-1">
-                <div v-if="item.title" class="tooltip tooltip-bottom block max-w-full" :data-tip="item.title">
+                <AutoTooltip v-if="item.title" :content="item.title">
                   <div class="truncate font-medium">{{ item.title }}</div>
-                </div>
+                </AutoTooltip>
                 <div v-if="certificateStatus(item)" class="flex flex-wrap items-center gap-1">
                   <span class="badge badge-sm" :class="certificateStatus(item).class">{{ certificateStatus(item).text }}</span>
                   <span v-if="item.tls_mode" class="badge badge-ghost badge-sm">{{ item.tls_mode }}</span>
                 </div>
-                <div v-if="item.tls_subject" class="tooltip tooltip-bottom block max-w-full" :data-tip="item.tls_subject">
+                <AutoTooltip v-if="item.tls_subject" :content="item.tls_subject">
                   <div class="truncate font-mono text-xs opacity-70">{{ item.tls_subject }}</div>
-                </div>
+                </AutoTooltip>
               </div>
               <span v-else>-</span>
             </td>
@@ -132,7 +133,9 @@ function rowKey(item) {
             <td class="whitespace-nowrap">
               <span v-if="item.scan_time" class="inline-flex items-center gap-1">
                 {{ formatDate(item.scan_time) }}
-                <span class="tooltip tooltip-bottom badge badge-ghost badge-xs" :data-tip="timeSettings.timezone">{{ timezoneOffsetLabel(item.scan_time) }}</span>
+                <AutoTooltip :content="timeSettings.timezone">
+                  <span class="badge badge-ghost badge-xs">{{ timezoneOffsetLabel(item.scan_time) }}</span>
+                </AutoTooltip>
               </span>
               <span v-else>-</span>
             </td>

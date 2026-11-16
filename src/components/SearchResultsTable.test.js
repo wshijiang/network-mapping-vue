@@ -59,17 +59,17 @@ test('search results table renders fixed columns, compact cells and the tech bad
     assert.doesNotMatch(html, /<details|<summary/)
     assert.doesNotMatch(html, /未识别到组件|非 Web 服务|未知|暂无识别结果/)
 
-    // Scan time is date-only with a short UTC offset badge naming the IANA zone
-    // through a daisyUI tooltip.
+    // Scan time is date-only with a short UTC offset badge; the IANA zone lives in
+    // a teleported AutoTooltip (closed at rest, so no daisyUI data-tip in markup).
     assert.match(html, /2026-01-15/)
     assert.match(html, /UTC\+8/)
-    assert.match(html, /data-tip="Asia\/Shanghai"/)
     assert.doesNotMatch(html, /09:00:00/)
+    assert.doesNotMatch(html, /data-tip=/)
+    assert.doesNotMatch(html, /tooltip tooltip-bottom/)
 
-    // IPv4 stays a full link; the IPv6 address is exposed via a daisyUI tooltip.
+    // IPv4 stays a full link; the IPv6 address is present (tooltip on hover).
     assert.match(html, /192\.168\.1\.10/)
-    assert.match(html, /data-tip="2001:db8::1"/)
-    assert.match(html, /tooltip tooltip-bottom/)
+    assert.match(html, /2001:db8::1/)
 
     // Column header renamed from "Web 技术栈" to "技术栈".
     assert.match(html, /技术栈/)

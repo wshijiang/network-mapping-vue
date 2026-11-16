@@ -84,7 +84,7 @@ onBeforeUnmount(() => observer?.disconnect())
       <WebTechnologyLabel v-for="technology in visibleChips" :key="technology.id" :technology="technology" />
     </div>
     <span v-if="showBadge" ref="badgeWrap" class="shrink-0">
-      <AutoTooltip prefer="bottom">
+      <AutoTooltip prefer="bottom" :copyable="false">
         <button type="button" class="badge badge-soft badge-primary whitespace-nowrap">{{ tr("共{0}条", [technologies.length]) }}</button>
         <template #content>
           <ul class="space-y-1 text-xs">

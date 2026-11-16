@@ -47,11 +47,11 @@ test('Web evidence renders safely and partial results retain their limits', asyn
       technologies: [{ id: 'elasticsearch', name: 'Elasticsearch', category: 'database', version: '8.19.0', confidence: 'high', usage: 'response_marker', evidence: [{ module: 'https', rule_id: 'elasticsearch-root-json', field_path: '/body', excerpt: '<script>untrusted</script>' }] }],
     } }))
     assert.match(database, /Elasticsearch 8\.19\.0/)
-    assert.match(database, /badge badge-outline badge-sm/)
-    assert.match(database, /数据库/)
-    assert.match(database, /<svg[^>]+aria-hidden="true"/)
+    assert.doesNotMatch(database, /数据库/)
+    assert.doesNotMatch(database, /badge badge-outline badge-sm/)
+    assert.match(database, /elasticsearch\.svg/)
     assert.match(database, /&lt;script&gt;untrusted&lt;\/script&gt;/)
-    assert.doesNotMatch(database, /<script>|<img/)
+    assert.doesNotMatch(database, /<script>/)
     const databaseConflict = await renderToString(createSSRApp(component, { value: {
       status: 'partial', truncated: true, stale: true,
       technologies: [{ id: 'elasticsearch', name: 'Elasticsearch', category: 'database', version: '8.19.0', version_conflict: true }],

@@ -8,6 +8,8 @@ The per-technology provider, exact upstream URL, upstream Git blob SHA, original
 - Devicon v2.17.0 contributors, copyright (c) 2015 konpa: [MIT](licenses/devicon-MIT.txt). Vue.js and .NET Core SVGs unchanged. .NET Core is a family symbol for ASP.NET, not a claim that the endpoint uses ASP.NET Core.
 - Element Plus, copyright (c) 2020-PRESENT Element Plus: [MIT](licenses/element-plus-MIT.txt). Official SVG unchanged; blob SHA pins the retrieved artwork.
 - Lucide contributors / Cole Bemis: [ISC and Feather MIT notice](licenses/lucide-ISC.txt). Server and database SVGs unchanged. Used as generic symbols, not product logos. The S3 icon makes no claim about AWS identity.
+- User-provided project artwork (official logos/favicons supplied by the maintainer): trademarks remain the property of their respective owners and are used solely to identify the detected technology. Where no vector source existed, the raster favicon/logo is embedded as a data URI inside an SVG wrapper; see manifest.json per-icon changes.
+- WorldVectorLogo contributors: brand logo artwork retrieved from cdn.worldvectorlogo.com; trademarks remain the property of their respective owners and are used solely to identify the detected technology. Original path geometry unchanged.
 - The Svelte logo represents SvelteKit's framework family; the Swagger logo represents Swagger UI's product family.
 
 ## Individual Simple Icons license attributions

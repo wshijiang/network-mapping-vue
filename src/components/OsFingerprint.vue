@@ -4,6 +4,7 @@ import { tr } from '../i18n/index.js'
 import { computed } from 'vue'
 import { osLabel, osConfidence } from '@/utils/osDetection'
 import { formatDateTime } from '../i18n/time.js'
+import AutoTooltip from '@/components/AutoTooltip.vue'
 
 const props = defineProps({ value: { type: Object, default: null }, compact: { type: Boolean, default: false } })
 const label = computed(() => osLabel(props.value))
@@ -16,9 +17,9 @@ const evidenceTime = computed(() => props.value?.observed_at == null ? '' : form
 
 <template>
   <template v-if="compact">
-    <div v-if="compactLabel !== '-'" class="tooltip tooltip-bottom block max-w-full" :data-tip="compactTitle">
+    <AutoTooltip v-if="compactLabel !== '-'" :content="compactTitle">
       <span class="block truncate text-xs">{{ compactLabel }}</span>
-    </div>
+    </AutoTooltip>
     <span v-else class="block text-xs opacity-50">-</span>
   </template>
   <details v-else-if="value" class="min-w-28 text-xs">

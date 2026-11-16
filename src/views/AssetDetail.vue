@@ -10,6 +10,7 @@ import AssetTags from '../components/AssetTags.vue'
 import IntelEvidence from '../components/IntelEvidence.vue'
 import WebTechnologies from '@/components/WebTechnologies.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
+import CellText from '@/components/CellText.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useTheme } from '@/composables/useTheme'
 import http from '../utils/http'
@@ -603,7 +604,7 @@ onMounted(() => {
                     <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" /></span></div>
                     <div v-if="port.service_stale" class="mt-1 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</div>
                   </td>
-                  <td class="max-w-xs truncate" :title="port.banner">{{ port.banner || '-' }}</td>
+                  <td class="max-w-xs"><CellText :text="port.banner || '-'" /></td>
                   <td><OsFingerprint compact :value="port.os" /></td>
                   <td><WebTechnologies compact :value="port.web" /></td>
                   <td class="whitespace-nowrap">{{ formatTime(port.first_seen_at) }}</td>

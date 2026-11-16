@@ -52,16 +52,14 @@
       "guidelines": "https://www.apache.org/foundation/marks"
     },
     "apexcharts": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "apexcharts.svg",
+      "kind": "brand",
       "title": "apexcharts",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/apexcharts.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
     },
     "aspnet": {
       "file": "aspnet.svg",
@@ -124,16 +122,14 @@
       "changes": "Added root fill #FF6384; original paths unchanged."
     },
     "discuz": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "discuz.svg",
+      "kind": "brand",
       "title": "discuz",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/discuz.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
     },
     "docusaurus": {
       "file": "docusaurus.svg",
@@ -282,16 +278,14 @@
       "changes": "Added root fill #499848; original paths unchanged."
     },
     "highcharts": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "highcharts.svg",
+      "kind": "brand",
       "title": "highcharts",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/highcharts.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/highcharts.svg",
+      "changes": "Original paths unchanged."
     },
     "htmx": {
       "file": "htmx.svg",
@@ -369,52 +363,44 @@
       "changes": "Added root fill #FF2D20; original paths unchanged."
     },
     "layui": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "layui.svg",
+      "kind": "brand",
       "title": "layui",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "Project logo (user-provided)",
+      "source": "svg-icon/layui-logo.png",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "Raster source (image/png, 650x288) embedded as data URI in an SVG wrapper (no vector source available)."
     },
     "lighttpd": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "lighttpd.svg",
+      "kind": "brand",
       "title": "lighttpd",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/lighttpd.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/lighttpd.svg",
+      "changes": "Original paths unchanged."
     },
     "litespeed": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "litespeed.svg",
+      "kind": "brand",
       "title": "litespeed",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/litespeed.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/litespeed.svg",
+      "changes": "Original paths unchanged."
     },
     "microsoft-iis": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "microsoft-iis.svg",
+      "kind": "brand",
       "title": "microsoft-iis",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "Project logo (user-provided)",
+      "source": "svg-icon/microsoft-iis-seeklogo.png",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "Raster source (image/png, 2000x851) embedded as data URI in an SVG wrapper (no vector source available)."
     },
     "minio": {
       "file": "minio.svg",
@@ -469,16 +455,14 @@
       "guidelines": "https://nuxt.com/design-kit"
     },
     "openresty": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "openresty.svg",
+      "kind": "brand",
       "title": "openresty",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/openresty.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
     },
     "php": {
       "file": "php.svg",
@@ -552,40 +536,34 @@
       "changes": "Added root fill #85EA2D; original paths unchanged."
     },
     "thinkphp": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "thinkphp.svg",
+      "kind": "brand",
       "title": "thinkphp",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/thinkphp.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
     },
     "tornado": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "tornado.svg",
+      "kind": "brand",
       "title": "tornado",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/tornado.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/tornado.svg",
+      "changes": "Original paths unchanged."
     },
     "uvicorn": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "uvicorn.svg",
+      "kind": "brand",
       "title": "uvicorn",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "Project logo (user-provided)",
+      "source": "svg-icon/uvicorn.png",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "Raster source (image/png, 720x720) embedded as data URI in an SVG wrapper (no vector source available)."
     },
     "vitepress": {
       "file": "vitepress.svg",
@@ -624,16 +602,14 @@
       "guidelines": "https://vuetifyjs.com/resources/brand-kit"
     },
     "werkzeug": {
-      "file": "generic.svg",
-      "kind": "fallback",
+      "file": "werkzeug.svg",
+      "kind": "brand",
       "title": "werkzeug",
-      "provider": "Lucide 0.468.0",
-      "source": "https://github.com/lucide-icons/lucide/blob/0.468.0/icons/server.svg",
-      "upstreamBlob": "a8b6ad92b3cc90688bfaa4d259dce75b26c81d2e",
-      "license": "ISC",
-      "licenseUrl": "https://opensource.org/license/isc",
-      "changes": "None.",
-      "reason": "No verified brand SVG selected; use the generic server icon."
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/werkzeug.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
     },
     "wordpress": {
       "file": "wordpress.svg",
@@ -647,6 +623,486 @@
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "changes": "Added root fill #21759B; original paths unchanged.",
       "guidelines": "https://wordpressfoundation.org/trademark-policy"
+    },
+    "chakra-ui": {
+      "file": "chakra-ui.svg",
+      "kind": "brand",
+      "title": "Chakra UI",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/chakraui.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #1BB2A9; original paths unchanged."
+    },
+    "cloudflare": {
+      "file": "cloudflare.svg",
+      "kind": "brand",
+      "title": "Cloudflare",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/cloudflare.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #F38020; original paths unchanged."
+    },
+    "codeigniter": {
+      "file": "codeigniter.svg",
+      "kind": "brand",
+      "title": "CodeIgniter",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/codeigniter.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #EF4223; original paths unchanged."
+    },
+    "couchdb": {
+      "file": "couchdb.svg",
+      "kind": "brand",
+      "title": "Apache CouchDB",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/apachecouchdb.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #E42528; original paths unchanged."
+    },
+    "django": {
+      "file": "django.svg",
+      "kind": "brand",
+      "title": "Django",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/django.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #092E20; original paths unchanged."
+    },
+    "elasticsearch": {
+      "file": "elasticsearch.svg",
+      "kind": "brand",
+      "title": "Elasticsearch",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/elasticsearch.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #005571; original paths unchanged."
+    },
+    "envoy": {
+      "file": "envoy.svg",
+      "kind": "brand",
+      "title": "Envoy Proxy",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/envoyproxy.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #AC6199; original paths unchanged."
+    },
+    "f5-bigip": {
+      "file": "f5-bigip.svg",
+      "kind": "brand",
+      "title": "F5",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/f5.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #E4002B; original paths unchanged."
+    },
+    "gitea": {
+      "file": "gitea.svg",
+      "kind": "brand",
+      "title": "Gitea",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/gitea.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #609926; original paths unchanged."
+    },
+    "graphiql": {
+      "file": "graphiql.svg",
+      "kind": "brand",
+      "title": "GraphQL",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/graphql.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #E10098; original paths unchanged."
+    },
+    "hexo": {
+      "file": "hexo.svg",
+      "kind": "brand",
+      "title": "Hexo",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/hexo.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #0E83CD; original paths unchanged."
+    },
+    "hugo": {
+      "file": "hugo.svg",
+      "kind": "brand",
+      "title": "Hugo",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/hugo.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #FF4088; original paths unchanged."
+    },
+    "influxdb": {
+      "file": "influxdb.svg",
+      "kind": "brand",
+      "title": "InfluxDB",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/influxdb.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #22ADF6; original paths unchanged."
+    },
+    "jekyll": {
+      "file": "jekyll.svg",
+      "kind": "brand",
+      "title": "Jekyll",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/jekyll.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #CC0000; original paths unchanged."
+    },
+    "kibana": {
+      "file": "kibana.svg",
+      "kind": "brand",
+      "title": "Kibana",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/kibana.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #005571; original paths unchanged."
+    },
+    "kong": {
+      "file": "kong.svg",
+      "kind": "brand",
+      "title": "Kong",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/kong.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #003459; original paths unchanged."
+    },
+    "lodash": {
+      "file": "lodash.svg",
+      "kind": "brand",
+      "title": "Lodash",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/lodash.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #3492FF; original paths unchanged."
+    },
+    "matomo": {
+      "file": "matomo.svg",
+      "kind": "brand",
+      "title": "Matomo",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/matomo.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #3152A0; original paths unchanged."
+    },
+    "mui": {
+      "file": "mui.svg",
+      "kind": "brand",
+      "title": "MUI",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/mui.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #007FFF; original paths unchanged."
+    },
+    "neo4j": {
+      "file": "neo4j.svg",
+      "kind": "brand",
+      "title": "Neo4j",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/neo4j.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #4581C3; original paths unchanged."
+    },
+    "pgadmin": {
+      "file": "pgadmin.svg",
+      "kind": "brand",
+      "title": "PostgreSQL",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/postgresql.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #4169E1; original paths unchanged."
+    },
+    "portainer": {
+      "file": "portainer.svg",
+      "kind": "brand",
+      "title": "Portainer",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/portainer.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #13BEF9; original paths unchanged."
+    },
+    "preact": {
+      "file": "preact.svg",
+      "kind": "brand",
+      "title": "Preact",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/preact.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #673AB8; original paths unchanged."
+    },
+    "prestashop": {
+      "file": "prestashop.svg",
+      "kind": "brand",
+      "title": "PrestaShop",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/prestashop.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #DF0067; original paths unchanged."
+    },
+    "prometheus": {
+      "file": "prometheus.svg",
+      "kind": "brand",
+      "title": "Prometheus",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/prometheus.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #E6522C; original paths unchanged."
+    },
+    "rails": {
+      "file": "rails.svg",
+      "kind": "brand",
+      "title": "Ruby on Rails",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/rubyonrails.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #D30001; original paths unchanged."
+    },
+    "redis-insight": {
+      "file": "redis-insight.svg",
+      "kind": "brand",
+      "title": "Redis",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/redis.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #FF4438; original paths unchanged."
+    },
+    "roundcube": {
+      "file": "roundcube.svg",
+      "kind": "brand",
+      "title": "Roundcube",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/roundcube.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #37BEFF; original paths unchanged."
+    },
+    "socket-io": {
+      "file": "socket-io.svg",
+      "kind": "brand",
+      "title": "Socket.io",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/socketdotio.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Root fill set to currentColor for light/dark theme adaptation; original paths unchanged."
+    },
+    "svelte": {
+      "file": "svelte.svg",
+      "kind": "brand",
+      "title": "Svelte",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/svelte.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #FF3E00; original paths unchanged."
+    },
+    "tomcat": {
+      "file": "tomcat.svg",
+      "kind": "brand",
+      "title": "Apache Tomcat",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/apachetomcat.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #F8DC75; original paths unchanged."
+    },
+    "typo3": {
+      "file": "typo3.svg",
+      "kind": "brand",
+      "title": "TYPO3",
+      "provider": "Simple Icons 16.0.0",
+      "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/typo3.svg",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Added root fill #FF8700; original paths unchanged."
+    },
+    "cloudfront": {
+      "file": "cloudfront.svg",
+      "kind": "brand",
+      "title": "cloudfront",
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/aws-cloudfront.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/aws-cloudfront.svg",
+      "changes": "Original paths unchanged."
+    },
+    "magento": {
+      "file": "magento.svg",
+      "kind": "brand",
+      "title": "magento",
+      "provider": "Devicon v2.17.0",
+      "source": "https://raw.githubusercontent.com/devicons/devicon/master/icons/magento/magento-original.svg",
+      "license": "MIT",
+      "licenseUrl": "https://github.com/devicons/devicon/blob/master/LICENSE",
+      "changes": "Original paths unchanged."
+    },
+    "opencart": {
+      "file": "opencart.svg",
+      "kind": "brand",
+      "title": "opencart",
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/opencart.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/opencart.svg",
+      "changes": "Original paths unchanged."
+    },
+    "sonarqube": {
+      "file": "sonarqube.svg",
+      "kind": "brand",
+      "title": "sonarqube",
+      "provider": "Devicon v2.17.0",
+      "source": "https://raw.githubusercontent.com/devicons/devicon/master/icons/sonarqube/sonarqube-original.svg",
+      "license": "MIT",
+      "licenseUrl": "https://github.com/devicons/devicon/blob/master/LICENSE",
+      "changes": "Original paths unchanged."
+    },
+    "undertow": {
+      "file": "undertow.svg",
+      "kind": "brand",
+      "title": "undertow",
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/undertow.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/undertow.svg",
+      "changes": "Original paths unchanged."
+    },
+    "varnish": {
+      "file": "varnish.svg",
+      "kind": "brand",
+      "title": "varnish",
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/varnish.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/varnish.svg",
+      "changes": "Original paths unchanged."
+    },
+    "zabbix": {
+      "file": "zabbix.svg",
+      "kind": "brand",
+      "title": "zabbix",
+      "provider": "WorldVectorLogo",
+      "source": "https://cdn.worldvectorlogo.com/logos/zabbix-1.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "https://cdn.worldvectorlogo.com/logos/zabbix-1.svg",
+      "changes": "Original paths unchanged."
+    },
+    "apisix": {
+      "file": "apisix.svg",
+      "kind": "brand",
+      "title": "apisix",
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/apisix.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
+    },
+    "arco-design": {
+      "file": "arco-design.svg",
+      "kind": "brand",
+      "title": "arco-design",
+      "provider": "Project favicon (user-provided)",
+      "source": "svg-icon/arco-favicon.ico",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "ICO (150x150) decoded to PNG and embedded as data URI in an SVG wrapper (no vector source available)."
+    },
+    "dayjs": {
+      "file": "dayjs.svg",
+      "kind": "brand",
+      "title": "dayjs",
+      "provider": "Project logo (user-provided)",
+      "source": "svg-icon/dayjs-logo.png",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "Raster source (image/png, 460x460) embedded as data URI in an SVG wrapper (no vector source available)."
+    },
+    "mkdocs": {
+      "file": "mkdocs.svg",
+      "kind": "brand",
+      "title": "mkdocs",
+      "provider": "Project favicon (user-provided)",
+      "source": "svg-icon/mkdocs-favicon.ico",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "ICO (16x16) decoded to PNG and embedded as data URI in an SVG wrapper (no vector source available)."
+    },
+    "nacos": {
+      "file": "nacos.svg",
+      "kind": "brand",
+      "title": "nacos",
+      "provider": "Project logo (user-provided)",
+      "source": "svg-icon/nacos-TB1hgJpHAPoK1RjSZKbXXX1IXXa-64-64.png",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "Raster source (image/webp, 64x64) embedded as data URI in an SVG wrapper (no vector source available)."
+    },
+    "naive-ui": {
+      "file": "naive-ui.svg",
+      "kind": "brand",
+      "title": "naive-ui",
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/naive-ui.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
+    },
+    "phusion-passenger": {
+      "file": "phusion-passenger.svg",
+      "kind": "brand",
+      "title": "phusion-passenger",
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/phusion-passenger.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
+    },
+    "redoc": {
+      "file": "redoc.svg",
+      "kind": "brand",
+      "title": "redoc",
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/redoc.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
+    },
+    "zimbra": {
+      "file": "zimbra.svg",
+      "kind": "brand",
+      "title": "zimbra",
+      "provider": "Project artwork (user-provided)",
+      "source": "svg-icon/zimbra.svg",
+      "license": "Brand logo (trademark of owner); identification use",
+      "licenseUrl": "",
+      "changes": "User-provided official/project artwork; paths unchanged."
     }
   }
 }

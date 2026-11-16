@@ -56,16 +56,16 @@ test('compact Web summary drops evidence and verbose status labels', async () =>
     const database = await render({ compact: true, value: {
       status: 'identified', technologies: [{ id: 'elasticsearch', name: 'Elasticsearch', category: 'database', version: '8.19.0' }],
     } })
-    assert.match(database, /badge badge-outline badge-sm/)
-    assert.match(database, /数据库/)
+    assert.match(database, /elasticsearch\.svg/)
+    assert.doesNotMatch(database, /数据库/)
 
     // More than three technologies show the count suffix, still without evidence.
     const many = await render({ compact: true, value: { status: 'identified', technologies: [
       { id: 'nginx', name: 'Nginx' }, { id: 'jquery', name: 'jQuery' }, { id: 'vue', name: 'Vue' },
       { id: 'react', name: 'React' }, { id: 'bootstrap', name: 'Bootstrap' },
     ] } })
-    assert.match(many, /等/)
-    assert.match(many, /5/)
+    for (const name of ['Nginx', 'jQuery', 'Vue', 'React', 'Bootstrap']) assert.match(many, new RegExp(name))
+    assert.doesNotMatch(many, /等/)
     assert.doesNotMatch(many, /<details|<summary/)
 
     // Regression guard: the default (detail) mode still renders the evidence triangle.
@@ -101,6 +101,12 @@ test('monochrome icons get the dark-mode invert class, colored brands do not', a
     const nginx = await mono('nginx', 'Nginx')
     assert.match(nginx, /nginx\.svg/)
     assert.doesNotMatch(nginx, /tech-icon-mono/)
+    // Newly catalogued brands resolve to their own vendored SVG, not the generic.
+    const django = await mono('django', 'Django')
+    assert.match(django, /django\.svg/)
+    assert.doesNotMatch(django, /generic\.svg/)
+    const socketio = await mono('socket-io', 'Socket.IO')
+    assert.match(socketio, /socket-io\.svg[^>]*class="[^"]*tech-icon-mono/)
   } finally {
     await server.close()
   }

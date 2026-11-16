@@ -74,17 +74,6 @@ function scheduleFederationPoll() {
     }
   }, 2000)
 }
-const generationMessage = computed(() => ({
-  get created() { return tr("已创建目标更新任务，扫描完成后可重新搜索。") },
-  get existing() { return tr("该目标已有任务正在排队或执行。") },
-  get cooldown() { return tr("该目标近期已由搜索生成任务，冷却期间不会重复创建。") },
-  get fresh() { return tr("该目标数据仍在有效期内，无需创建更新任务。") },
-  get queue_full() { return tr("搜索更新队列已满，请稍后重新搜索。") },
-  get rate_limited() { return tr("本小时搜索生成任务已达上限。") },
-  get out_of_scope() { return tr("该目标不在已启用的搜索扫描范围内。") },
-  get unavailable() { return tr("自动更新暂不可用，请稍后重新搜索确认任务状态。") },
-}[autoGeneration.value?.status] || ''))
-
 const examples = [
   'ip IN 192.168.1.0/24 AND port IN (80, 443)',
   'service = "https" AND banner ~ "nginx"',
@@ -363,14 +352,6 @@ onBeforeUnmount(() => {
 
       <div v-if="errorMessage" role="alert" class="alert alert-error mx-auto mt-6 max-w-2xl">
         <span>{{ errorMessage }}<span v-if="errorSpan">{{ tr("（位置") }} {{ errorSpan.start + 1 }}）</span></span>
-      </div>
-
-      <div v-if="generationMessage" role="status" class="alert alert-info alert-soft mx-auto mt-6 max-w-2xl text-sm">
-        <span>
-          {{ generationMessage }}
-          <span v-if="autoGeneration.status === 'cooldown' && autoGeneration.next_eligible_at">{{ tr("冷却至") }} {{ formatTime(autoGeneration.next_eligible_at) }}。</span>
-        </span>
-        <a v-if="autoGeneration.task_id" :href="`/task/${autoGeneration.task_id}`" class="link whitespace-nowrap" target="_blank" rel="noopener">{{ tr("查看任务") }}</a>
       </div>
 
       <div v-if="federationText" role="status" class="alert alert-info alert-soft mx-auto mt-3 max-w-2xl text-sm">
