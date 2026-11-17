@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 class="text-lg font-semibold">{{ tr("组合搜索结果") }}</h2>
           <div class="flex flex-wrap items-center gap-3">
-            <span class="text-sm opacity-70">“{{ searchResult.query }}{{ tr("” · 共") }} {{ searchResult.total }} {{ tr("条") }}</span>
+            <span class="text-sm opacity-70" :title="searchResult.es_took_ms != null ? tr('Elasticsearch 查询耗时 {0} ms', [searchResult.es_took_ms]) : null">“{{ searchResult.query }}{{ tr("” · 共") }} {{ searchResult.total }} {{ tr("条") }}<template v-if="searchResult.took_ms != null"> {{ tr("· 耗时") }} {{ searchResult.took_ms }} ms</template></span>
             <label class="flex items-center gap-1 text-sm">
               <span>{{ tr("排序") }}</span>
               <select v-model="sortField" class="select select-bordered select-sm" :aria-label="tr(&quot;排序字段&quot;)" :disabled="loading" @change="changeSortField">
