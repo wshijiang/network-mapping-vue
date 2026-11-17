@@ -1,17 +1,13 @@
 <script setup>
-import { formatDateTime as formatCsvDateTime } from './utils/systemTime.js'
 import { tr } from './i18n/index.js'
 
 import SearchResultsTable from '@/components/SearchResultsTable.vue'
-import { formatNetworkOwner } from './utils/searchFormat'
+import SearchExportDialog from '@/components/SearchExportDialog.vue'
 import { formatDateTime as formatSystemDateTime } from './i18n/time.js'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { webCsvHeaders, webCsvValues } from './utils/webDetection'
-import { osCsvHeaders, osCsvValues } from './utils/osDetection'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import http from './utils/http'
-import { formatLocation } from './utils/location'
-import { federationMessage, isRunActive, originLabel } from './utils/federation.js'
+import { federationMessage, isRunActive } from './utils/federation.js'
 
 const STORAGE_KEY = 'network_mapping_search_history'
 const MAX_HISTORY = 12
@@ -24,7 +20,8 @@ const showHistory = ref(false)
 const searchBoxRef = ref(null)
 const searchInputRef = ref(null)
 const loading = ref(false)
-const exporting = ref(false)
+const exportDialogRef = ref(null)
+const exportNotice = ref(null)
 const errorMessage = ref('')
 const errorSpan = ref(null)
 const searchResult = ref(null)
@@ -232,63 +229,19 @@ function formatTime(timestamp) {
   return formatSystemDateTime(new Date(timestamp))
 }
 
-function csvCell(value) {
-  const text = String(value ?? '')
-  const safeText = /^[\s]*[=+\-@]/.test(text) ? `'${text}` : text
-  return `"${safeText.replaceAll('"', '""')}"`
+function openExportDialog() {
+  if (!searchResult.value || !activeSearch.value) return
+  exportNotice.value = null
+  exportDialogRef.value?.open({
+    query: activeSearch.value.query,
+    page: { offset: offset.value, limit: PAGE_SIZE, count: searchResult.value.items.length },
+    sortField: sortField.value,
+    sortOrder: sortOrder.value,
+  })
 }
 
-function exportCurrentPage() {
-  const formatTime = timestamp => timestamp ? formatCsvDateTime(new Date(timestamp)) : '-'
-  if (!searchResult.value?.items.length) return
-
-  exporting.value = true
-  try {
-    const header = [
-      'IP', '端口', '协议', '服务', 'Banner', ...osCsvHeaders, ...webCsvHeaders, '网页标题', 'TLS 模式', 'TLS 版本',
-      'TLS 密码套件', '证书主体', '证书签发者', '证书名称', '证书序列号',
-      '证书生效时间', '证书失效时间', '证书 SHA-256 指纹', '是否自签名',
-      'ASN / AS 组织', '位置', '扫描时间', '标签', '数据来源',
-    ]
-    const rows = searchResult.value.items.map((item) => [
-      item.ip_address,
-      item.port,
-      item.protocol,
-      item.service,
-      item.banner,
-      ...osCsvValues(item.os, formatTime),
-      ...webCsvValues(item.web, formatTime),
-      item.title,
-      item.tls_mode,
-      item.tls_version,
-      item.tls_cipher_suite,
-      item.tls_subject,
-      item.tls_issuer,
-      (item.tls_names || []).join('、'),
-      item.tls_serial_number,
-      formatTime(item.tls_not_before),
-      formatTime(item.tls_not_after),
-      item.tls_fingerprint_sha256,
-      item.tls_self_signed == null ? '' : item.tls_self_signed ? '是' : '否',
-      formatNetworkOwner(item),
-      formatLocation(item),
-      formatTime(item.scan_time),
-      (item.tags || []).map((tag) => tag.name).join('、'),
-      originLabel(item) ? `${originLabel(item)}(${(item.federation_sources || []).join('/')})` : '本地',
-    ])
-    const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')
-    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }))
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `network-mapping-search-${new Date().toISOString().slice(0, 10)}.csv`
-    link.click()
-    setTimeout(() => URL.revokeObjectURL(url), 0)
-  } catch (error) {
-    console.error('export search results failed', error)
-    errorMessage.value = '导出搜索结果失败，请稍后重试。'
-  } finally {
-    exporting.value = false
-  }
+function onExportSubmitted(task) {
+  exportNotice.value = task
 }
 
 function onDocumentClick(event) {
@@ -360,6 +313,11 @@ onBeforeUnmount(() => {
         <router-link v-if="federation.run_id" to="/data/federation" class="link whitespace-nowrap">{{ tr("联测记录") }}</router-link>
       </div>
 
+      <div v-if="exportNotice" role="status" class="alert alert-success alert-soft mx-auto mt-3 max-w-2xl text-sm">
+        <span>{{ tr("导出任务已创建，后台执行中。") }}</span>
+        <router-link class="link whitespace-nowrap" to="/data/export">{{ tr("前往数据管理 · 导出下载") }}</router-link>
+      </div>
+
       <section v-if="searchResult" class="mt-10 rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 class="text-lg font-semibold">{{ tr("组合搜索结果") }}</h2>
@@ -378,8 +336,8 @@ onBeforeUnmount(() => {
                 <option value="asc">{{ tr("升序") }}</option>
               </select>
             </label>
-            <button class="btn btn-outline btn-sm" :disabled="loading || exporting || searchResult.items.length === 0" @click="exportCurrentPage">
-              {{ exporting ? tr("导出中…") : tr("导出当前页 CSV") }}
+            <button class="btn btn-outline btn-sm" :disabled="loading || searchResult.items.length === 0" @click="openExportDialog">
+              {{ tr("导出") }}
             </button>
           </div>
         </div>
@@ -393,6 +351,8 @@ onBeforeUnmount(() => {
       </section>
     </div>
   </main>
+
+  <SearchExportDialog ref="exportDialogRef" @submitted="onExportSubmitted" />
 
   <dialog ref="syntaxDialogRef" class="modal">
     <div class="modal-box w-[calc(100vw-2rem)] max-w-lg">
