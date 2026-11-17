@@ -134,8 +134,15 @@ function changeStatusFilter() {
   loadTasks()
 }
 
+// 本页任务的进度分母是分页窗口（page_limit），不是全部匹配数。
+function effectiveTask(task) {
+  if (task.scope !== 'page') return task
+  const window = Number(task.page_limit)
+  return { ...task, matched_total: Number.isFinite(window) && window > 0 ? window : task.matched_total }
+}
+
 function taskProgress(task) {
-  const stats = formatRowStats(task)
+  const stats = formatRowStats(effectiveTask(task))
   return progressPercent(stats.exported, stats.total)
 }
 
@@ -290,7 +297,7 @@ onBeforeUnmount(() => {
                   <progress class="progress progress-primary w-24" :value="taskProgress(task)" max="100" :aria-label="tr(&quot;进度&quot;)"></progress>
                   <span class="text-xs opacity-70">{{ taskProgress(task) }}%</span>
                 </div>
-                <div class="text-xs opacity-50">{{ formatRowStats(task).exported }} / {{ formatRowStats(task).total === null ? '?' : formatRowStats(task).total }}</div>
+                <div class="text-xs opacity-50">{{ formatRowStats(effectiveTask(task)).exported }} / {{ formatRowStats(effectiveTask(task)).total === null ? '?' : formatRowStats(effectiveTask(task)).total }}</div>
               </td>
               <td class="text-xs">{{ fieldCount(task) }}</td>
               <td class="text-xs">{{ formatBytes(task.file_size) }}</td>
