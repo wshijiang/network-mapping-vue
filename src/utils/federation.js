@@ -1,7 +1,7 @@
 // 联测（多源联合查询）前端辅助函数：状态徽标、额度摘要、表单校验、搜索状态文案。
 
 export const RUN_ACTIVE_STATUSES = ['pending', 'running']
-export const RUN_TERMINAL_STATUSES = ['completed', 'partial', 'failed', 'cancelled']
+export const RUN_TERMINAL_STATUSES = ['completed', 'partial', 'failed', 'cancelled', 'unsupported']
 
 const RUN_STATUS_META = {
   pending: { labelKey: '等待执行', badgeClass: 'badge-ghost' },
@@ -10,6 +10,7 @@ const RUN_STATUS_META = {
   partial: { labelKey: '部分完成', badgeClass: 'badge-warning' },
   failed: { labelKey: '失败', badgeClass: 'badge-error' },
   cancelled: { labelKey: '已取消', badgeClass: 'badge-neutral' },
+  unsupported: { labelKey: '未查询', badgeClass: 'badge-ghost' },
 }
 
 const UNKNOWN_RUN_STATUS = { labelKey: '未知状态', badgeClass: 'badge-ghost' }
@@ -20,6 +21,50 @@ export function runStatusMeta(status) {
 
 export function isRunActive(status) {
   return RUN_ACTIVE_STATUSES.includes(status)
+}
+
+// 单源执行状态：unsupported 表示该平台不支持此语句（未查询），不是错误。
+const SOURCE_STATUS_META = {
+  completed: { labelKey: '已查询', badgeClass: 'badge-success' },
+  partial: { labelKey: '部分完成', badgeClass: 'badge-warning' },
+  error: { labelKey: '错误', badgeClass: 'badge-error' },
+  unsupported: { labelKey: '未查询', badgeClass: 'badge-ghost' },
+}
+
+export function sourceStatusMeta(status) {
+  return SOURCE_STATUS_META[status] || { labelKey: status || '未知状态', badgeClass: 'badge-ghost' }
+}
+
+// 平台/传输错误码 → 可读文案（原始码保留在 title 供排查）。
+const SOURCE_ERROR_LABELS = {
+  auth_failed: '凭据无效或已过期',
+  credential_missing: '未配置凭据',
+  rate_limited: '平台限速，重试后仍失败',
+  query_rejected: '平台拒绝该查询',
+  field_permission: '字段权限不足',
+  quota_exhausted: '平台额度不足',
+  timeout: '请求超时',
+  transport: '网络传输失败',
+  invalid_response: '平台响应异常',
+  ip_banned: 'IP 被平台限制',
+  proxy_invalid: '代理配置无效',
+  proxy_authentication_failed: '代理认证失败',
+  proxy_connection_failed: '代理连接失败',
+  proxy_dns_failed: '代理域名解析失败',
+  proxy_tls_error: '代理 TLS 校验失败',
+  proxy_connect_rejected: '代理拒绝连接目标',
+  proxy_invalid_response: '代理响应格式无效',
+  proxy_configuration_unavailable: '全局代理不可用',
+  proxy_url_required: '全局代理未配置地址',
+}
+
+export function sourceErrorLabel(code) {
+  return SOURCE_ERROR_LABELS[code] || code
+}
+
+// 翻译失败原因去掉英文前缀，仅保留平台与字段/操作符信息。
+export function unsupportedReason(reason) {
+  return (reason || '').replace(/^unsupported:\s*/, '')
 }
 
 export const KIND_NAMES = {
@@ -61,15 +106,12 @@ export function quotaSummary(kind, capabilities) {
   let low = false
   const details = []
   if (kind === 'hunter') {
-    const free = num(capabilities.rest_free_point)
-    const day = num(capabilities.day_free_point)
+    // Hunter API 消耗权益积分，额度展示只保留权益积分。
     const equity = num(capabilities.rest_equity_point)
-    if (free !== null) {
-      primary = day !== null ? `今日免费 ${free}/${day}` : `今日免费 ${free}`
-      low = free < 50
+    if (equity !== null) {
+      primary = `权益积分 ${equity}`
+      low = equity < 50
     }
-    if (equity !== null) details.push(`权益积分 ${equity}`)
-    if (capabilities.type) details.push(String(capabilities.type))
   } else if (kind === 'quake') {
     const credit = num(capabilities.credit)
     const persistent = num(capabilities.persistent_credit)
@@ -146,6 +188,7 @@ export function federationMessage(federation) {
     return added > 0 ? `联测完成，新增 ${added} 个端点` : '联测完成，无新增端点'
   }
   if (status === 'timeout') return '联测等待超时，后台继续执行'
+  if (status === 'unsupported') return '各平台不支持该查询语句，未发起联测'
   if (status === 'failed') return '联测失败，请查看联测记录'
   return ''
 }

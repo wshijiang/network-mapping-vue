@@ -13,6 +13,9 @@ import {
   isRunActive,
   quotaSummary,
   runStatusMeta,
+  sourceErrorLabel,
+  sourceStatusMeta,
+  unsupportedReason,
   validateSourceForm,
   windowLabel,
 } from '@/utils/federation.js'
@@ -90,8 +93,8 @@ function emptySourceForm() {
     proxy_configured: false,
     fields: ['ip', 'domain', 'port', 'service', 'tech'],
     pagination_mode: 'follow_local',
-    page_size: 100,
-    max_pages: 5,
+    page_size: 10,
+    max_pages: 1,
     window_mode: 'follow',
     window_days: 30,
     timeout_seconds: 15,
@@ -278,6 +281,13 @@ const policySnapshot = ref(null)
 const policyRevision = ref(0)
 const policyLoading = ref(false)
 const policySaving = ref(false)
+
+// 保存按钮仅在策略相对已保存快照有变动时出现。
+const policyDirty = computed(
+  () =>
+    Boolean(policy.value && policySnapshot.value) &&
+    JSON.stringify(policy.value) !== JSON.stringify(policySnapshot.value),
+)
 
 async function loadPolicy() {
   policyLoading.value = true
@@ -542,6 +552,8 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
         </div>
       </div>
       <div v-if="policy">
+        <Transition name="policy-body">
+          <div v-if="policy.enabled" class="policy-body">
           <div class="divider my-3"></div>
           <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <fieldset class="fieldset min-w-0 w-full">
@@ -618,11 +630,15 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
           </div>
         </fieldset>
 
-        <div class="mt-4 flex justify-end">
-          <button type="button" class="btn btn-neutral btn-sm" :disabled="policySaving" @click="savePolicy">
-            {{ policySaving ? tr("保存中…") : tr("保存策略") }}
-          </button>
-        </div>
+          <Transition name="policy-save">
+            <div v-if="policyDirty" class="mt-4 flex justify-end">
+              <button type="button" class="btn btn-neutral btn-sm" :disabled="policySaving" @click="savePolicy">
+                {{ policySaving ? tr("保存中…") : tr("保存策略") }}
+              </button>
+            </div>
+          </Transition>
+          </div>
+        </Transition>
       </div>
       <p v-else class="mt-4 text-sm opacity-65">{{ policyLoading ? tr("加载中…") : tr("策略加载失败") }}</p>
     </section>
@@ -709,6 +725,7 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
             <option value="completed">{{ tr("已完成") }}</option>
             <option value="partial">{{ tr("部分完成") }}</option>
             <option value="failed">{{ tr("失败") }}</option>
+            <option value="unsupported">{{ tr("未查询") }}</option>
             <option value="cancelled">{{ tr("已取消") }}</option>
           </select>
           <button type="button" class="btn btn-ghost btn-sm" :disabled="runsLoading" @click="loadRuns">
@@ -939,13 +956,13 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
               <tr v-for="(source, index) in detailRun.sources || []" :key="index">
                 <td>{{ KIND_NAMES[source.kind] || source.kind }}</td>
                 <td>
-                  <span class="badge badge-xs" :class="source.status === 'completed' ? 'badge-success' : source.status === 'unsupported' ? 'badge-ghost' : 'badge-warning'">{{ source.status }}</span>
-                  <span v-if="source.error_code" class="ml-1 text-error">{{ source.error_code }}</span>
+                  <span class="badge badge-xs" :class="sourceStatusMeta(source.status).badgeClass">{{ tr(sourceStatusMeta(source.status).labelKey) }}</span>
+                  <span v-if="source.error_code" class="ml-1 text-xs text-error" :title="source.error_code">{{ tr(sourceErrorLabel(source.error_code)) }}</span>
                 </td>
                 <td>{{ source.window_days ? `${source.window_days}d` : tr('不指定') }} <span class="opacity-60">({{ source.time_filter }})</span></td>
                 <td>{{ source.fetched }} / {{ source.normalized }}</td>
                 <td>{{ source.duration_ms }}ms</td>
-                <td class="max-w-64 truncate font-mono" :title="source.platform_query">{{ source.platform_query || source.reason || '-' }}</td>
+                <td class="max-w-64 truncate font-mono" :title="source.platform_query || source.reason">{{ source.platform_query || (source.reason ? `${tr('不支持：')}${unsupportedReason(source.reason)}` : '-') }}</td>
               </tr>
             </tbody>
           </table>
@@ -958,3 +975,45 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
     <form method="dialog" class="modal-backdrop"><button @click="detailRun = null">{{ tr("关闭") }}</button></form>
   </dialog>
 </template>
+
+<style scoped>
+/* 联测开关联动：策略表单随 enabled 展开/收起。 */
+.policy-body-enter-active,
+.policy-body-leave-active {
+  overflow: hidden;
+  transition: max-height 250ms ease, opacity 200ms ease;
+}
+
+.policy-body-enter-from,
+.policy-body-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.policy-body-enter-to,
+.policy-body-leave-from {
+  max-height: 64rem;
+  opacity: 1;
+}
+
+/* 保存策略按钮仅在策略有变动时淡入出现。 */
+.policy-save-enter-active,
+.policy-save-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.policy-save-enter-from,
+.policy-save-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .policy-body-enter-active,
+  .policy-body-leave-active,
+  .policy-save-enter-active,
+  .policy-save-leave-active {
+    transition: none;
+  }
+}
+</style>

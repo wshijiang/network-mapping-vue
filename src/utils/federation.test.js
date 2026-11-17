@@ -8,6 +8,9 @@ import {
   validateSourceForm,
   federationMessage,
   originLabel,
+  sourceStatusMeta,
+  sourceErrorLabel,
+  unsupportedReason,
 } from './federation.js'
 
 test('run status meta and active detection', () => {
@@ -27,10 +30,13 @@ test('window label follows mode', () => {
 })
 
 test('quota summary per platform', () => {
+  // Hunter API 消耗权益积分：只展示权益积分，免费积分不再参与展示。
   const hunter = quotaSummary('hunter', { rest_free_point: 499, day_free_point: 500, rest_equity_point: 1000, type: '个人账号' })
-  assert.equal(hunter.primary, '今日免费 499/500')
+  assert.equal(hunter.primary, '权益积分 1000')
   assert.ok(!hunter.low)
-  assert.ok(quotaSummary('hunter', { rest_free_point: 10 }).low)
+  assert.deepEqual(hunter.details, [])
+  assert.ok(quotaSummary('hunter', { rest_equity_point: 10 }).low)
+  assert.equal(quotaSummary('hunter', { rest_free_point: 10 }).primary, '未知')
   const quake = quotaSummary('quake', { credit: 5000, persistent_credit: 1000, role: [{ fullname: '高级会员' }] })
   assert.equal(quake.primary, '月度积分 5000')
   assert.ok(quake.details.includes('高级会员'))
@@ -72,6 +78,24 @@ test('search federation message', () => {
   assert.match(federationMessage({ status: 'completed', merged_new: 0 }), /无新增/)
   assert.match(federationMessage({ status: 'cached' }), /缓存/)
   assert.match(federationMessage({ status: 'timeout' }), /超时/)
+})
+
+test('unsupported is not-query, not error', () => {
+  assert.equal(runStatusMeta('unsupported').labelKey, '未查询')
+  assert.equal(runStatusMeta('unsupported').badgeClass, 'badge-ghost')
+  assert.ok(!isRunActive('unsupported'))
+  assert.equal(sourceStatusMeta('unsupported').labelKey, '未查询')
+  assert.equal(sourceStatusMeta('completed').labelKey, '已查询')
+  assert.equal(sourceStatusMeta('error').badgeClass, 'badge-error')
+  assert.match(federationMessage({ status: 'unsupported' }), /未发起联测/)
+  assert.equal(unsupportedReason('unsupported: hunter Title NotEq'), 'hunter Title NotEq')
+  assert.equal(unsupportedReason(''), '')
+})
+
+test('source error codes map to readable labels', () => {
+  assert.equal(sourceErrorLabel('auth_failed'), '凭据无效或已过期')
+  assert.equal(sourceErrorLabel('rate_limited'), '平台限速，重试后仍失败')
+  assert.equal(sourceErrorLabel('unknown_code'), 'unknown_code')
 })
 
 test('origin label', () => {
