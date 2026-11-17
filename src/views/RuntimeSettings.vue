@@ -109,6 +109,11 @@ const history = ref([])
 const historyLoading = ref(false)
 const conflicts = reactive({})
 const historyError = ref('')
+const cursorStatus = ref(null)
+const cursorLoading = ref(false)
+const cursorError = ref('')
+const cursorInputs = reactive({ ipv4: '', ipv6: '' })
+const cursorSaving = reactive({ ipv4: false, ipv6: false })
 const previewRows = computed(() => previewNamespace.value ? policyDiff(previewNamespace.value, savedDocuments[previewNamespace.value], documentFor(previewNamespace.value), catalogue.value) : [])
 const policyNamespace = computed(() => ['monitor', 'scanner_health'].includes(activeTab.value))
 const changeReasons = reactive(Object.fromEntries(namespaces.map(({ key }) => [key, ''])))
@@ -213,6 +218,46 @@ function selectTab(namespace) {
   activeTab.value = namespace
   history.value = []
   historyError.value = ''
+  if (namespace === 'automatic_target') loadCursorStatus()
+}
+
+async function loadCursorStatus() {
+  cursorLoading.value = true
+  cursorError.value = ''
+  try {
+    const response = await http.get('/api/automatic-target/status')
+    const data = response.data?.data
+    if (!data || !Array.isArray(data.families)) throw new Error('invalid automatic target status response')
+    cursorStatus.value = data
+  } catch (error) {
+    console.error('load automatic target status failed', error)
+    cursorStatus.value = null
+    cursorError.value = error.response?.data?.message || tr("生成游标状态加载失败，请重试。")
+  } finally {
+    cursorLoading.value = false
+  }
+}
+
+async function saveCursorPosition(family) {
+  const raw = cursorInputs[family].trim()
+  if (!raw || cursorSaving[family]) return
+  const body = { address_family: family }
+  if (/^\d+$/.test(raw)) body.position = raw
+  else body.target = raw
+  cursorSaving[family] = true
+  try {
+    const response = await http.post('/api/automatic-target/cursor', body)
+    const data = response.data?.data
+    if (!response.data?.success || !data) throw new Error('invalid cursor update response')
+    cursorInputs[family] = ''
+    pushAlert('success', tr("生成游标已调整"), tr("{0} 游标已移动到 {1}（位置 {2}），下一个生成周期生效。", [family.toUpperCase(), data.target, String(data.position)]))
+    await loadCursorStatus()
+  } catch (error) {
+    console.error(`update ${family} cursor failed`, error)
+    pushAlert('error', tr("生成游标调整失败"), error.response?.data?.message || tr("请检查位置序号或 CIDR 后重试。"))
+  } finally {
+    cursorSaving[family] = false
+  }
 }
 
 async function loadNamespace(namespace, silent = false) {
@@ -327,6 +372,7 @@ async function saveNamespace(namespace) {
     if (!data?.document || !Number.isInteger(data.revision)) throw new Error('invalid runtime config response')
     applyDocument(namespace, data.document, data.revision)
     pushAlert('success', tr("运行策略已保存"), tr("{0}已应用，当前版本为 #{1}。", [namespaces.find((item) => item.key === namespace)?.title, data.revision]))
+    if (namespace === 'automatic_target') loadCursorStatus()
     return true
   } catch (error) {
     console.error(`save runtime config ${namespace} failed`, error)
@@ -634,6 +680,43 @@ onMounted(loadAll)
                   <label class="fieldset-legend mt-2">{{ tr("资产变化后复核间隔（秒）") }}</label><input v-model.number="settings.automatic_target.change_refresh_seconds" type="number" class="input input-bordered" min="30" max="86400" /><p class="text-xs opacity-60">{{ tr("发现端口、服务或漏洞模板变化后，提前复核；稳定后恢复正常刷新间隔。") }}</p>
                 </fieldset>
               </div>
+            </section>
+            <section class="space-y-3 rounded-lg border border-base-300 p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h4 class="font-semibold">{{ tr("生成游标") }}</h4>
+                  <p class="mt-1 text-xs opacity-60">{{ tr("顺序覆盖的当前位置。可输入位置序号或任务 CIDR 把游标移动到授权范围内任意位置，下一个生成周期生效；冷却期内已生成的网段仍会跳过。") }}</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-ghost" :disabled="cursorLoading" @click="loadCursorStatus">{{ tr("刷新") }}</button>
+              </div>
+              <div v-if="cursorLoading && !cursorStatus" class="text-sm opacity-60">{{ tr("正在加载游标状态…") }}</div>
+              <div v-else-if="cursorError" class="alert alert-error alert-soft text-sm" role="alert">{{ cursorError }}</div>
+              <template v-else-if="cursorStatus">
+                <section v-for="family in cursorStatus.families" :key="family.address_family" class="space-y-3 rounded-lg border border-base-300 p-4">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h5 class="font-semibold">{{ family.address_family.toUpperCase() }}</h5>
+                    <span class="badge badge-sm" :class="family.enabled ? 'badge-success' : 'badge-ghost'">{{ family.enabled ? tr("已启用") : tr("未启用") }}</span>
+                    <span class="text-xs opacity-60">{{ tr("任务前缀 /{0}", [family.task_prefix]) }}</span>
+                  </div>
+                  <dl class="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+                    <div class="flex justify-between gap-3 sm:justify-start"><dt class="opacity-60">{{ tr("当前位置") }}</dt><dd class="font-mono">{{ family.cursor_position }} / {{ family.total_subnets }}</dd></div>
+                    <div class="flex justify-between gap-3 sm:justify-start"><dt class="opacity-60">{{ tr("下一个目标") }}</dt><dd class="font-mono">{{ family.next_target || '—' }}</dd></div>
+                    <div class="flex justify-between gap-3 sm:justify-start"><dt class="opacity-60">{{ tr("待执行 / 执行中") }}</dt><dd>{{ family.pending_tasks }} / {{ family.running_tasks }}</dd></div>
+                    <div class="flex justify-between gap-3 sm:justify-start"><dt class="opacity-60">{{ tr("最近生成") }}</dt><dd>{{ family.last_generated_at ? formatSystemDateTime(new Date(family.last_generated_at)) : tr("从未生成") }}</dd></div>
+                  </dl>
+                  <div v-if="family.last_error" class="alert alert-warning alert-soft text-xs" role="alert">{{ family.last_error }}</div>
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <fieldset class="fieldset min-w-0 flex-1">
+                      <legend class="fieldset-legend"><label :for="`policy-cursor-${family.address_family}`">{{ tr("新位置（序号或 CIDR）") }}</label></legend>
+                      <input :id="`policy-cursor-${family.address_family}`" v-model="cursorInputs[family.address_family]" type="text" class="input input-bordered font-mono" :placeholder="family.address_family === 'ipv4' ? tr('如 129540 或 1.250.4.0/24') : tr('如 128 或 2001:db8::8000/120')" />
+                    </fieldset>
+                    <button type="button" class="btn btn-primary btn-sm" :disabled="cursorSaving[family.address_family] || !cursorInputs[family.address_family].trim()" @click="saveCursorPosition(family.address_family)">
+                      <span v-if="cursorSaving[family.address_family]" class="loading loading-spinner loading-xs"></span>
+                      {{ tr("调整游标") }}
+                    </button>
+                  </div>
+                </section>
+              </template>
             </section>
           </template>
 
