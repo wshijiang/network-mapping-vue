@@ -4583,7 +4583,6 @@
   "代理响应格式无效": "Invalid proxy response format",
   "全局代理不可用": "Global proxy unavailable",
   "全局代理未配置地址": "Global proxy URL not configured",
-  "生成游标": "Generation cursor",
   "顺序覆盖的当前位置。可输入位置序号或任务 CIDR 把游标移动到授权范围内任意位置，下一个生成周期生效；冷却期内已生成的网段仍会跳过。": "Current position of the sequential walk. Enter a position index or a task CIDR to move the cursor anywhere inside the authorized space; it takes effect on the next generation tick. Subnets already generated within the cooldown are still skipped.",
   "正在加载游标状态…": "Loading cursor status…",
   "生成游标状态加载失败，请重试。": "Failed to load cursor status. Please retry.",
@@ -4600,5 +4599,9 @@
   "生成游标已调整": "Generation cursor moved",
   "{0} 游标已移动到 {1}（位置 {2}），下一个生成周期生效。": "{0} cursor moved to {1} (position {2}); effective on the next generation tick.",
   "生成游标调整失败": "Failed to move generation cursor",
-  "请检查位置序号或 CIDR 后重试。": "Check the position index or CIDR and retry."
+  "请检查位置序号或 CIDR 后重试。": "Check the position index or CIDR and retry.",
+  "游标说明": "About the cursor",
+  "游标是顺序覆盖扫描的进度指针：授权 CIDR 按配置顺序展开为任务前缀大小的子网并从 0 编号，游标即下一个待生成子网的序号。": "The cursor is the progress pointer of the sequential walk: authorized CIDRs are expanded in configured order into task-prefix-sized subnets numbered from 0, and the cursor is the index of the next subnet to generate.",
+  "例如授权 0.0.0.0/0、任务前缀 /24 时，位置 129540 对应 1.250.4.0/24（1×65536 + 250×256 + 4）。IPv6 按同一规则展开，序号为 128 位整数。": "For example, with authorized 0.0.0.0/0 and task prefix /24, position 129540 maps to 1.250.4.0/24 (1×65536 + 250×256 + 4). IPv6 expands by the same rule with 128-bit indices.",
+  "生成器从游标向后取候选，整段跳过排除网段、跳过冷却期内已生成的网段，直到补满队列高水位；手动调整后下一个生成周期从新位置继续。": "The generator takes candidates forward from the cursor, jumping whole excluded blocks and skipping subnets generated within the cooldown until the queue reaches its high watermark; after a manual move, the next generation tick continues from the new position."
 }

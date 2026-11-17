@@ -2,7 +2,9 @@
 import { tr } from '../i18n/index.js'
 
 import { computed, onMounted, reactive, ref } from 'vue'
+import { Info } from '@lucide/vue'
 import AppAlert from '@/components/AppAlert.vue'
+import AutoTooltip from '@/components/AutoTooltip.vue'
 import MonitorRulesEditor from '@/components/MonitorRulesEditor.vue'
 import { normalizeMonitor, policyDiff, scannerHealthDefaults, scannerHealthFields, validateMonitor, validateScannerHealth } from '@/utils/monitorRules'
 import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
@@ -684,7 +686,17 @@ onMounted(loadAll)
             <section class="space-y-3 rounded-lg border border-base-300 p-4">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <h4 class="font-semibold">{{ tr("生成游标") }}</h4>
+                  <h4 class="flex items-center gap-1.5 font-semibold">
+                    {{ tr("调整游标") }}
+                    <AutoTooltip :copyable="false">
+                      <span tabindex="0" class="inline-flex cursor-help opacity-60 transition-opacity hover:opacity-100 focus:opacity-100" :aria-label="tr('游标说明')"><Info class="size-3.5" aria-hidden="true" /></span>
+                      <template #content>
+                        <p>{{ tr("游标是顺序覆盖扫描的进度指针：授权 CIDR 按配置顺序展开为任务前缀大小的子网并从 0 编号，游标即下一个待生成子网的序号。") }}</p>
+                        <p class="mt-1">{{ tr("例如授权 0.0.0.0/0、任务前缀 /24 时，位置 129540 对应 1.250.4.0/24（1×65536 + 250×256 + 4）。IPv6 按同一规则展开，序号为 128 位整数。") }}</p>
+                        <p class="mt-1">{{ tr("生成器从游标向后取候选，整段跳过排除网段、跳过冷却期内已生成的网段，直到补满队列高水位；手动调整后下一个生成周期从新位置继续。") }}</p>
+                      </template>
+                    </AutoTooltip>
+                  </h4>
                   <p class="mt-1 text-xs opacity-60">{{ tr("顺序覆盖的当前位置。可输入位置序号或任务 CIDR 把游标移动到授权范围内任意位置，下一个生成周期生效；冷却期内已生成的网段仍会跳过。") }}</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-ghost" :disabled="cursorLoading" @click="loadCursorStatus">{{ tr("刷新") }}</button>
@@ -692,7 +704,8 @@ onMounted(loadAll)
               <div v-if="cursorLoading && !cursorStatus" class="text-sm opacity-60">{{ tr("正在加载游标状态…") }}</div>
               <div v-else-if="cursorError" class="alert alert-error alert-soft text-sm" role="alert">{{ cursorError }}</div>
               <template v-else-if="cursorStatus">
-                <section v-for="family in cursorStatus.families" :key="family.address_family" class="space-y-3 rounded-lg border border-base-300 p-4">
+                <section v-for="(family, index) in cursorStatus.families" :key="family.address_family" class="space-y-3">
+                  <div v-if="index > 0" class="divider my-2" role="separator"></div>
                   <div class="flex flex-wrap items-center gap-2">
                     <h5 class="font-semibold">{{ family.address_family.toUpperCase() }}</h5>
                     <span class="badge badge-sm" :class="family.enabled ? 'badge-success' : 'badge-ghost'">{{ family.enabled ? tr("已启用") : tr("未启用") }}</span>
@@ -705,15 +718,15 @@ onMounted(loadAll)
                     <div class="flex justify-between gap-3 sm:justify-start"><dt class="opacity-60">{{ tr("最近生成") }}</dt><dd>{{ family.last_generated_at ? formatSystemDateTime(new Date(family.last_generated_at)) : tr("从未生成") }}</dd></div>
                   </dl>
                   <div v-if="family.last_error" class="alert alert-warning alert-soft text-xs" role="alert">{{ family.last_error }}</div>
-                  <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
-                    <fieldset class="fieldset min-w-0 flex-1">
-                      <legend class="fieldset-legend"><label :for="`policy-cursor-${family.address_family}`">{{ tr("新位置（序号或 CIDR）") }}</label></legend>
-                      <input :id="`policy-cursor-${family.address_family}`" v-model="cursorInputs[family.address_family]" type="text" class="input input-bordered font-mono" :placeholder="family.address_family === 'ipv4' ? tr('如 129540 或 1.250.4.0/24') : tr('如 128 或 2001:db8::8000/120')" />
-                    </fieldset>
-                    <button type="button" class="btn btn-primary btn-sm" :disabled="cursorSaving[family.address_family] || !cursorInputs[family.address_family].trim()" @click="saveCursorPosition(family.address_family)">
-                      <span v-if="cursorSaving[family.address_family]" class="loading loading-spinner loading-xs"></span>
-                      {{ tr("调整游标") }}
-                    </button>
+                  <div class="min-w-0">
+                    <label :for="`policy-cursor-${family.address_family}`" class="mb-1 block text-xs font-semibold">{{ tr("新位置（序号或 CIDR）") }}</label>
+                    <div class="flex items-center gap-2">
+                      <input :id="`policy-cursor-${family.address_family}`" v-model="cursorInputs[family.address_family]" type="text" class="input input-bordered font-mono min-w-0 flex-1" :placeholder="family.address_family === 'ipv4' ? tr('如 129540 或 1.250.4.0/24') : tr('如 128 或 2001:db8::8000/120')" />
+                      <button type="button" class="btn btn-primary" :disabled="cursorSaving[family.address_family] || !cursorInputs[family.address_family].trim()" @click="saveCursorPosition(family.address_family)">
+                        <span v-if="cursorSaving[family.address_family]" class="loading loading-spinner loading-xs"></span>
+                        {{ tr("调整游标") }}
+                      </button>
+                    </div>
                   </div>
                 </section>
               </template>
