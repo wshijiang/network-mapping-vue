@@ -223,102 +223,102 @@ onBeforeUnmount(() => {
     />
   </div>
 
-  <div class="space-y-4">
-    <div class="card bg-base-100 card-border border-base-300 p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="font-semibold">{{ tr("后台导出") }}</h2>
-          <p class="mt-1 text-xs opacity-70">{{ tr("按搜索语句匹配资产数据，后台生成 CSV 文件后在此下载。") }}</p>
-        </div>
-        <button class="btn btn-neutral btn-sm" @click="openCreate">{{ tr("新建导出") }}</button>
+  <div class="page-shell">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="page-title">{{ tr("数据导出") }}</h1>
+        <p class="text-xs opacity-60">{{ tr("按搜索语句匹配资产数据，后台生成 CSV 文件后在此下载。") }}</p>
       </div>
+      <button class="btn btn-neutral btn-sm" @click="openCreate">{{ tr("新建导出") }}</button>
     </div>
 
-    <div class="card bg-base-100 card-border border-base-300 p-4">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h3 class="font-semibold">{{ tr("导出任务") }}</h3>
-        <div class="flex items-center gap-2">
-          <select v-model="statusFilter" class="select select-bordered select-sm" :aria-label="tr(&quot;状态&quot;)" @change="changeStatusFilter">
-            <option value="">{{ tr("全部状态") }}</option>
-            <option v-for="status in EXPORT_STATUSES" :key="status" :value="status">{{ tr(statusMeta(status).labelKey) }}</option>
-          </select>
-          <button class="btn btn-ghost btn-xs" :disabled="listLoading" @click="loadTasks()">
-            {{ listLoading ? tr("加载中...") : tr("刷新") }}
-          </button>
+    <div class="flex flex-col gap-5">
+      <div class="card bg-base-100 card-border border-base-300 p-4">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h3 class="font-semibold">{{ tr("导出任务") }}</h3>
+          <div class="flex items-center gap-2">
+            <select v-model="statusFilter" class="select select-bordered select-sm" :aria-label="tr(&quot;状态&quot;)" @change="changeStatusFilter">
+              <option value="">{{ tr("全部状态") }}</option>
+              <option v-for="status in EXPORT_STATUSES" :key="status" :value="status">{{ tr(statusMeta(status).labelKey) }}</option>
+            </select>
+            <button class="btn btn-ghost btn-xs" :disabled="listLoading" @click="loadTasks()">
+              {{ listLoading ? tr("加载中...") : tr("刷新") }}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div v-if="listLoading && tasks.length === 0" class="grid min-h-64 place-items-center rounded-lg bg-base-200/60">
-        <span class="loading loading-spinner loading-md"></span>
-      </div>
+        <div v-if="listLoading && tasks.length === 0" class="grid min-h-64 place-items-center rounded-lg bg-base-200/60">
+          <span class="loading loading-spinner loading-md"></span>
+        </div>
 
-      <EmptyState
-        v-else-if="initialLoadFailed"
-        type="error"
-        :title="tr(&quot;导出任务加载失败&quot;)"
-        :message="tr(&quot;无法从服务器获取导出任务，请稍后重试。&quot;)"
-      />
+        <EmptyState
+          v-else-if="initialLoadFailed"
+          type="error"
+          :title="tr(&quot;导出任务加载失败&quot;)"
+          :message="tr(&quot;无法从服务器获取导出任务，请稍后重试。&quot;)"
+        />
 
-      <EmptyState
-        v-else-if="tasks.length === 0"
-        :title="tr(&quot;暂无导出任务&quot;)"
-        :message="tr(&quot;点击「新建导出」，或在搜索页结果区点击「导出」创建第一个任务。&quot;)"
-      />
+        <EmptyState
+          v-else-if="tasks.length === 0"
+          :title="tr(&quot;暂无导出任务&quot;)"
+          :message="tr(&quot;点击「新建导出」，或在搜索页结果区点击「导出」创建第一个任务。&quot;)"
+        />
 
-      <div v-else class="overflow-x-auto rounded-box border border-base-300">
-        <table class="table table-sm whitespace-nowrap">
-          <thead>
-            <tr>
-              <th>{{ tr("搜索语句") }}</th>
-              <th>{{ tr("状态") }}</th>
-              <th>{{ tr("范围") }}</th>
-              <th>{{ tr("进度") }}</th>
-              <th>{{ tr("字段数") }}</th>
-              <th>{{ tr("文件大小") }}</th>
-              <th>{{ tr("创建时间") }}</th>
-              <th>{{ tr("操作") }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="task in tasks" :key="task.id">
-              <td>
-                <div class="max-w-64 truncate font-mono text-xs" :title="task.query">{{ task.query }}</div>
-                <div v-if="task.status === 'error' && task.error_message" class="max-w-64 truncate text-xs text-error" :title="task.error_message">{{ task.error_message }}</div>
-              </td>
-              <td>
-                <span class="badge badge-sm" :class="statusMeta(task.status).badgeClass">{{ tr(statusMeta(task.status).labelKey) }}</span>
-              </td>
-              <td>
-                <span class="badge badge-ghost badge-xs">{{ scopeLabel(task) }}</span>
-              </td>
-              <td>
-                <div v-if="taskProgress(task) === null" class="text-xs opacity-60">{{ tr("统计中") }}</div>
-                <div v-else class="flex items-center gap-2">
-                  <progress class="progress progress-primary w-24" :value="taskProgress(task)" max="100" :aria-label="tr(&quot;进度&quot;)"></progress>
-                  <span class="text-xs opacity-70">{{ taskProgress(task) }}%</span>
-                </div>
-                <div class="text-xs opacity-50">{{ formatRowStats(effectiveTask(task)).exported }} / {{ formatRowStats(effectiveTask(task)).total === null ? '?' : formatRowStats(effectiveTask(task)).total }}</div>
-              </td>
-              <td class="text-xs">{{ fieldCount(task) }}</td>
-              <td class="text-xs">{{ formatBytes(task.file_size) }}</td>
-              <td class="whitespace-nowrap">{{ formatDate(task.created_at) }}</td>
-              <td>
-                <div class="flex flex-wrap gap-1">
-                  <button v-if="canDownload(task.status)" class="btn btn-ghost btn-xs" @click="downloadTask(task)">{{ tr("下载") }}</button>
-                  <button v-if="canCancel(task.status)" class="btn btn-ghost btn-xs" @click="cancelTask(task)">{{ tr("取消") }}</button>
-                  <button v-if="canDelete(task.status)" class="btn btn-ghost btn-xs text-error" @click="deleteTask(task)">{{ tr("删除") }}</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <div v-else class="overflow-x-auto rounded-box border border-base-300">
+          <table class="table table-sm whitespace-nowrap">
+            <thead>
+              <tr>
+                <th>{{ tr("搜索语句") }}</th>
+                <th>{{ tr("状态") }}</th>
+                <th>{{ tr("范围") }}</th>
+                <th>{{ tr("进度") }}</th>
+                <th>{{ tr("字段数") }}</th>
+                <th>{{ tr("文件大小") }}</th>
+                <th>{{ tr("创建时间") }}</th>
+                <th>{{ tr("操作") }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="task in tasks" :key="task.id">
+                <td>
+                  <div class="max-w-64 truncate font-mono text-xs" :title="task.query">{{ task.query }}</div>
+                  <div v-if="task.status === 'error' && task.error_message" class="max-w-64 truncate text-xs text-error" :title="task.error_message">{{ task.error_message }}</div>
+                </td>
+                <td>
+                  <span class="badge badge-sm" :class="statusMeta(task.status).badgeClass">{{ tr(statusMeta(task.status).labelKey) }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-ghost badge-xs">{{ scopeLabel(task) }}</span>
+                </td>
+                <td>
+                  <div v-if="taskProgress(task) === null" class="text-xs opacity-60">{{ tr("统计中") }}</div>
+                  <div v-else class="flex items-center gap-2">
+                    <progress class="progress progress-primary w-24" :value="taskProgress(task)" max="100" :aria-label="tr(&quot;进度&quot;)"></progress>
+                    <span class="text-xs opacity-70">{{ taskProgress(task) }}%</span>
+                  </div>
+                  <div class="text-xs opacity-50">{{ formatRowStats(effectiveTask(task)).exported }} / {{ formatRowStats(effectiveTask(task)).total === null ? '?' : formatRowStats(effectiveTask(task)).total }}</div>
+                </td>
+                <td class="text-xs">{{ fieldCount(task) }}</td>
+                <td class="text-xs">{{ formatBytes(task.file_size) }}</td>
+                <td class="whitespace-nowrap">{{ formatDate(task.created_at) }}</td>
+                <td>
+                  <div class="flex flex-wrap gap-1">
+                    <button v-if="canDownload(task.status)" class="btn btn-ghost btn-xs" @click="downloadTask(task)">{{ tr("下载") }}</button>
+                    <button v-if="canCancel(task.status)" class="btn btn-ghost btn-xs" @click="cancelTask(task)">{{ tr("取消") }}</button>
+                    <button v-if="canDelete(task.status)" class="btn btn-ghost btn-xs text-error" @click="deleteTask(task)">{{ tr("删除") }}</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <div v-if="total > pageSize" class="mt-4 flex flex-wrap items-center justify-end gap-2">
-        <span class="mr-auto text-xs opacity-60">{{ tr("共") }} {{ total }} {{ tr("个任务") }}</span>
-        <button class="btn btn-sm" :disabled="listLoading || page === 1" @click="changePage(page - 1)">{{ tr("上一页") }}</button>
-        <span class="text-sm">{{ page }} / {{ totalPages }}</span>
-        <button class="btn btn-sm" :disabled="listLoading || page === totalPages" @click="changePage(page + 1)">{{ tr("下一页") }}</button>
+        <div v-if="total > pageSize" class="mt-4 flex flex-wrap items-center justify-end gap-2">
+          <span class="mr-auto text-xs opacity-60">{{ tr("共") }} {{ total }} {{ tr("个任务") }}</span>
+          <button class="btn btn-sm" :disabled="listLoading || page === 1" @click="changePage(page - 1)">{{ tr("上一页") }}</button>
+          <span class="text-sm">{{ page }} / {{ totalPages }}</span>
+          <button class="btn btn-sm" :disabled="listLoading || page === totalPages" @click="changePage(page + 1)">{{ tr("下一页") }}</button>
+        </div>
       </div>
     </div>
   </div>
