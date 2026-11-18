@@ -122,6 +122,8 @@
   "升序": "Ascending",
   "导出中…": "Exporting…",
   "导出当前页 CSV": "Export current page as CSV",
+  "· 耗时": "· took",
+  "Elasticsearch 查询耗时 {0} ms": "Elasticsearch query took {0} ms",
   "没有匹配的资产。": "No matching assets.",
   "系统线索": "OS evidence",
   "Web 技术栈": "Web technologies",
