@@ -335,13 +335,7 @@ onBeforeUnmount(() => {
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 class="text-lg font-semibold">{{ tr("组合搜索结果") }}</h2>
           <div class="flex flex-wrap items-center gap-3">
-            <AutoTooltip v-if="timingRows.length" :copyable="false">
-              <span class="text-sm opacity-70">“{{ searchResult.query }}{{ tr("” · 共") }} {{ searchResult.total }} {{ tr("条") }}<template v-if="searchResult.took_ms != null"> {{ tr("· 耗时") }} {{ searchResult.took_ms }} ms</template></span>
-              <template #content>
-                <div class="space-y-0.5"><div v-for="row in timingRows" :key="row">{{ row }}</div></div>
-              </template>
-            </AutoTooltip>
-            <span v-else class="text-sm opacity-70">“{{ searchResult.query }}{{ tr("” · 共") }} {{ searchResult.total }} {{ tr("条") }}<template v-if="searchResult.took_ms != null"> {{ tr("· 耗时") }} {{ searchResult.took_ms }} ms</template></span>
+            <span class="text-sm opacity-70" :title="searchResult.took_ms == null && searchResult.es_took_ms != null ? tr('Elasticsearch 查询耗时 {0} ms', [searchResult.es_took_ms]) : null">“{{ searchResult.query }}{{ tr("” · 共") }} {{ searchResult.total }} {{ tr("条") }}<AutoTooltip v-if="searchResult.took_ms != null" :copyable="false" prefer="bottom"><span> {{ tr("· 耗时") }} {{ searchResult.took_ms }} ms</span><template #content><div class="space-y-0.5"><div v-for="row in timingRows" :key="row">{{ row }}</div></div></template></AutoTooltip></span>
             <label class="flex items-center gap-1 text-sm">
               <span>{{ tr("排序") }}</span>
               <select v-model="sortField" class="select select-bordered select-sm" :aria-label="tr(&quot;排序字段&quot;)" :disabled="loading" @change="changeSortField">
