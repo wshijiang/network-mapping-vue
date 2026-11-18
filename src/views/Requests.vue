@@ -102,8 +102,9 @@ function queryString(value) {
 }
 
 const requestedWindow = queryString(route.query.window)
+const hasWindowQuery = typeof route.query.window === 'string'
 const filters = ref({
-  window: windowOptions.some((option) => option.value === requestedWindow) ? requestedWindow : '24h',
+  window: hasWindowQuery && windowOptions.some((option) => option.value === requestedWindow) ? requestedWindow : '1h',
   method: queryString(route.query.method).toUpperCase(),
   path: queryString(route.query.path),
   status: '',
@@ -256,7 +257,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  filters.value = { window: '24h', method: '', path: '', status: '', error_type: '', reason_code: '', only_errors: false, request_id: '' }
+  filters.value = { window: '1h', method: '', path: '', status: '', error_type: '', reason_code: '', only_errors: false, request_id: '' }
   granularity.value = 'auto'
   page.value = 1
   loadAll()
@@ -434,8 +435,8 @@ onMounted(loadAll)
               <option v-for="method in methodOptions" :key="method" :value="method">{{ method || tr("全部方法") }}</option>
             </select>
           </fieldset>
-          <input v-model.trim="filters.path" class="input input-bordered w-full self-end" :placeholder="tr(&quot;路径（模糊匹配）&quot;)" @keyup.enter="applyFilters" />
-          <input v-model.trim="filters.status" type="number" class="input input-bordered w-full self-end" :placeholder="tr(&quot;状态码&quot;)" @keyup.enter="applyFilters" />
+          <input v-model.trim="filters.path" class="input input-bordered w-full self-end mb-1" :placeholder="tr(&quot;路径（模糊匹配）&quot;)" @keyup.enter="applyFilters" />
+          <input v-model.trim="filters.status" type="number" class="input input-bordered w-full self-end mb-1" :placeholder="tr(&quot;状态码&quot;)" @keyup.enter="applyFilters" />
           <fieldset class="fieldset min-w-0 w-full">
             <legend class="fieldset-legend"><label :for="`${formFieldId}-4`">{{ tr("错误类型") }}</label></legend>
             <select :id="`${formFieldId}-4`" v-model="filters.error_type" class="select select-bordered w-full">
@@ -443,8 +444,8 @@ onMounted(loadAll)
               <option v-for="(label, value) in errorTypeLabels" :key="value" :value="value">{{ label }}</option>
             </select>
           </fieldset>
-          <input v-model.trim="filters.reason_code" class="input input-bordered w-full self-end" :placeholder="tr(&quot;具体原因代码&quot;)" @keyup.enter="applyFilters" />
-          <input v-model.trim="filters.request_id" class="input input-bordered w-full self-end" :placeholder="tr(&quot;请求 ID (UUID)&quot;)" @keyup.enter="applyFilters" />
+          <input v-model.trim="filters.reason_code" class="input input-bordered w-full self-end mb-1" :placeholder="tr(&quot;具体原因代码&quot;)" @keyup.enter="applyFilters" />
+          <input v-model.trim="filters.request_id" class="input input-bordered w-full self-end mb-1" :placeholder="tr(&quot;请求 ID (UUID)&quot;)" @keyup.enter="applyFilters" />
           <label class="flex cursor-pointer items-center gap-2 self-end pb-3">
             <input v-model="filters.only_errors" type="checkbox" class="checkbox checkbox-sm" />
             <span class="text-sm">{{ tr("仅看错误") }}</span>
