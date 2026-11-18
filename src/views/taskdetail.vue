@@ -8,6 +8,9 @@ import { useRoute, useRouter } from 'vue-router'
 import http from '@/utils/http'
 import WebTechnologies from '@/components/WebTechnologies.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
+import CellText from '@/components/CellText.vue'
+import { ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
+import { compareItems } from '@/utils/tableSort'
 import { formatLocation } from '@/utils/location'
 import { routingLocation, routingSummary } from '@/utils/scanRouting'
 import { isProjectionPending, projectionMessage } from '@/utils/projectionStatus'
@@ -134,6 +137,48 @@ const resultByIp = computed(() => (task.value?.results || []).map((item) => ({
   region_name: item.region_name,
   city_name: item.city_name
 })))
+
+// 各 IP 分组端口子表的前端排序，复用搜索结果的 sortKeys 语义（空值恒排末尾，
+// 循环 无→升→降→无）。仅排当前已加载页，不重新请求服务端。
+// computed 而非 setup 常量：tr() 读取响应式 locale，语言切换时表头随页面更新。
+const portColumns = computed(() => [
+  { key: 'port', label: tr("端口") },
+  { key: 'protocol', label: tr("协议") },
+  { key: 'service', label: tr("服务") },
+  { key: 'banner', label: 'Banner' },
+  { key: 'os', label: tr("系统线索") },
+  { key: 'tech', label: tr("技术栈") },
+  { key: 'scan_time', label: tr("扫描时间") },
+])
+const portSort = ref({})
+watch(resultByIp, () => { portSort.value = {} })
+
+function togglePortSort(ip, key) {
+  const current = portSort.value[ip]
+  const next = !current || current.key !== key ? { key, direction: 1 }
+    : current.direction === 1 ? { key, direction: -1 } : null
+  portSort.value = { ...portSort.value, [ip]: next }
+}
+function sortedPorts(row) {
+  const state = portSort.value[row.ip]
+  if (!state?.key) return row.ports
+  return [...row.ports].sort((a, b) => compareItems(state.key, state.direction, a, b))
+}
+function portSortIcon(ip, key) {
+  const state = portSort.value[ip]
+  if (!state || state.key !== key) return ChevronsUpDown
+  return state.direction === 1 ? ChevronUp : ChevronDown
+}
+function portSortState(ip, key) {
+  const state = portSort.value[ip]
+  if (!state || state.key !== key) return 'none'
+  return state.direction === 1 ? 'asc' : 'desc'
+}
+function portAriaSort(ip, key) {
+  const state = portSort.value[ip]
+  if (!state || state.key !== key) return 'none'
+  return state.direction === 1 ? 'ascending' : 'descending'
+}
 const timelineSteps = computed(() => {
   if (!task.value) return []
   const steps = [{ time: formatTime(task.value.task_create_time), get label() { return tr("创建扫描任务") } }]
@@ -483,15 +528,15 @@ onBeforeUnmount(() => {
               </div>
               <div class="overflow-x-auto">
                 <table class="table table-sm">
-                  <thead><tr><th>{{ tr("端口") }}</th><th>{{ tr("协议") }}</th><th>{{ tr("服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("技术栈") }}</th><th>{{ tr("扫描时间") }}</th></tr></thead>
+                  <thead><tr><th v-for="column in portColumns" :key="column.key" :aria-sort="portAriaSort(row.ip, column.key)"><button type="button" class="flex w-full items-center gap-1 overflow-hidden" @click="togglePortSort(row.ip, column.key)"><span class="truncate">{{ column.label }}</span><Transition name="sort-chevron" mode="out-in"><component :is="portSortIcon(row.ip, column.key)" :key="portSortState(row.ip, column.key)" class="size-3.5 shrink-0" aria-hidden="true" /></Transition></button></th></tr></thead>
                   <tbody>
-                    <tr v-for="port in row.ports" :key="`${port.protocol || 'unknown'}:${port.port}`">
-                      <td>{{ port.port }}</td>
+                    <tr v-for="port in sortedPorts(row)" :key="`${port.protocol || 'unknown'}:${port.port}`">
+                      <td><span class="font-mono font-semibold">{{ port.port }}</span></td>
                       <td>{{ port.protocol || '-' }}</td>
                       <td><ServiceLabel :service="port.service" :data="port.data" /></td>
-                      <td class="max-w-72 truncate" :title="port.banner || ''">{{ port.banner || '-' }}</td>
-                      <td><OsFingerprint :value="port.os" /></td>
-                      <td><WebTechnologies :value="port.web" /></td>
+                      <td class="max-w-xs"><CellText :text="port.banner || '-'" /></td>
+                      <td><OsFingerprint compact :value="port.os" /></td>
+                      <td><WebTechnologies compact :value="port.web" /></td>
                       <td class="whitespace-nowrap">{{ formatTime(port.scan_time) }}</td>
                     </tr>
                   </tbody>
@@ -580,3 +625,24 @@ onBeforeUnmount(() => {
     </template>
   </div>
 </template>
+
+<style scoped>
+.sort-chevron-enter-active,
+.sort-chevron-leave-active {
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+.sort-chevron-enter-from {
+  opacity: 0;
+  transform: translateY(2px);
+}
+.sort-chevron-leave-to {
+  opacity: 0;
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sort-chevron-enter-active,
+  .sort-chevron-leave-active {
+    transition: none;
+  }
+}
+</style>

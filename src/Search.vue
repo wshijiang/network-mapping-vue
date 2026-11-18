@@ -3,6 +3,7 @@ import { tr } from './i18n/index.js'
 
 import SearchResultsTable from '@/components/SearchResultsTable.vue'
 import SearchExportDialog from '@/components/SearchExportDialog.vue'
+import AutoTooltip from '@/components/AutoTooltip.vue'
 import { formatDateTime as formatSystemDateTime } from './i18n/time.js'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
@@ -86,6 +87,18 @@ const examples = [
 
 const supportedSyntax = tr("支持域名、AND、OR、NOT、括号、IN、标签及资产服务组合条件")
 const visibleTags = computed(() => tagCatalog.value.slice(0, 10))
+
+// 耗时分解：旧后端缺少分阶段字段时仅显示已有项，全部缺失则不挂 tooltip。
+const timingRows = computed(() => {
+  const result = searchResult.value
+  if (!result) return []
+  const rows = []
+  if (result.took_ms != null) rows.push(tr('总耗时 {0} ms', [result.took_ms]))
+  if (result.es_took_ms != null) rows.push(tr('ES 服务端 {0} ms', [result.es_took_ms]))
+  if (result.es_wall_ms != null) rows.push(tr('ES 往返 {0} ms', [result.es_wall_ms]))
+  if (result.intel_took_ms != null) rows.push(tr('情报标注 {0} ms', [result.intel_took_ms]))
+  return rows
+})
 
 function openSyntaxDialog() {
   syntaxDialogRef.value?.showModal()
@@ -322,7 +335,7 @@ onBeforeUnmount(() => {
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 class="text-lg font-semibold">{{ tr("组合搜索结果") }}</h2>
           <div class="flex flex-wrap items-center gap-3">
-            <span class="text-sm opacity-70" :title="searchResult.es_took_ms != null ? tr('Elasticsearch 查询耗时 {0} ms', [searchResult.es_took_ms]) : null">“{{ searchResult.query }}{{ tr("” · 共") }} {{ searchResult.total }} {{ tr("条") }}<template v-if="searchResult.took_ms != null"> {{ tr("· 耗时") }} {{ searchResult.took_ms }} ms</template></span>
+            <span class="text-sm opacity-70" :title="searchResult.took_ms == null && searchResult.es_took_ms != null ? tr('Elasticsearch 查询耗时 {0} ms', [searchResult.es_took_ms]) : null">“{{ searchResult.query }}{{ tr("” · 共") }} {{ searchResult.total }} {{ tr("条") }}<AutoTooltip v-if="searchResult.took_ms != null" :copyable="false" prefer="bottom"><span> {{ tr("· 耗时") }} {{ searchResult.took_ms }} ms</span><template #content><div class="space-y-0.5"><div v-for="row in timingRows" :key="row">{{ row }}</div></div></template></AutoTooltip></span>
             <label class="flex items-center gap-1 text-sm">
               <span>{{ tr("排序") }}</span>
               <select v-model="sortField" class="select select-bordered select-sm" :aria-label="tr(&quot;排序字段&quot;)" :disabled="loading" @change="changeSortField">
