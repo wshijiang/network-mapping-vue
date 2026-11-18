@@ -2,7 +2,7 @@
 
 [文档中心](README.md) · [配套发布与升级](https://github.com/wshijiang/network-mapping/blob/main/docs/RELEASING.md)
 
-## 未发布
+## v0.1.25（2026-11-18）
 
 - **请求日志 · 默认范围与筛选对齐**：默认时间范围由「全部时间」改为「最近 1 小时」，重置按钮同样回到最近 1 小时；URL 显式携带 `window` 参数仍优先（含 `?window=` 显式选择全部时间）。修复方法/错误类型下拉框与相邻路径/状态码/具体原因代码/请求 ID 输入框不在同一水平线的问题：daisyUI fieldset 底部有 4px 内边距，`self-end` 的裸输入框比 fieldset 内下拉框低 4px，输入框补 `mb-1` 后底边对齐（浏览器实测各控件对底边差 0）。
 
