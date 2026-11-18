@@ -127,10 +127,13 @@ function setScope(value) {
 
 function onQueryInput() {
   submitError.value = ''
-  if (scope.value === 'all') {
-    matchedTotal.value = null
-    schedulePreview()
-  }
+  // 语句一变立即作废在途预览：否则 debounce 窗口内旧响应会回填旧语句的条数，
+  // 解除提交限制并使上限校验作用于错误条数；切到本页再切回全部也会复用该旧值。
+  previewSeq += 1
+  previewLoading.value = false
+  previewError.value = ''
+  matchedTotal.value = null
+  if (scope.value === 'all') schedulePreview()
 }
 
 function toggleField(key) {
