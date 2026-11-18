@@ -14,6 +14,7 @@ const router = createRouter({
     { path: '/scanner', component: () => import('../views/Scanner.vue'), meta: { title: '扫描器' } },
     { path: '/data', redirect: '/data/import' },
     { path: '/data/import', component: () => import('../views/DataImport.vue'), meta: { title: '数据导入' } },
+    { path: '/data/export', component: () => import('../views/DataExport.vue'), meta: { title: '数据导出' } },
     { path: '/data/federation', component: () => import('../views/DataFederation.vue'), meta: { title: '联测' } },
     {
       path: '/analysis',
