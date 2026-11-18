@@ -24,7 +24,8 @@ const props = defineProps({
 // protocol, tech, scan time) keep a predictable width; the rest measure their
 // content and compete for surplus space, so overflowing columns widen while
 // sparse ones stay compact. Every minimum fits the header label plus chevron.
-const columns = [
+// computed 而非 setup 常量：tr() 读取响应式 locale，语言切换时表头随页面更新。
+const columns = computed(() => [
   { key: 'ip', label: 'IP', default: 170, min: 140 },
   { key: 'port', label: tr("端口"), default: 80, min: 80, natural: true },
   { key: 'protocol', label: tr("协议"), default: 84, min: 84, natural: true },
@@ -36,10 +37,11 @@ const columns = [
   { key: 'asn', label: tr("ASN / AS 组织"), default: 160, min: 150 },
   { key: 'location', label: tr("位置"), default: 130, min: 96 },
   { key: 'scan_time', label: tr("扫描时间"), default: 168, min: 160, natural: true },
-]
+])
 
 const wrapper = ref(null)
-const { widths, totalWidth, needsScroll, userResized, refresh, onPointerDown, onKeydown, resetColumn, resetAll } = useColumnResize(columns, wrapper)
+// 列宽只依赖 key/min/default/natural（与语言无关），传入 setup 期结构快照即可。
+const { widths, totalWidth, needsScroll, userResized, refresh, onPointerDown, onKeydown, resetColumn, resetAll } = useColumnResize(columns.value, wrapper)
 const itemsRef = computed(() => props.items)
 const { pageSort, displayItems, toggle } = useTableSort(itemsRef)
 watch(itemsRef, () => refresh())
