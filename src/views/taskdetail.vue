@@ -140,7 +140,8 @@ const resultByIp = computed(() => (task.value?.results || []).map((item) => ({
 
 // 各 IP 分组端口子表的前端排序，复用搜索结果的 sortKeys 语义（空值恒排末尾，
 // 循环 无→升→降→无）。仅排当前已加载页，不重新请求服务端。
-const portColumns = [
+// computed 而非 setup 常量：tr() 读取响应式 locale，语言切换时表头随页面更新。
+const portColumns = computed(() => [
   { key: 'port', label: tr("端口") },
   { key: 'protocol', label: tr("协议") },
   { key: 'service', label: tr("服务") },
@@ -148,7 +149,7 @@ const portColumns = [
   { key: 'os', label: tr("系统线索") },
   { key: 'tech', label: tr("技术栈") },
   { key: 'scan_time', label: tr("扫描时间") },
-]
+])
 const portSort = ref({})
 watch(resultByIp, () => { portSort.value = {} })
 
