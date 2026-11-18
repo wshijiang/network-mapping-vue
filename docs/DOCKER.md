@@ -20,4 +20,4 @@ pnpm 11.9.0，冻结锁文件安装，执行所有工具测试、目标校验、
 
 完整流程、GitHub 设置及 Compose 见服务端仓库 [Docker 部署指南](https://github.com/wshijiang/network-mapping/blob/main/docs/DOCKER.md)。
 
-本次配套版本为控制台 **0.1.24**、服务端 **0.1.30**、扫描器 **0.1.21**。PR 保留待审，tag 仅在本地准备，未触发正式发布；合并后检查与升级次序见[配套发布指南](https://github.com/wshijiang/network-mapping/blob/main/docs/RELEASING.md)。
+本次配套版本为控制台 **0.1.25**、服务端 **0.1.31**、扫描器 **0.1.22**。PR 保留待审，tag 仅在本地准备，未触发正式发布；合并后检查与升级次序见[配套发布指南](https://github.com/wshijiang/network-mapping/blob/main/docs/RELEASING.md)。
