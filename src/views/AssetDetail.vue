@@ -9,6 +9,7 @@ import 'apexmaps/apexmaps.css'
 import AssetTags from '../components/AssetTags.vue'
 import IntelEvidence from '../components/IntelEvidence.vue'
 import WebTechnologies from '@/components/WebTechnologies.vue'
+import AssetFavicon from '@/components/AssetFavicon.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
@@ -601,7 +602,10 @@ onMounted(() => {
                 <tr v-for="port in ports" :key="`${port.protocol || 'unknown'}:${port.port}`">
                   <td><span class="font-mono font-semibold">{{ port.port }}</span><IntelEvidence :intel="port.intel" :label="tr(&quot;端点情报&quot;)" /></td>
                   <td>
-                    <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" /></span></div>
+                    <div class="flex items-center gap-1.5">
+                      <AssetFavicon v-if="port.favicon" :ip="summary.ip" :port="port.port" :protocol="port.protocol" :icon-md5="port.icon_md5" :size="16" />
+                      <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" /></span></div>
+                    </div>
                     <div v-if="port.service_stale" class="mt-1 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</div>
                   </td>
                   <td class="max-w-xs"><CellText :text="port.banner || '-'" /></td>

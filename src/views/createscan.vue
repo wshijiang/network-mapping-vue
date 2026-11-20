@@ -65,6 +65,7 @@ const serviceProbeOptions = computed(() => isDnsTask.value ? {} : automaticProbe
   modbusUnitId: modbusUnitId.value, s7Tsap: s7Tsap.value, mqttVersion: mqttVersion.value
 }))
 const scanProfile = ref('vulnerability_scan')
+const webContentEnabled = ref(true)
 const dnsResolverMode = ref('system')
 const dnsResolvers = ref([])
 const dnsResolverPresets = ref([])
@@ -344,11 +345,13 @@ async function submitTask() {
                 id: item.id.trim(), label: item.label.trim(), ip: item.ip.trim(),
                 port: Number(item.port) || 53, transport: item.transport
               }))
-            : []
+            : [],
+          web_content_enabled: ['service_inventory', 'vulnerability_scan'].includes(scanProfile.value) ? webContentEnabled.value : undefined
         }
       : {
           required_services: requiredServices.value,
           service_probe_options:serviceProbeOptions.value,
+          web_content_enabled: ['service_inventory', 'vulnerability_scan'].includes(scanProfile.value) ? webContentEnabled.value : undefined,
           ip: validatedTargets.targets.join(','),
           port: port.value.trim(),
           level: Number(level.value),
@@ -476,11 +479,16 @@ useUnsavedChanges(hasUnsavedChanges, submitTask)
                   {{ scanSettingsLoading ? tr("正在读取系统默认模式...") : selectedScanProfileDescription }}
                 </p>
               </fieldset>
-              <fieldset v-if="!isDnsTask && ['service_inventory', 'vulnerability_scan', 'udp_inventory'].includes(scanProfile)" class="fieldset mt-3 rounded-lg bg-base-200/50 p-3">
+              <fieldset v-if="['service_inventory', 'vulnerability_scan', 'udp_inventory'].includes(scanProfile)" class="fieldset mt-3 rounded-lg bg-base-200/50 p-3">
                 <legend class="fieldset-legend">{{ tr("自动服务识别") }}</legend>
                 <p v-if="scanProfile === 'udp_inventory'" class="text-xs opacity-60">{{ tr("自动尝试 DNS、EtherNet/IP 和 BACnet/IP（仅 IPv4），无需选择协议。请填写最多 32 个明确的 UDP 端口；仅确认匹配响应，超时不标记端口开放或关闭。") }}</p>
                 <template v-else>
                   <p class="text-xs opacity-60">{{ tr("自动识别扫描器支持的全部 TCP 服务协议，无需逐项选择。根据端口与响应进行探测，非标准端口的覆盖受节点识别策略和探测预算限制。") }}</p>
+                  <label class="label mt-2 cursor-pointer justify-start gap-2">
+                    <input v-model="webContentEnabled" type="checkbox" class="checkbox checkbox-sm" />
+                    <span class="text-sm">{{ tr("抓取网页内容（favicon / JS / 正文）") }}</span>
+                  </label>
+                  <p class="text-xs opacity-60">{{ tr("默认开启，并发异步抓取；支持 icon_md5、js_name、js_md5 搜索与图标展示。关闭后本任务不产生网页资产数据。") }}</p>
                   <details class="collapse collapse-arrow rounded-lg bg-base-100">
                     <summary class="collapse-title min-h-0 py-3 text-sm font-medium">{{ tr("高级识别参数（可选）") }}</summary>
                     <div class="collapse-content">

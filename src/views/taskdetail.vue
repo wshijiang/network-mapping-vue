@@ -7,6 +7,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http from '@/utils/http'
 import WebTechnologies from '@/components/WebTechnologies.vue'
+import AssetFavicon from '@/components/AssetFavicon.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
 import { ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
@@ -533,7 +534,7 @@ onBeforeUnmount(() => {
                     <tr v-for="port in sortedPorts(row)" :key="`${port.protocol || 'unknown'}:${port.port}`">
                       <td><span class="font-mono font-semibold">{{ port.port }}</span></td>
                       <td>{{ port.protocol || '-' }}</td>
-                      <td><ServiceLabel :service="port.service" :data="port.data" /></td>
+                      <td><div class="flex items-center gap-1.5"><AssetFavicon v-if="port.favicon" :ip="row.ip" :port="port.port" :protocol="port.protocol" :icon-md5="port.icon_md5" :size="16" /><ServiceLabel :service="port.service" :data="port.data" /></div></td>
                       <td class="max-w-xs"><CellText :text="port.banner || '-'" /></td>
                       <td><OsFingerprint compact :value="port.os" /></td>
                       <td><WebTechnologies compact :value="port.web" /></td>
