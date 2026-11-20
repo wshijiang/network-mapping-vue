@@ -40,6 +40,18 @@ const form = reactive({
     connect_timeout_seconds: 5,
     target_timeout_seconds: 15,
     max_result_bytes: 65536,
+    web_content: {
+      enabled: true,
+      concurrency: 16,
+      fetch_timeout_seconds: 10,
+      max_redirects: 3,
+      max_stage_seconds: 120,
+      max_favicon_bytes: 65536,
+      max_js_files: 10,
+      max_js_bytes: 524288,
+      max_body_bytes: 262144,
+      user_agent: null,
+    },
   },
   dns: { enabled: true, record_types: [...dnsRecordTypes], query_timeout_seconds: 5 },
   nuclei: {
@@ -69,7 +81,10 @@ const isDirty = computed(() => savedDocument.value && JSON.stringify(documentVal
 
 function applyData(data) {
   Object.assign(form.masscan, data.document.masscan)
-  Object.assign(form.service_detection, data.document.service_detection)
+  // web_content 单独浅合并：旧服务端文档缺省该段时保留表单默认值。
+  const { web_content: webContent, ...serviceRest } = data.document.service_detection
+  Object.assign(form.service_detection, serviceRest)
+  if (webContent) Object.assign(form.service_detection.web_content, webContent)
   Object.assign(form.dns, data.document.dns)
   Object.assign(form.nuclei, data.document.nuclei)
   revision.value = data.revision
@@ -221,6 +236,30 @@ onMounted(loadConfiguration)
           <div class="space-y-4">
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-8`">{{ tr("目标超时（秒）") }}</label></legend><input :id="`${formFieldId}-8`" v-model.number="form.service_detection.target_timeout_seconds" type="number" min="1" max="300" class="input input-bordered w-full" /></fieldset>
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-9`">{{ tr("单结果上限（字节）") }}</label></legend><input :id="`${formFieldId}-9`" v-model.number="form.service_detection.max_result_bytes" type="number" min="1024" max="1048576" class="input input-bordered w-full" /></fieldset>
+          </div>
+        </div>
+      </section>
+
+      <section class="card bg-base-100 card-border border-base-300 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div><h3 class="font-semibold">{{ tr("网页内容抓取（favicon / JS / 正文）") }}</h3><p class="mt-1 text-xs opacity-60">{{ tr("对识别为 http/https 的端点并发异步抓取 favicon、外部 JS 路径与哈希，并在重定向/空正文时补抓落地页。默认开启；抓取失败不影响扫描结果。也可用服务器 CLI scanner-config set-web-content 管理。") }}</p></div>
+          <input v-model="form.service_detection.web_content.enabled" type="checkbox" class="toggle" />
+        </div>
+        <div class="mt-4 grid gap-4 lg:grid-cols-3">
+          <div class="space-y-4">
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-10`">{{ tr("并发抓取上限") }}</label></legend><input :id="`${formFieldId}-10`" v-model.number="form.service_detection.web_content.concurrency" type="number" min="1" max="256" class="input input-bordered w-full" /></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-11`">{{ tr("单请求超时（秒）") }}</label></legend><input :id="`${formFieldId}-11`" v-model.number="form.service_detection.web_content.fetch_timeout_seconds" type="number" min="1" max="120" class="input input-bordered w-full" /></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-12`">{{ tr("重定向上限") }}</label></legend><input :id="`${formFieldId}-12`" v-model.number="form.service_detection.web_content.max_redirects" type="number" min="0" max="10" class="input input-bordered w-full" /></fieldset>
+          </div>
+          <div class="space-y-4">
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-13`">{{ tr("块级总预算（秒）") }}</label></legend><input :id="`${formFieldId}-13`" v-model.number="form.service_detection.web_content.max_stage_seconds" type="number" min="1" max="3600" class="input input-bordered w-full" /></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-14`">{{ tr("favicon 上限（字节）") }}</label></legend><input :id="`${formFieldId}-14`" v-model.number="form.service_detection.web_content.max_favicon_bytes" type="number" min="1024" max="1048576" class="input input-bordered w-full" /></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-15`">{{ tr("每页 JS 抓取上限") }}</label></legend><input :id="`${formFieldId}-15`" v-model.number="form.service_detection.web_content.max_js_files" type="number" min="0" max="64" class="input input-bordered w-full" /></fieldset>
+          </div>
+          <div class="space-y-4">
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-16`">{{ tr("单 JS 上限（字节）") }}</label></legend><input :id="`${formFieldId}-16`" v-model.number="form.service_detection.web_content.max_js_bytes" type="number" min="1024" max="4194304" class="input input-bordered w-full" /></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-17`">{{ tr("落地页正文上限（字节）") }}</label></legend><input :id="`${formFieldId}-17`" v-model.number="form.service_detection.web_content.max_body_bytes" type="number" min="1024" max="1048576" class="input input-bordered w-full" /></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-18`">{{ tr("抓取 User-Agent（留空用默认）") }}</label></legend><input :id="`${formFieldId}-18`" :value="form.service_detection.web_content.user_agent || ''" type="text" maxlength="256" class="input input-bordered w-full" @input="form.service_detection.web_content.user_agent = $event.target.value || null" /></fieldset>
           </div>
         </div>
       </section>

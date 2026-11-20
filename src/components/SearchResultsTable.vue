@@ -15,6 +15,7 @@ import OsFingerprint from '@/components/OsFingerprint.vue'
 import TechStackCell from '@/components/TechStackCell.vue'
 import CellText from '@/components/CellText.vue'
 import AutoTooltip from '@/components/AutoTooltip.vue'
+import AssetFavicon from '@/components/AssetFavicon.vue'
 
 const props = defineProps({
   items: { type: Array, required: true },
@@ -116,10 +117,13 @@ function rowKey(item) {
             <td><OsFingerprint compact :value="item.os" /></td>
             <td><TechStackCell :web="item.web" /></td>
             <td>
-              <div v-if="item.title || item.tls_subject || item.tls_version" class="space-y-1">
-                <AutoTooltip v-if="item.title" :content="item.title">
-                  <div class="truncate font-medium">{{ item.title }}</div>
-                </AutoTooltip>
+              <div v-if="item.title || item.tls_subject || item.tls_version || item.favicon" class="space-y-1">
+                <div class="flex items-center gap-1.5">
+                  <AssetFavicon v-if="item.favicon" :ip="item.ip_address" :port="item.port" :protocol="item.protocol" :icon-md5="item.icon_md5" :size="16" />
+                  <AutoTooltip v-if="item.title" :content="item.title">
+                    <div class="truncate font-medium">{{ item.title }}</div>
+                  </AutoTooltip>
+                </div>
                 <div v-if="certificateStatus(item)" class="flex flex-wrap items-center gap-1">
                   <span class="badge badge-sm" :class="certificateStatus(item).class">{{ certificateStatus(item).text }}</span>
                   <span v-if="item.tls_mode" class="badge badge-ghost badge-sm">{{ item.tls_mode }}</span>

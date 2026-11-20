@@ -83,6 +83,8 @@ const examples = [
   'tag = "生产环境" AND NOT tag.kind = malicious',
   'tag.category = "运行环境" AND tag = "生产环境"',
   'has_endpoint(port = 80) AND has_endpoint(port = 443)',
+  'icon_md5 = "22eeab765346f14faf564a4709f98548"',
+  'js_name ~ "jquery" AND port = 443',
 ]
 
 const supportedSyntax = tr("支持域名、AND、OR、NOT、括号、IN、标签及资产服务组合条件")
@@ -265,6 +267,12 @@ onMounted(() => {
   loadHistory()
   loadTags()
   document.addEventListener('mousedown', onDocumentClick)
+  // 深链接：/search.html?q=<语句>（favicon「按此图标搜索」等入口使用）。
+  const initialQuery = new URLSearchParams(window.location.search).get('q')
+  if (initialQuery && initialQuery.trim()) {
+    searchInput.value = initialQuery.trim()
+    doSearch()
+  }
 })
 
 onBeforeUnmount(() => {
@@ -400,12 +408,18 @@ onBeforeUnmount(() => {
           <code class="block rounded bg-base-300 px-2 py-1">tls.san = "mail.example.com"</code>
         </div>
         <div class="rounded-lg bg-base-200 p-3 space-y-2">
+          <p class="font-medium">{{ tr("网页资产字段（favicon / JS）") }}</p>
+          <code class="block rounded bg-base-300 px-2 py-1">icon_md5 = "22eeab765346f14faf564a4709f98548"</code>
+          <code class="block rounded bg-base-300 px-2 py-1">js_name ~ "jquery" AND js_md5 = "82ac3f14327a8b7ba49baa208d4eaa15"</code>
+          <p class="text-xs opacity-70">{{ tr("icon_md5 与 Hunter web.icon / Quake favicon.hash 同值；js_md5 与 FOFA js_md5 同值。数据来自扫描器网页内容抓取（默认开启）。") }}</p>
+        </div>
+        <div class="rounded-lg bg-base-200 p-3 space-y-2">
           <p class="font-medium">{{ tr("同一资产的多个端点") }}</p>
           <code class="block rounded bg-base-300 px-2 py-1">has_endpoint(port = 80) AND has_endpoint(port = 443)</code>
         </div>
         <div class="rounded-lg border border-base-300 p-3">
           <p class="font-medium">{{ tr("支持字段") }}</p>
-          <p class="mt-1 break-words font-mono text-xs opacity-70">ip, domain, asn, isp, org, country, city, tag, tag.id, tag.kind, tag.category, port, protocol, service, banner, os.family, os.distribution, os.version, os.confidence, os.status, os.score, tech, web.status, title, http.body, tls.mode, tls.version, tls.cipher, tls.subject, tls.issuer, tls.san, tls.serial, tls.not_before, tls.not_after, tls.fingerprint, tls.self_signed, source, scanner, first_seen, last_seen</p>
+          <p class="mt-1 break-words font-mono text-xs opacity-70">ip, domain, asn, isp, org, country, city, tag, tag.id, tag.kind, tag.category, port, protocol, service, banner, os.family, os.distribution, os.version, os.confidence, os.status, os.score, tech, web.status, title, http.body, icon_md5, js_name, js_md5, tls.mode, tls.version, tls.cipher, tls.subject, tls.issuer, tls.san, tls.serial, tls.not_before, tls.not_after, tls.fingerprint, tls.self_signed, source, scanner, first_seen, last_seen</p>
         </div>
       </div>
 

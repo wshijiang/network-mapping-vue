@@ -32,6 +32,8 @@ test('search results table renders fixed columns, compact cells and the tech bad
           { id: 'react', name: 'React' }, { id: 'bootstrap', name: 'Bootstrap' },
         ] },
         title: 'Example Domain', tls_version: 'TLSv1.3', tls_subject: 'CN=example.invalid',
+        icon_md5: '22eeab765346f14faf564a4709f98548',
+        favicon: { content_type: 'image/x-icon', size: 1150 },
         asn: 'AS4134', as_org: 'Chinanet', country_name: '中国', country_code: 'CN',
         scan_time: '2026-01-15T01:00:00Z', tags: [], intel: null,
       },
@@ -74,6 +76,11 @@ test('search results table renders fixed columns, compact cells and the tech bad
     // Column header renamed from "Web 技术栈" to "技术栈".
     assert.match(html, /技术栈/)
     assert.doesNotMatch(html, /Web 技术栈/)
+
+    // Favicon renders at the head of the web/TLS cell via the backend relay;
+    // the icon-less second row adds no favicon image.
+    assert.equal((html.match(/\/api\/assets\/favicon\?/g) || []).length, 1)
+    assert.match(html, /\/api\/assets\/favicon\?ip=192\.168\.1\.10/)
   } finally {
     await server.close()
   }
