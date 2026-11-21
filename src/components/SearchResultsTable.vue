@@ -51,10 +51,10 @@ function openSettings() {
   columnSettingsRef.value?.open()
 }
 
-// 布局列 = 可见数据列 + 末尾的设置按钮列（固定窄列，不参与内容测量）。
-const layoutColumns = computed(() => [...visibleColumns.value, { key: '__settings', label: '', default: 44, min: 44, natural: true }])
+// 设置按钮绝对定位嵌在最后一个表头单元格内，不单独占列宽，避免挤压数据列。
+const lastVisibleKey = computed(() => visibleColumns.value.at(-1)?.key)
 const wrapper = ref(null)
-const { widths, totalWidth, needsScroll, userResized, refresh, onPointerDown, onKeydown, resetColumn, resetAll } = useColumnResize(layoutColumns, wrapper)
+const { widths, totalWidth, needsScroll, userResized, refresh, onPointerDown, onKeydown, resetColumn, resetAll } = useColumnResize(visibleColumns, wrapper)
 const itemsRef = computed(() => props.items)
 const { pageSort, displayItems, toggle: toggleSort } = useTableSort(itemsRef)
 watch(itemsRef, () => refresh())
@@ -85,12 +85,12 @@ function rowKey(item) {
     <div ref="wrapper" :class="needsScroll ? 'overflow-x-auto overflow-y-clip' : 'overflow-visible'">
       <table class="table table-zebra table-sm table-fixed" :style="{ width: `${totalWidth}px` }">
         <colgroup>
-          <col v-for="column in layoutColumns" :key="column.key" :style="{ width: `${widths[column.key] ?? column.default}px` }">
+          <col v-for="column in visibleColumns" :key="column.key" :style="{ width: `${widths[column.key] ?? column.default}px` }">
         </colgroup>
         <thead>
           <tr>
             <th v-for="column in visibleColumns" :key="column.key" class="relative" :aria-sort="ariaSort(column.key)">
-              <button type="button" class="flex w-full items-center gap-1 overflow-hidden" @click="toggleSort(column.key)">
+              <button type="button" class="flex w-full items-center gap-1 overflow-hidden" :class="column.key === lastVisibleKey ? 'pr-7' : ''" @click="toggleSort(column.key)">
                 <span class="truncate">{{ column.label }}</span>
                 <Transition name="sort-chevron" mode="out-in">
                   <component :is="sortIcon(column.key)" :key="sortState(column.key)" class="size-3.5 shrink-0" aria-hidden="true" />
@@ -106,11 +106,10 @@ function rowKey(item) {
                 @dblclick="resetColumn(column.key)"
                 @keydown="onKeydown($event, column.key)"
               ></span>
-            </th>
-            <th class="p-1 text-center">
               <button
+                v-if="column.key === lastVisibleKey"
                 type="button"
-                class="btn btn-ghost btn-xs btn-square mx-auto flex"
+                class="btn btn-ghost btn-xs btn-square absolute right-2 top-1/2 -translate-y-1/2"
                 :aria-label="tr(&quot;管理显示列&quot;)"
                 :title="tr(&quot;管理显示列&quot;)"
                 :aria-expanded="settingsOpen"
@@ -172,7 +171,6 @@ function rowKey(item) {
                 <span v-else>-</span>
               </td>
             </template>
-            <td></td>
           </tr>
         </tbody>
       </table>
