@@ -4681,5 +4681,9 @@
   "扫描类型": "Scan type",
   "扫描发起人": "Started by",
   "个 IP": "IPs",
-  "暂无 IP 情报": "No IP intelligence yet"
+  "暂无 IP 情报": "No IP intelligence yet",
+  "服务观察时间": "Service observed at",
+  "执行实例": "Execution",
+  "JS 资产": "JS assets",
+  "展开详情": "Expand details"
 }
