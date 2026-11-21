@@ -12,6 +12,9 @@ import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
 import ClampText from '@/components/ClampText.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import TablePagination from '@/components/TablePagination.vue'
+import AutoTooltip from '@/components/AutoTooltip.vue'
+import { aggregateIpIntel } from '@/utils/ipAggregation'
 import { ChevronDown, ChevronsUpDown, ChevronUp, Files } from '@lucide/vue'
 import { compareItems } from '@/utils/tableSort'
 import { formatLocation } from '@/utils/location'
@@ -210,13 +213,16 @@ const timelineSteps = computed(() => {
   return steps
 })
 const activeStepIndex = computed(() => timelineSteps.value.length - 1)
-const ipIntelRows = computed(() => (task.value?.results || []).map((item, index) => ({
-  index: index + 1,
-  ipCidr: item.ip,
-  asn: item.asn ? (/^AS/i.test(item.asn) ? item.asn : `AS${item.asn}`) : '-',
-  asOrg: item.as_org || item.isp || '-',
-  location: formatLocation(item)
-})))
+// IP 情报：连续且 ASN/组织/ISP/地区完全相同的 IPv4 行合并为最小覆盖网段。
+const ipIntelRows = computed(() => aggregateIpIntel(task.value?.results || []))
+const INTEL_PAGE_SIZE = 10
+const intelPage = ref(1)
+const intelPages = computed(() => Math.max(1, Math.ceil(ipIntelRows.value.length / INTEL_PAGE_SIZE)))
+const pagedIntelRows = computed(() => {
+  const current = Math.min(intelPage.value, intelPages.value)
+  return ipIntelRows.value.slice((current - 1) * INTEL_PAGE_SIZE, current * INTEL_PAGE_SIZE)
+})
+watch([taskId, page, selectedExecutionId], () => { intelPage.value = 1 })
 
 function severityBadge(severity) {
   return {
@@ -521,8 +527,9 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="card bg-base-100 card-border border-base-300 p-4">
-          <h3 class="font-semibold mb-3">{{ tr("结果展示") }}</h3>
+        <div class="card bg-base-100 card-border border-base-300 p-4 flex max-h-[100dvh] flex-col">
+          <h3 class="font-semibold mb-3 shrink-0">{{ tr("结果展示") }}</h3>
+          <div class="min-h-0 flex-1 overflow-y-auto">
           <div v-if="isDnsTask" class="flex flex-col gap-3">
             <div v-if="dnsComparisonLoading" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70"><span class="loading loading-spinner loading-xs mr-2"></span>{{ tr("正在加载 DNS 对比结果...") }}</div>
             <div v-else-if="dnsComparisonError" class="rounded-lg bg-warning/10 p-4 text-sm text-warning">{{ dnsComparisonError }}</div>
@@ -570,12 +577,10 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
-          <div v-if="!isDnsTask && endpointResultsAvailable && task.pagination.total_pages > 1" class="mt-4 flex items-center justify-between">
+          </div>
+          <div v-if="!isDnsTask && endpointResultsAvailable && task.pagination.total_pages > 1" class="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-base-300 pt-3">
             <span class="text-sm opacity-70">{{ tr("第") }} {{ task.pagination.page }} / {{ task.pagination.total_pages }} {{ tr("页") }}</span>
-            <div class="join">
-              <button class="join-item btn btn-sm" :disabled="page <= 1 || loading" @click="changePage(page - 1)">{{ tr("上一页") }}</button>
-              <button class="join-item btn btn-sm" :disabled="page >= task.pagination.total_pages || loading" @click="changePage(page + 1)">{{ tr("下一页") }}</button>
-            </div>
+            <TablePagination :page="task.pagination.page" :total-pages="task.pagination.total_pages" :disabled="loading" @change="changePage" />
           </div>
         </div>
       </div>
@@ -620,31 +625,47 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="!isDnsTask" class="card bg-base-100 card-border border-base-300 p-4">
-          <h3 class="font-semibold mb-3">{{ tr("IP 情报") }}</h3>
+        <div v-if="!isDnsTask" class="card bg-base-100 card-border border-base-300 p-4 flex max-h-[100dvh] flex-col">
+          <h3 class="font-semibold mb-3 shrink-0">{{ tr("IP 情报") }}</h3>
           <div v-if="!endpointResultsAvailable" class="rounded-lg bg-warning/10 p-4 text-sm text-warning">{{ tr("IP 情报依赖扫描结果索引，暂时无法显示。") }}</div>
-          <div v-else class="overflow-x-auto rounded-box border border-base-300">
-            <table class="table table-sm">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>IP/CIDR</th>
-                  <th>ASN</th>
-                  <th>{{ tr("AS 组织") }}</th>
-                  <th>{{ tr("位置") }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in ipIntelRows" :key="`${row.index}-${row.ipCidr}`">
-                  <td>{{ row.index }}</td>
-                  <td>{{ row.ipCidr }}</td>
-                  <td>{{ row.asn }}</td>
-                  <td>{{ row.asOrg }}</td>
-                  <td>{{ row.location }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <div v-else-if="ipIntelRows.length === 0" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70">{{ tr("暂无 IP 情报") }}</div>
+          <template v-else>
+            <div class="min-h-0 flex-1 overflow-auto rounded-box border border-base-300">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>IP/CIDR</th>
+                    <th>ASN</th>
+                    <th>{{ tr("AS 组织") }}</th>
+                    <th>{{ tr("位置") }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in pagedIntelRows" :key="`${row.index}-${row.ips[0]}`">
+                    <td class="align-top">{{ row.index }}</td>
+                    <td class="max-w-44">
+                      <div class="flex flex-wrap items-center gap-1">
+                        <AutoTooltip v-if="row.cidr" :copy-text="row.ips.join('\n')">
+                          <span class="block truncate font-mono">{{ row.cidr }}</span>
+                          <template #content><div class="space-y-0.5 font-mono"><div v-for="ip in row.ips" :key="ip">{{ ip }}</div></div></template>
+                        </AutoTooltip>
+                        <span v-else class="block truncate font-mono">{{ row.ips[0] }}</span>
+                        <span v-if="row.count > 1" class="badge badge-ghost badge-xs shrink-0">{{ row.count }} {{ tr("个 IP") }}</span>
+                      </div>
+                    </td>
+                    <td class="whitespace-nowrap align-top">{{ row.asn }}</td>
+                    <td class="max-w-40 align-top"><CellText :text="row.asOrg" /></td>
+                    <td class="max-w-44 align-top"><CellText :text="row.location" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-if="intelPages > 1" class="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-base-300 pt-3">
+              <span class="text-xs opacity-70">{{ tr("共") }} {{ ipIntelRows.length }} {{ tr("条") }}</span>
+              <TablePagination :page="intelPage" :total-pages="intelPages" @change="intelPage = $event" />
+            </div>
+          </template>
         </div>
       </div>
     </div>

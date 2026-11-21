@@ -4680,5 +4680,7 @@
   "复制任务 UUID": "Copy task UUID",
   "地址协议": "Address family",
   "扫描类型": "Scan type",
-  "扫描发起人": "Started by"
+  "扫描发起人": "Started by",
+  "个 IP": "IPs",
+  "暂无 IP 情报": "No IP intelligence yet"
 }
