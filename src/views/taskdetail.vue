@@ -10,6 +10,7 @@ import WebTechnologies from '@/components/WebTechnologies.vue'
 import AssetFavicon from '@/components/AssetFavicon.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
+import ClampText from '@/components/ClampText.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { ChevronDown, ChevronsUpDown, ChevronUp, Files } from '@lucide/vue'
 import { compareItems } from '@/utils/tableSort'
@@ -438,17 +439,17 @@ onBeforeUnmount(() => {
         <button
           v-for="execution in task.executions"
           :key="execution.execution_id"
-          class="rounded-lg border p-3 text-left transition-colors"
+          class="min-w-0 rounded-lg border p-3 text-left transition-colors"
           :class="execution.execution_id === task.selected_execution_id ? 'border-base-content/60 bg-base-content/10' : 'border-base-300 bg-base-200/40 hover:border-base-content/30'"
           @click="changeExecution(execution.execution_id)"
         >
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate font-medium">{{ execution.scanner_name || execution.requested_scanner_id || tr("自动分配（待领取）") }}</span>
-            <span class="badge badge-sm" :class="execution.status === 'succeeded' ? 'badge-success' : execution.status === 'failed' ? 'badge-error' : execution.status === 'running' ? 'badge-info' : 'badge-ghost'">{{ statusText[execution.status] || execution.status }}</span>
+            <span class="min-w-0 flex-1 truncate font-medium">{{ execution.scanner_name || execution.requested_scanner_id || tr("自动分配（待领取）") }}</span>
+            <span class="badge badge-sm shrink-0" :class="execution.status === 'succeeded' ? 'badge-success' : execution.status === 'failed' ? 'badge-error' : execution.status === 'running' ? 'badge-info' : 'badge-ghost'">{{ statusText[execution.status] || execution.status }}</span>
           </div>
           <div class="mt-1 truncate text-xs opacity-60">{{ execution.scanner_location || tr("未设置位置") }} · {{ execution.scanner_id || execution.requested_scanner_id || tr("尚未领取") }}</div>
-          <div class="mt-2 flex gap-3 text-xs opacity-70"><span>IP {{ execution.summary.ip_count }}</span><span>{{ tr("端口") }} {{ execution.summary.port_count }}</span><span>{{ tr("观察") }} {{ execution.summary.result_count }}</span></div>
-          <div v-if="execution.failure_reason" class="mt-2 line-clamp-2 text-xs text-error" :title="execution.failure_reason">{{ execution.failure_reason }}</div>
+          <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs opacity-70"><span>IP {{ execution.summary.ip_count }}</span><span>{{ tr("端口") }} {{ execution.summary.port_count }}</span><span>{{ tr("观察") }} {{ execution.summary.result_count }}</span></div>
+          <div v-if="execution.failure_reason" class="mt-2 line-clamp-2 break-words text-xs text-error" :title="execution.failure_reason">{{ execution.failure_reason }}</div>
         </button>
       </div>
     </div>
@@ -508,15 +509,15 @@ onBeforeUnmount(() => {
         <div class="card bg-base-100 card-border border-base-300 p-4">
           <h3 class="font-semibold mb-3">{{ tr("任务细节") }}</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ taskDetail.targetLabel }}：</span>{{ taskDetail.target }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ isDnsTask ? tr("查询类型") : 'Port' }}：</span>{{ taskDetail.port }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("地址协议：") }}</span>{{ taskDetail.addressFamily }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("扫描类型：") }}</span>{{ taskDetail.scanType }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("扫描发起人：") }}</span>{{ taskDetail.starter }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("开始时间：") }}</span>{{ taskDetail.startTime }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("结束时间：") }}</span>{{ taskDetail.endTime }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3 md:col-span-2"><span class="opacity-60">{{ tr("执行扫描器：") }}</span>{{ taskDetail.scanner }}</div>
-            <div v-if="isDnsTask" class="rounded-lg bg-base-200/50 p-3 md:col-span-2"><span class="opacity-60">{{ tr("解析服务器：") }}</span><span v-if="task.dns_resolvers?.length">{{ task.dns_resolvers.map((resolver) => `${resolver.label} (${resolver.ip}:${resolver.port}/${resolver.transport})`).join('；') }}</span><span v-else>{{ tr("扫描器系统 DNS") }}</span></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ taskDetail.targetLabel }}</div><ClampText class="mt-1" :text="taskDetail.target" /></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ isDnsTask ? tr("查询类型") : 'Port' }}</div><ClampText class="mt-1" :text="taskDetail.port" /></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("地址协议") }}</div><div class="mt-1 break-words">{{ taskDetail.addressFamily }}</div></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("扫描类型") }}</div><div class="mt-1 break-words">{{ taskDetail.scanType }}</div></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("扫描发起人") }}</div><ClampText class="mt-1" :text="taskDetail.starter" /></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("开始时间") }}</div><div class="mt-1 break-words">{{ taskDetail.startTime }}</div></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("结束时间") }}</div><div class="mt-1 break-words">{{ taskDetail.endTime }}</div></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3 md:col-span-2"><div class="text-xs opacity-60">{{ tr("执行扫描器") }}</div><ClampText class="mt-1" :text="taskDetail.scanner" /></div>
+            <div v-if="isDnsTask" class="min-w-0 rounded-lg bg-base-200/50 p-3 md:col-span-2"><div class="text-xs opacity-60">{{ tr("解析服务器") }}</div><ClampText class="mt-1" :text="task.dns_resolvers?.length ? task.dns_resolvers.map((resolver) => `${resolver.label} (${resolver.ip}:${resolver.port}/${resolver.transport})`).join('；') : tr(&quot;扫描器系统 DNS&quot;)" /></div>
           </div>
         </div>
 
@@ -545,10 +546,10 @@ onBeforeUnmount(() => {
             <div v-else-if="resultByIp.length === 0" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70">{{ tr("暂无扫描结果") }}</div>
             <div v-for="row in resultByIp" :key="row.ip" class="overflow-hidden rounded-lg border border-base-300 bg-base-100 text-sm">
               <div class="flex flex-wrap items-center justify-between gap-2 bg-base-200/60 px-3 py-2">
-                <span class="font-medium">{{ row.ip }}</span>
-                <div class="text-right text-xs opacity-70">
-                  <div>{{ formatNetworkOwner(row) }}</div>
-                  <div>{{ formatLocation(row) }}</div>
+                <span class="min-w-0 break-all font-medium">{{ row.ip }}</span>
+                <div class="min-w-0 text-right text-xs opacity-70">
+                  <div class="break-words">{{ formatNetworkOwner(row) }}</div>
+                  <div class="break-words">{{ formatLocation(row) }}</div>
                 </div>
               </div>
               <div class="overflow-x-auto">
@@ -592,11 +593,11 @@ onBeforeUnmount(() => {
 
           <div class="divider my-3">Timeline</div>
 
-          <div>
-            <ul class="timeline timeline-vertical">
+          <div class="min-w-0">
+            <ul class="timeline timeline-vertical w-full [&>li]:min-w-0 [&>li]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
               <li v-for="(step, index) in timelineSteps" :key="step.label">
                 <hr v-if="index > 0" :class="isPrevLineActive(index) ? 'bg-base-content' : ''" />
-                <div class="timeline-start text-xs opacity-70">{{ step.time }}</div>
+                <div class="timeline-start min-w-0 text-xs opacity-70">{{ step.time }}</div>
                 <div class="timeline-middle">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -612,7 +613,7 @@ onBeforeUnmount(() => {
                     />
                   </svg>
                 </div>
-                <div class="timeline-end timeline-box text-sm">{{ step.label }}</div>
+                <div class="timeline-end timeline-box min-w-0 break-words text-sm">{{ step.label }}</div>
                 <hr v-if="index < timelineSteps.length - 1" :class="isNextLineActive(index) ? 'bg-base-content' : ''" />
               </li>
             </ul>

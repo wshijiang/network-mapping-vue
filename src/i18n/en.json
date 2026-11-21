@@ -4677,5 +4677,8 @@
   "保存后离开": "Save and leave",
   "修改尚未保存，确定放弃修改并离开吗？": "Changes are not saved. Discard them and leave?",
   "放弃修改并离开": "Discard and leave",
-  "复制任务 UUID": "Copy task UUID"
+  "复制任务 UUID": "Copy task UUID",
+  "地址协议": "Address family",
+  "扫描类型": "Scan type",
+  "扫描发起人": "Started by"
 }
