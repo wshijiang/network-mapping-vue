@@ -83,13 +83,21 @@ export function evidenceBlocks(port) {
     }))
 }
 
+// Optional counters: null/undefined/'' mean "unknown", not zero. Number(null)
+// is a finite 0, so coercing first would fabricate confidence/attempts of 0.
+function optionalNumber(value) {
+  if (value == null || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
 export function serviceEnvelope(port) {
   const data = port?.data
   if (!data) return null
   return {
     probe: data.selected_probe || null,
     reason: data.selection_reason || null,
-    confidence: Number.isFinite(Number(data.confidence)) ? Number(data.confidence) : null,
-    attempts: Number.isFinite(Number(data.attempt_count)) ? Number(data.attempt_count) : null,
+    confidence: optionalNumber(data.confidence),
+    attempts: optionalNumber(data.attempt_count),
   }
 }
