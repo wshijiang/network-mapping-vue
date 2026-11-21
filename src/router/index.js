@@ -43,7 +43,6 @@ const router = createRouter({
     { path: '/open-source', component: () => import('../views/open-source.vue'), meta: { title: '开源项目' } },
     { path: '/open-platform/:section?', component: () => import('../views/OpenPlatform.vue'), meta: { title: '开放平台' } },
     { path: '/developer/open-api', component: () => import('../views/OpenPlatform.vue'), meta: { title: '开发者控制台' } },
-    { path: '/testpage', component: () => import('../views/TestPage.vue'), meta: { title: 'Alert 测试' } },
     { path: '/setting', component: () => import('../views/setting.vue'), meta: { title: '设置' } },
     { path: '/setting/maintenance', component: () => import('../views/SystemMaintenance.vue'), meta: { title: '系统维护' } },
     { path: '/setting/scan', component: () => import('../views/ScanSettings.vue'), meta: { title: '扫描设置' } },
