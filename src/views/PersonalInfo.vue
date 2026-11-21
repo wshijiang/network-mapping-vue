@@ -4,6 +4,7 @@ import { tr } from '../i18n/index.js'
 import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
 import { computed, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import CellText from '@/components/CellText.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
@@ -244,9 +245,9 @@ onMounted(() => {
           <div class="mt-1 text-sm font-medium">{{ formatTime(userInfo.lastLoginAt) }}</div>
         </div>
 
-        <div class="rounded-lg bg-base-200/60 p-3">
+        <div class="min-w-0 rounded-lg bg-base-200/60 p-3">
           <div class="text-xs opacity-60">{{ tr("最后一次登录 IP") }}</div>
-          <div class="mt-1 text-sm font-medium">{{ userInfo.lastLoginIp }}</div>
+          <div class="mt-1 break-all text-sm font-medium">{{ userInfo.lastLoginIp }}</div>
         </div>
       </div>
     </div>
@@ -286,7 +287,7 @@ onMounted(() => {
               <td class="whitespace-nowrap">{{ formatTime(record.occurredAt) }}</td>
               <td><span class="badge badge-sm" :class="loginResultClass(record.outcome)">{{ loginResultLabel(record.outcome) }}</span></td>
               <td>{{ loginMethodLabel(record.authMethod) }}</td>
-              <td class="font-mono text-xs">{{ record.sourceIp || '--' }}</td>
+              <td class="max-w-40 font-mono text-xs"><CellText :text="record.sourceIp || '--'" /></td>
               <td>{{ loginReasonLabel(record.reasonCode) }}</td>
               <td class="max-w-72 truncate text-xs" :title="record.userAgent || ''">{{ record.userAgent || '--' }}</td>
             </tr>

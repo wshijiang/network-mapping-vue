@@ -224,7 +224,7 @@ onBeforeUnmount(() => { disposed = true; requests.abort(); chatController?.abort
         </div>
         <p class="text-xs opacity-60">{{ tr("临时调试不改变 IOC 提取配置。启用系统提示词时使用已保存的内容；切换模型或提示词开关会清空会话。启用保留后可加载历史。新建会话会重新生成 session；历史加载会保留原供应商 session，缓存是否命中仍由供应商决定。") }}</p>
         <div v-if="loadedHistory" class="alert text-sm"><span>{{ tr("已加载历史，继续使用当时的系统提示词和 session。继续发送会另存调试记录；接口或协议变化时请新建会话。") }}</span></div>
-        <details v-if="loadedHistory && conversationPrompt" class="collapse collapse-arrow border border-base-300 rounded-box"><summary class="collapse-title text-sm">{{ tr("历史系统提示词") }}</summary><pre class="collapse-content whitespace-pre-wrap break-words text-xs">{{ conversationPrompt }}</pre></details>
+        <details v-if="loadedHistory && conversationPrompt" class="collapse collapse-arrow rounded-box bg-base-200/40"><summary class="collapse-title text-sm">{{ tr("历史系统提示词") }}</summary><pre class="collapse-content whitespace-pre-wrap break-words text-xs">{{ conversationPrompt }}</pre></details>
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
           <div class="min-w-0 flex flex-col gap-4">
             <div ref="transcript" role="log" :aria-label="tr(&quot;调试对话&quot;)" aria-live="polite" class="min-h-64 flex-1 max-h-[36rem] overflow-y-auto rounded-box border border-base-300 p-3">

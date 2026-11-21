@@ -323,7 +323,7 @@ onMounted(async () => {
             </div>
           </div>
 
-          <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+          <details class="collapse collapse-arrow rounded-lg bg-base-200/40">
             <summary class="collapse-title min-h-0 py-3 text-sm font-semibold">{{ tr("高级筛选") }}</summary>
             <div class="collapse-content">
               <div class="grid gap-3 pt-1 md:grid-cols-2 xl:grid-cols-4">

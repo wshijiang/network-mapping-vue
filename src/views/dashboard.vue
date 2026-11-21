@@ -59,7 +59,7 @@
       <div v-if="isFirstLoad" class="skeleton h-64 w-full rounded-box"></div>
 
       <div v-else class="flex flex-col gap-4">
-        <div class="flex flex-wrap items-center justify-between gap-2 rounded-box border border-base-300 bg-base-200/40 px-4 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-box bg-base-200/40 px-4 py-3">
           <span class="text-sm font-medium">{{ tr("系统运行状态") }}</span>
           <span class="flex items-center gap-2 text-sm">
             <span :aria-label="tr(&quot;运行中&quot;)" class="status status-success"></span>
@@ -75,7 +75,7 @@
           </div>
         </dl>
 
-        <div class="rounded-box border border-base-300">
+        <div class="rounded-box bg-base-200/40">
           <div class="flex items-center justify-between border-b border-base-300 px-4 py-2.5">
             <span class="text-sm font-medium">{{ tr("网络接口") }}</span>
             <span class="text-xs opacity-60">{{ tr("系统启动以来累计流量") }}</span>

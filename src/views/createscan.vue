@@ -443,7 +443,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
         </fieldset>
 
         <div class="space-y-3">
-          <details name="create-task-options" class="create-task-accordion collapse collapse-arrow border border-base-300 bg-base-100" open>
+          <details name="create-task-options" class="create-task-accordion collapse collapse-arrow rounded-lg bg-base-200/40" open>
             <summary class="collapse-title min-h-0 py-3 pr-12">
               <span class="block font-medium">{{ tr("扫描模式") }}</span>
               <span class="mt-0.5 block text-xs text-base-content/60">
@@ -543,7 +543,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
             </div>
           </details>
 
-          <details name="create-task-options" class="create-task-accordion collapse collapse-arrow border border-base-300 bg-base-100">
+          <details name="create-task-options" class="create-task-accordion collapse collapse-arrow rounded-lg bg-base-200/40">
             <summary class="collapse-title min-h-0 py-3 pr-12">
               <span class="block font-medium">{{ tr("执行扫描器") }}</span>
               <span class="mt-0.5 block text-xs text-base-content/60">{{ tr("当前：") }}{{ dispatchModeSummary }}</span>
@@ -656,14 +656,11 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
 }
 
 .create-task-accordion {
-  transition:
-    border-color 200ms ease,
-    box-shadow 200ms ease;
+  transition: background-color 200ms ease;
 }
 
 .create-task-accordion[open] {
-  border-color: color-mix(in oklab, var(--color-neutral) 35%, var(--color-base-300));
-  box-shadow: 0 1px 3px color-mix(in oklab, var(--color-base-content) 8%, transparent);
+  background-color: var(--color-base-200);
 }
 
 .create-task-accordion > summary {

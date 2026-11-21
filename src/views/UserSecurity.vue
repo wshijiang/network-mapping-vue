@@ -365,7 +365,7 @@ onMounted(() => {
       <div v-else class="space-y-3">
         <div class="flex flex-wrap items-center gap-2 rounded-box bg-base-200 px-3 py-2 text-sm">
           <span class="opacity-60">{{ tr("当前识别 IP") }}</span>
-          <code class="font-medium">{{ currentIp || '无法识别' }}</code>
+          <code class="min-w-0 break-all font-medium">{{ currentIp || '无法识别' }}</code>
           <button v-if="currentIp" type="button" class="btn btn-ghost btn-xs ml-auto" @click="addCurrentIp">{{ tr("添加当前 IP") }}</button>
         </div>
 
@@ -437,7 +437,7 @@ onMounted(() => {
               <p class="mt-1 text-xs opacity-60">{{ tr("使用认证器应用扫描左侧二维码，或复制下方测试内容手动添加。") }}</p>
 
               <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <code class="block min-w-0 flex-1 overflow-hidden text-ellipsis rounded-lg bg-base-200 px-3 py-2 text-xs">
+                <code class="block min-w-0 flex-1 truncate rounded-lg bg-base-200 px-3 py-2 text-xs" :title="twoFactorQrContent">
                   {{ twoFactorQrContent }}
                 </code>
                 <button type="button" class="btn btn-neutral btn-sm rounded-lg" @click="copyTwoFactorContent">

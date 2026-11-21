@@ -488,7 +488,7 @@ onBeforeUnmount(() => {
           <div v-if="!vulnerabilitiesAvailable" class="rounded-lg bg-warning/10 p-4 text-sm text-warning"> {{ tr("漏洞结果索引暂不可用，请稍后刷新。") }} </div>
           <div v-else-if="!task.vulnerabilities?.length" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70"> {{ tr("暂未发现符合当前 Nuclei 策略的漏洞。") }} </div>
           <div v-else class="flex flex-col gap-3">
-            <details v-for="finding in task.vulnerabilities" :key="`${finding.template_id}-${finding.matched_at}-${finding.matcher_name || ''}`" class="collapse collapse-arrow border border-base-300 bg-base-100">
+            <details v-for="finding in task.vulnerabilities" :key="`${finding.template_id}-${finding.matched_at}-${finding.matcher_name || ''}`" class="collapse collapse-arrow rounded-lg bg-base-200/40">
               <summary class="collapse-title min-h-0 py-3">
                 <div class="flex flex-wrap items-center gap-2 pr-6">
                   <span class="badge badge-sm uppercase" :class="severityBadge(finding.severity)">{{ finding.severity || 'unknown' }}</span>
@@ -535,7 +535,7 @@ onBeforeUnmount(() => {
             <div v-else-if="dnsComparisonError" class="rounded-lg bg-warning/10 p-4 text-sm text-warning">{{ dnsComparisonError }}</div>
             <div v-else-if="dnsComparison.length === 0" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70">{{ tr("暂无 DNS 查询观察。") }}</div>
             <template v-else>
-            <div v-for="record in dnsComparison" :key="`${record.name}-${record.record_type}`" class="overflow-hidden rounded-lg border border-base-300 bg-base-100 text-sm">
+            <div v-for="record in dnsComparison" :key="`${record.name}-${record.record_type}`" class="overflow-hidden rounded-lg bg-base-200/40 text-sm">
               <div class="flex flex-wrap items-center justify-between gap-2 bg-base-200/60 px-3 py-2"><span class="font-medium break-all">{{ record.name }}</span><span class="badge badge-outline">{{ record.record_type }}</span></div>
               <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -551,7 +551,7 @@ onBeforeUnmount(() => {
           <div v-else class="flex flex-col gap-2">
             <div v-if="!endpointResultsAvailable" class="rounded-lg bg-warning/10 p-4 text-sm text-warning">{{ tr("扫描结果索引暂不可用，请稍后刷新。") }}</div>
             <div v-else-if="resultByIp.length === 0" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70">{{ tr("暂无扫描结果") }}</div>
-            <div v-for="row in resultByIp" :key="row.ip" class="overflow-hidden rounded-lg border border-base-300 bg-base-100 text-sm">
+            <div v-for="row in resultByIp" :key="row.ip" class="overflow-hidden rounded-lg bg-base-200/40 text-sm">
               <div class="flex flex-wrap items-center justify-between gap-2 bg-base-200/60 px-3 py-2">
                 <span class="min-w-0 break-all font-medium">{{ row.ip }}</span>
                 <div class="min-w-0 text-right text-xs opacity-70">
@@ -589,11 +589,11 @@ onBeforeUnmount(() => {
         <div class="card bg-base-100 card-border border-base-300 p-4">
           <h3 class="font-semibold mb-3">{{ tr("执行状态") }}</h3>
           <div class="flex w-full flex-col text-sm">
-            <div class="card bg-base-200 rounded-box px-3 py-2">{{ tr("当前扫描器状态：") }}{{ taskMeta.status }}</div>
+            <div class="rounded-lg bg-base-200/60 px-3 py-2">{{ tr("当前扫描器状态：") }}{{ taskMeta.status }}</div>
             <div class="card bg-base-200 rounded-box px-3 py-2 mt-2">{{ tr("任务总体状态：") }}{{ statusText[task.task_status] || task.task_status }}</div>
             <div class="card bg-base-200 rounded-box px-3 py-2 mt-2">{{ tr("优先级：") }}{{ taskMeta.priority }}</div>
             <div class="card bg-base-200 rounded-box px-3 py-2 mt-2">{{ tr("领取次数：") }}{{ taskMeta.attemptCount }}</div>
-            <div v-if="taskMeta.failureReason" class="card bg-error/10 rounded-box px-3 py-2 mt-2 text-error">{{ tr("失败原因：") }}{{ taskMeta.failureReason }}</div>
+            <div v-if="taskMeta.failureReason" class="rounded-lg bg-error/10 px-3 py-2 mt-2 text-error">{{ tr("失败原因：") }}{{ taskMeta.failureReason }}</div>
           </div>
 
           <div class="divider my-3">Timeline</div>
