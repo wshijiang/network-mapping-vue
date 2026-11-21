@@ -178,7 +178,7 @@ onMounted(() => {
   </div>
 
   <div class="page-shell">
-    <div class="mb-5">
+    <div class="mb-4">
       <h1 class="page-title">{{ tr("个人信息") }}</h1>
       <p class="mt-1 text-xs opacity-60">{{ tr("查看当前用户资料、登录状态和基础账号信息。") }}</p>
     </div>

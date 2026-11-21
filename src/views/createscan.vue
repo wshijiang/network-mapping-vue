@@ -413,7 +413,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
   </div>
 
   <div class="page-shell">
-    <h1 class="page-title mb-5">{{ tr("创建任务") }}</h1>
+    <h1 class="page-title mb-4">{{ tr("创建任务") }}</h1>
     <div class="card bg-base-100 card-border border-base-300 w-full p-5">
       <div class="grid grid-cols-1 gap-4">
         <fieldset class="fieldset min-w-0 w-full">

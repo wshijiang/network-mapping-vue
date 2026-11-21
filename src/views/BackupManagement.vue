@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
 
   <main class="page-shell">
     <ConfirmDialog ref="confirmDialog" />
-    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 class="page-title">{{ tr("数据备份") }}</h1>
         <p class="mt-1 text-sm text-base-content/60">{{ tr("管理 pgBackRest 备份集、手动任务和 WAL 归档检查。") }}</p>

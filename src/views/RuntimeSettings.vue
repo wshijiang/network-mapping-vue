@@ -417,7 +417,7 @@ onMounted(loadAll)
   </div>
 
   <div class="page-shell">
-    <div class="mb-5">
+    <div class="mb-4">
       <h1 class="page-title">{{ tr("运行策略") }}</h1>
       <p class="mt-1 text-xs opacity-60">{{ tr("管理日志、监控告警、自动扫描与分析策略，保存后生效。") }}</p>
     </div>

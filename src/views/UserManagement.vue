@@ -348,7 +348,7 @@ onMounted(() => loadUsers({ page: 1 }))
 
   <div class="page-shell">
     <ConfirmDialog ref="confirmDialog" />
-    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 class="page-title">{{ tr("用户管理") }}</h1>
         <p class="mt-1 text-xs opacity-60">{{ tr("创建账号、控制登录权限，并管理当前有效会话。") }}</p>

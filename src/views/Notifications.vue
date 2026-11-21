@@ -216,7 +216,7 @@ onBeforeUnmount(() => {
   <div class="page-shell space-y-6">
     <ConfirmDialog ref="confirmDialog" />
     <AppAlert v-for="item in alerts" :key="item.id" v-bind="item" @close="alerts = alerts.filter(value => value.id !== item.id)" />
-    <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div><h1 class="page-title">{{ tr("通知渠道") }}</h1><p class="mt-2 text-sm opacity-60">{{ tr("统一管理邮件、飞书和 Telegram。各渠道独立启停、订阅通知，同一事件可同时发送到多个渠道。") }}</p></div>
       <div v-if="!forbidden" class="flex gap-2"><button class="btn btn-sm" :disabled="loading || historyLoading" @click="refresh">{{ tr("刷新") }}</button><button class="btn btn-neutral btn-sm" :disabled="busy || loadFailed" @click="openEditor()">{{ tr("添加通知渠道") }}</button></div>
     </div>

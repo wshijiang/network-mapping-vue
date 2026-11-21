@@ -92,7 +92,7 @@ async function restoreVersion(version) {
 <template>
   <div class="page-shell">
     <ConfirmDialog ref="confirmDialog" />
-    <div class="mb-5">
+    <div class="mb-4">
       <h1 class="page-title">{{ tr("通知模板") }}</h1>
       <p class="mt-1 text-xs opacity-60">{{ tr("分别配置邮件、飞书和 Telegram 的模板。各渠道独立保存和发布，同类渠道共用对应事件的已发布模板。") }}</p>
     </div>

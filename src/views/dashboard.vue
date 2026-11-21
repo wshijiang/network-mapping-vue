@@ -13,7 +13,7 @@
   </div>
 
   <div class="page-shell grid grid-cols-1 xl:grid-cols-2 gap-5">
-    <h1 class="page-title xl:col-span-2">{{ tr("仪表盘") }}</h1>
+    <h1 class="page-title -mb-1 xl:col-span-2">{{ tr("仪表盘") }}</h1>
     <div class="card bg-base-100 card-border border-base-300 p-4">
       <div class="mb-3">
         <h3 class="font-semibold">{{ tr("服务器资源利用状态") }}</h3>

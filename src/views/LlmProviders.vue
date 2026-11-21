@@ -98,7 +98,7 @@ onBeforeUnmount(() => { disposed = true; requests.abort() })
 <template>
   <div class="page-shell space-y-5">
     <ConfirmDialog ref="confirmDialog" />
-    <div class="flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("LLM 供应商") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("管理模型接口与公共请求设置，供应商局部配置可覆盖全局。") }}</p></div><button type="button" class="btn btn-outline btn-sm" :disabled="loading || busy" @click="refresh">{{ loading ? tr("加载中…") : tr("刷新") }}</button></div>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("LLM 供应商") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("管理模型接口与公共请求设置，供应商局部配置可覆盖全局。") }}</p></div><button type="button" class="btn btn-outline btn-sm" :disabled="loading || busy" @click="refresh">{{ loading ? tr("加载中…") : tr("刷新") }}</button></div>
     <AppAlert v-for="alert in alerts" :key="alert.id" :type="alert.type" :title="alert.title" @close="alerts = alerts.filter(a => a.id !== alert.id)" />
     <div v-if="error && !editing" role="alert" class="alert alert-error">{{ error }}</div>
     <template v-if="state">

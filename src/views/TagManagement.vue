@@ -266,7 +266,7 @@ onMounted(loadCatalog)
   <main class="page-shell">
     <ConfirmDialog ref="confirmDialog" />
     <div class="space-y-5">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 class="page-title">{{ tr("标签管理") }}</h1>
           <p class="mt-1 text-sm opacity-65">{{ tr("集中维护标签分类与名称，并直接为已收录的 IP 地址打标。") }}</p>

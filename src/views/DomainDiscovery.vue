@@ -102,7 +102,7 @@ onBeforeUnmount(() => { disposed = true; requestVersion++; requests.abort(); cle
 
 <template>
   <main class="page-shell space-y-5">
-    <div><h1 class="page-title">{{ tr("域名发现") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("从 crt.sh 证书透明度记录发现子域名和证书关联，选中域名后执行 DNS 验证。") }}</p><IntelLookup v-if="seed" type="domain" :value="seed" /></div>
+    <div class="mb-4"><h1 class="page-title">{{ tr("域名发现") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("从 crt.sh 证书透明度记录发现子域名和证书关联，选中域名后执行 DNS 验证。") }}</p><IntelLookup v-if="seed" type="domain" :value="seed" /></div>
     <div v-if="error" class="alert alert-error" role="alert">{{ error }}</div>
     <div v-if="notice" class="alert alert-info" role="status">{{ notice }}</div>
     <form class="card border border-base-300 bg-base-100 p-4 space-y-3" @submit.prevent="create">

@@ -190,7 +190,7 @@ onBeforeUnmount(() => { disposed = true; requests.abort(); chatController?.abort
 <template>
   <div class="page-shell space-y-5">
     <ConfirmDialog ref="confirmDialog" />
-    <div class="flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("LLM 基础") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("选择 IOC 提取使用的供应商和模型，并通过对话调试连接。") }}</p></div><button class="btn btn-outline btn-sm" :disabled="loading || busy" @click="refresh">{{ loading ? tr("加载中…") : tr("刷新") }}</button></div>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("LLM 基础") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("选择 IOC 提取使用的供应商和模型，并通过对话调试连接。") }}</p></div><button class="btn btn-outline btn-sm" :disabled="loading || busy" @click="refresh">{{ loading ? tr("加载中…") : tr("刷新") }}</button></div>
     <AppAlert v-for="alert in alerts" :key="alert.id" :title="alert.title" type="success" @close="alerts = alerts.filter(a => a.id !== alert.id)" />
     <div v-if="error" role="alert" class="alert alert-error">{{ error }}</div>
     <template v-if="state">

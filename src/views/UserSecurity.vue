@@ -326,7 +326,7 @@ onMounted(() => {
   </div>
 
   <div class="page-shell">
-    <div class="mb-5">
+    <div class="mb-4">
       <h1 class="page-title">{{ tr("用户安全") }}</h1>
       <p class="mt-1 text-xs opacity-60">{{ tr("管理当前用户的登录保护、双因素认证和安全验证状态。") }}</p>
     </div>

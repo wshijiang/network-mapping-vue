@@ -117,7 +117,7 @@ onBeforeUnmount(() => { disposed = true; clearTimeout(timer); controller?.abort(
 <template>
   <div class="page-shell space-y-6">
     <AppAlert v-for="item in alerts" :key="item.id" v-bind="item" @close="alerts = alerts.filter((a) => a.id !== item.id)" />
-    <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div><h1 class="page-title">{{ tr("报告中心") }}</h1><p class="mt-1 text-sm text-base-content/60">{{ tr("管理员平台周报与月报 ·") }} {{ timeSettings.timezone }} {{ tr("· 归档后保留统计快照") }}</p></div>
       <button class="btn btn-sm btn-ghost" :disabled="loading" @click="loadReports(); loadSettings()">{{ tr("刷新") }}</button>
     </div>

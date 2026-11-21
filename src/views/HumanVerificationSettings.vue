@@ -87,7 +87,7 @@ onBeforeUnmount(() => { disposed = true; readController?.abort(); if (form.value
 <template>
   <div class="page-shell space-y-5">
     <ConfirmDialog ref="confirmDialog" />
-    <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div><h1 class="page-title">{{ tr("登录保护") }}</h1><p class="mt-2 text-sm opacity-60">{{ tr("配置密码登录的人机验证。保存后应用于新的登录，现有会话和两步验证沿用原有规则。") }}</p></div>
       <button type="button" class="btn btn-outline btn-sm" :disabled="loading || saving" @click="load">{{ tr("重新加载") }}</button>
     </div>

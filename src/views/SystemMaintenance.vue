@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 class="page-title">{{ tr("系统维护") }}</h1>
         <p class="mt-1 text-sm text-base-content/60">{{ tr("进入系统维护后暂停 Scanner 任务流，活动扫描在本地完成并于维护结束后补传。") }}</p>

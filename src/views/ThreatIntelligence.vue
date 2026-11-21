@@ -218,7 +218,7 @@ onBeforeUnmount(() => { disposed = true; tabVersion++; articleVersion++; article
 
 <template>
   <main class="page-shell space-y-5">
-    <div><h1 class="page-title">{{ tr("威胁情报与自动标记") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("可信来源的 IOC 默认直接接纳；AI 提取作为补充，所有提议均须人工审核后生效。") }}</p></div>
+    <div class="mb-4"><h1 class="page-title">{{ tr("威胁情报与自动标记") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("可信来源的 IOC 默认直接接纳；AI 提取作为补充，所有提议均须人工审核后生效。") }}</p></div>
     <div v-if="error" role="alert" class="alert alert-error">{{ error }}</div>
     <div v-if="notice" role="status" class="alert alert-info">{{ notice }}</div>
     <div class="card border border-base-300 bg-base-100 p-4">

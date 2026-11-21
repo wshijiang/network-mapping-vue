@@ -389,7 +389,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="page-shell">
     <ConfirmDialog ref="confirmDialog" />
-    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-2">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
       <div class="min-w-0 flex items-center gap-2">
         <h1 class="page-title flex min-w-0 items-center gap-1 text-left">
           <span class="shrink-0">{{ tr("任务 UUID：") }}</span>
