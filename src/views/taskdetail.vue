@@ -11,7 +11,7 @@ import AssetFavicon from '@/components/AssetFavicon.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import { ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
+import { ChevronDown, ChevronsUpDown, ChevronUp, Files } from '@lucide/vue'
 import { compareItems } from '@/utils/tableSort'
 import { formatLocation } from '@/utils/location'
 import { routingLocation, routingSummary } from '@/utils/scanRouting'
@@ -35,9 +35,25 @@ let refreshTimer
 let isUnmounted = false
 const refreshableStatuses = new Set(['pending', 'running'])
 
-const displayTaskId = computed(() => taskId.value.length <= 34
-  ? taskId.value
-  : `${taskId.value.slice(0, 18)}...${taskId.value.slice(-8)}`)
+// UUID 标题按可用宽度截断：宽度足够时完整显示，不足时 CSS 截断并挂
+// daisyUI tooltip。截断状态用 ResizeObserver 实测，随窗口/语言变化更新。
+const uuidTextRef = ref(null)
+const uuidTruncated = ref(false)
+let uuidObserver
+function measureUuidTruncation() {
+  const el = uuidTextRef.value
+  uuidTruncated.value = Boolean(el && el.scrollWidth > el.clientWidth)
+}
+watch(uuidTextRef, (el) => {
+  uuidObserver?.disconnect()
+  uuidObserver = undefined
+  if (!el) return
+  measureUuidTruncation()
+  if (typeof ResizeObserver !== 'undefined') {
+    uuidObserver = new ResizeObserver(measureUuidTruncation)
+    uuidObserver.observe(el)
+  }
+})
 
 const statusText = {
   get pending() { return tr("待扫描") }, get running() { return tr("扫描中") }, get succeeded() { return tr("扫描完成") }, get failed() { return tr("扫描失败") }, get cancelled() { return tr("已取消") }, get partial() { return tr("部分完成") }
@@ -359,6 +375,7 @@ watch(taskId, () => {
 onBeforeUnmount(() => {
   isUnmounted = true
   window.clearTimeout(refreshTimer)
+  uuidObserver?.disconnect()
 })
 </script>
 
@@ -367,14 +384,18 @@ onBeforeUnmount(() => {
     <ConfirmDialog ref="confirmDialog" />
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-2">
       <div class="min-w-0 flex items-center gap-2">
-        <h1 class="page-title truncate text-left" :title="taskId"> {{ tr("任务 UUID：") }}{{ displayTaskId }}
-        </h1>
-        <div class="tooltip tooltip-bottom" :data-tip="taskId">
-          <button class="btn btn-ghost btn-xs gap-1" @click="copyTaskId">
-            UUID
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-files-icon lucide-files size-3.5"><path d="M15 2h-4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/><path d="M16.706 2.706A2.4 2.4 0 0 0 15 2v5a1 1 0 0 0 1 1h5a2.4 2.4 0 0 0-.706-1.706z"/><path d="M5 7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 1.732-1"/></svg>
+        <h1 class="page-title flex min-w-0 items-center gap-1 text-left">
+          <span class="shrink-0">{{ tr("任务 UUID：") }}</span>
+          <span
+            ref="uuidTextRef"
+            class="min-w-0 truncate font-mono"
+            :class="uuidTruncated ? 'tooltip tooltip-bottom' : ''"
+            :data-tip="uuidTruncated ? taskId : undefined"
+          >{{ taskId }}</span>
+          <button class="btn btn-ghost btn-xs shrink-0" :aria-label="tr(&quot;复制任务 UUID&quot;)" @click="copyTaskId">
+            <Files class="size-3.5" aria-hidden="true" />
           </button>
-        </div>
+        </h1>
       </div>
 
       <div class="flex flex-wrap items-center justify-start md:justify-end gap-2">
