@@ -133,7 +133,7 @@ const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length
 
     <section v-if="hasWeb" class="rounded-lg border border-base-300/60 bg-base-100 p-3">
       <h4 class="mb-2 text-xs font-semibold opacity-60">{{ tr("技术栈") }}</h4>
-      <WebTechnologies :value="port.web" />
+      <WebTechnologies :value="port.web" inline />
     </section>
 
     <section v-if="hasWebAssets" class="rounded-lg border border-base-300/60 bg-base-100 p-3">

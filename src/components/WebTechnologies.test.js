@@ -32,6 +32,12 @@ test('Web evidence renders safely and partial results retain their limits', asyn
     assert.match(html, /<img[^>]+src="\/assets\/web-technologies\/jquery\.svg"[^>]+alt(?:="")?[^>]+aria-hidden="true"/)
     assert.doesNotMatch(html, /<img src=x/)
     assert.ok(html.indexOf('jquery.svg') < html.indexOf('jQuery（版本冲突）'))
+    // inline mode (port detail panel): evidence visible immediately, no collapse.
+    const inline = await renderToString(createSSRApp(component, { value, inline: true }))
+    assert.doesNotMatch(inline, /<details|<summary/)
+    assert.match(inline, /&lt;img src=x onerror=alert\(1\)&gt;/)
+    assert.match(inline, /页面引用资源/)
+    assert.match(inline, /证据不完整/)
     const unknown = await renderToString(createSSRApp(component, { value: {
       status: 'identified', technologies: [{ id: 'https://untrusted.invalid/icon.svg', name: '<Unknown>' }],
     } }))
