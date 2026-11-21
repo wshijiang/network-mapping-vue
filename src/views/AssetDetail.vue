@@ -14,6 +14,7 @@ import AssetFavicon from '@/components/AssetFavicon.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
 import ColumnSettingsModal from '@/components/ColumnSettingsModal.vue'
+import PortDetailPanel from '@/components/PortDetailPanel.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useTableSort } from '@/composables/useTableSort'
@@ -83,6 +84,9 @@ const portColumns = computed(() => [
   { key: 'source', label: tr("来源") },
 ])
 const { hiddenKeys: portHiddenKeys, visibleColumns: visiblePortColumns, isDefault: portColumnsDefault, toggle: togglePortColumn, reset: resetPortColumns } = useColumnVisibility('network_mapping_asset_port_columns', portColumns)
+// table-fixed + 固定列宽：展开行的 colspan 内容不再参与列宽计算，
+// 打开/关闭展开行不会引起数据列宽度抖动。
+const PORT_COLUMN_WIDTHS = { port: 70, service: 190, banner: 200, os: 140, tech: 160, first_seen_at: 150, last_seen_at: 150, source: 120 }
 const portSettingsOpen = ref(false)
 const portSettingsRef = ref(null)
 function openPortSettings() {
@@ -653,7 +657,11 @@ onMounted(() => {
           <div v-if="portsLoading" class="flex justify-center py-16"><span class="loading loading-spinner loading-lg"></span></div>
           <div v-else-if="ports.length === 0" class="py-16 text-center opacity-60">{{ tr("暂无端口观察记录。") }}</div>
           <div v-else class="overflow-x-auto">
-            <table class="table table-zebra">
+            <table class="table table-fixed w-full min-w-[1080px]">
+              <colgroup>
+                <col v-for="column in visiblePortColumns" :key="column.key" :style="{ width: `${PORT_COLUMN_WIDTHS[column.key]}px` }">
+                <col style="width: 120px">
+              </colgroup>
               <thead>
                 <tr>
                   <th v-for="column in visiblePortColumns" :key="column.key" :aria-sort="portAriaSort(column.key)">
@@ -668,8 +676,8 @@ onMounted(() => {
                 </tr>
               </thead>
               <tbody>
-                <template v-for="port in displayPorts" :key="portRowKey(port)">
-                  <tr>
+                <template v-for="(port, index) in displayPorts" :key="portRowKey(port)">
+                  <tr :class="index % 2 === 1 ? 'bg-base-200/40' : ''">
                     <template v-for="column in visiblePortColumns" :key="column.key">
                       <td v-if="column.key === 'port'"><span class="font-mono font-semibold">{{ port.port }}</span><IntelEvidence :intel="port.intel" :label="tr(&quot;端点情报&quot;)" /></td>
                       <td v-else-if="column.key === 'service'">
@@ -707,26 +715,15 @@ onMounted(() => {
                       </div>
                     </td>
                   </tr>
-                  <tr v-if="expandedPortKey === portRowKey(port)">
-                    <td :colspan="visiblePortColumns.length + 1" class="bg-base-200/60 p-0">
-                      <div class="grid gap-4 p-4 text-sm md:grid-cols-2">
-                        <dl class="space-y-2">
-                          <div v-if="port.service_observed_at"><dt class="text-xs opacity-60">{{ tr("服务观察时间") }}</dt><dd class="mt-0.5">{{ formatTime(port.service_observed_at) }}</dd></div>
-                          <div v-if="port.task_id"><dt class="text-xs opacity-60">{{ tr("任务") }}</dt><dd class="mt-0.5"><a class="link font-mono text-xs break-all" :href="`/task/${port.task_id}`">{{ port.task_id }}</a></dd></div>
-                          <div v-if="port.execution_id"><dt class="text-xs opacity-60">{{ tr("执行实例") }}</dt><dd class="mt-0.5 font-mono text-xs break-all">{{ port.execution_id }}</dd></div>
-                          <div v-if="port.js_names?.length"><dt class="text-xs opacity-60">{{ tr("JS 资产") }}</dt><dd class="mt-1 flex flex-wrap gap-1"><span v-for="(name, index) in port.js_names" :key="name" class="badge badge-ghost badge-sm font-mono" :title="port.js_md5s?.[index] || ''">{{ name }}</span></dd></div>
-                        </dl>
-                        <div class="min-w-0 space-y-3">
-                          <section v-if="port.banner">
-                            <h4 class="text-xs font-semibold opacity-60">Banner</h4>
-                            <pre class="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-base-100 p-2 font-mono text-xs">{{ port.banner }}</pre>
-                          </section>
-                          <section v-if="port.data">
-                            <h4 class="text-xs font-semibold opacity-60">{{ tr("原始数据") }}</h4>
-                            <pre class="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-base-100 p-2 font-mono text-xs">{{ JSON.stringify(port.data, null, 2) }}</pre>
-                          </section>
+                  <tr>
+                    <td :colspan="visiblePortColumns.length + 1" class="p-0">
+                      <Transition name="port-detail">
+                        <div v-show="expandedPortKey === portRowKey(port)" class="port-detail-transition">
+                          <div class="max-h-[36rem] overflow-y-auto bg-base-200/60 p-4">
+                            <PortDetailPanel :port="port" :ip="summary.ip" />
+                          </div>
                         </div>
-                      </div>
+                      </Transition>
                     </td>
                   </tr>
                 </template>
@@ -900,6 +897,28 @@ onMounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .history-detail-enter-active,
   .history-detail-leave-active {
+    transition: none;
+  }
+}
+
+.port-detail-enter-active,
+.port-detail-leave-active {
+  overflow: hidden;
+  transition: max-height 240ms ease, opacity 240ms ease;
+}
+.port-detail-enter-from,
+.port-detail-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.port-detail-enter-to,
+.port-detail-leave-from {
+  max-height: 40rem;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .port-detail-enter-active,
+  .port-detail-leave-active {
     transition: none;
   }
 }
