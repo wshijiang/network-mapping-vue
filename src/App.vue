@@ -564,7 +564,7 @@ async function handleLogout() {
               <ul v-if="settingsMenuOpen" id="settings-submenu" class="overflow-hidden py-1 is-drawer-close:hidden">
                 <li>
                   <router-link class="sidebar-submenu-item" exact-active-class="active" to="/setting">
-                    <span class="whitespace-nowrap">{{ tr("常规设置") }}</span>
+                    <span class="whitespace-nowrap">{{ tr("时区设置") }}</span>
                   </router-link>
                 </li>
                 <li v-if="isAdmin">
