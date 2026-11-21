@@ -39,11 +39,19 @@ function cancel() {
   dialogRef.value?.close()
 }
 
+// close() queues its event; when a new ask() reopens the dialog before that
+// event fires (save prompt → discard prompt), the stale event must not cancel
+// the new prompt. Only a genuinely closed dialog resolves as cancelled.
+function onClose() {
+  if (dialogRef.value?.open) return
+  settle(false)
+}
+
 defineExpose({ ask })
 </script>
 
 <template>
-  <dialog ref="dialogRef" class="modal" @close="settle(false)">
+  <dialog ref="dialogRef" class="modal" @close="onClose">
     <div class="modal-box w-[calc(100vw-2rem)] max-w-md">
       <h3 class="text-lg font-bold break-words">{{ options.title }}</h3>
       <p v-if="options.message" class="py-3 text-sm opacity-70 break-words">{{ options.message }}</p>
