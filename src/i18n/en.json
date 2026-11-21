@@ -4658,5 +4658,12 @@
   "落地页正文上限（字节）": "Landing body limit (bytes)",
   "抓取 User-Agent（留空用默认）": "Fetch User-Agent (empty for default)",
   "抓取网页内容（favicon / JS / 正文）": "Enrich web content (favicon / JS / body)",
-  "默认开启，并发异步抓取；支持 icon_md5、js_name、js_md5 搜索与图标展示。关闭后本任务不产生网页资产数据。": "Enabled by default with concurrent async fetches; powers icon_md5, js_name and js_md5 search plus icon display. Disabling produces no web asset data for this task."
+  "默认开启，并发异步抓取；支持 icon_md5、js_name、js_md5 搜索与图标展示。关闭后本任务不产生网页资产数据。": "Enabled by default with concurrent async fetches; powers icon_md5, js_name and js_md5 search plus icon display. Disabling produces no web asset data for this task.",
+  "确认操作": "Confirm action",
+  "确认": "Confirm",
+  "首页": "First page",
+  "末页": "Last page",
+  "管理显示列": "Manage visible columns",
+  "选择表格中显示的列，设置保存在本浏览器中，不会过期。": "Choose which columns the table shows. The preference is stored in this browser and never expires.",
+  "重置为默认": "Reset to defaults"
 }
