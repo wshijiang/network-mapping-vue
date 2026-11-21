@@ -9,7 +9,7 @@ const props = defineProps({
   hiddenKeys: { type: Array, default: () => [] },
   isDefault: { type: Boolean, default: true },
 })
-const emit = defineEmits(['toggle', 'reset'])
+const emit = defineEmits(['toggle', 'reset', 'close'])
 const dialogRef = ref(null)
 
 const visibleCount = () => props.columns.filter((column) => !props.hiddenKeys.includes(column.key)).length
@@ -25,7 +25,7 @@ defineExpose({ open, close })
 </script>
 
 <template>
-  <dialog ref="dialogRef" class="modal">
+  <dialog ref="dialogRef" class="modal" @close="emit('close')">
     <div class="modal-box w-[calc(100vw-2rem)] max-w-md">
       <h3 class="text-lg font-bold">{{ tr("管理显示列") }}</h3>
       <p class="py-2 text-sm opacity-70">{{ tr("选择表格中显示的列，设置保存在本浏览器中，不会过期。") }}</p>
