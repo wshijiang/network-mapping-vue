@@ -3,6 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import LlmTransportFields from '@/components/LlmTransportFields.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { availableModels, clone, llmError, mergeModels, providerForm, settingsPayload, transportForm } from '@/utils/llm'
@@ -14,7 +15,8 @@ const alerts = ref([]), error = ref(''), editing = ref(false)
 const globalDirty = computed(() => state.value && JSON.stringify(global.value) !== savedGlobal.value)
 const providerDirty = computed(() => editing.value && JSON.stringify(form.value) !== savedProvider.value)
 const dirty = computed(() => globalDirty.value || providerDirty.value)
-useUnsavedChanges(dirty, () => providerDirty.value ? saveProvider() : saveGlobal())
+const confirmDialog = ref(null)
+useUnsavedChanges(dirty, () => providerDirty.value ? saveProvider() : saveGlobal(), confirmDialog)
 const requests = new AbortController()
 let disposed = false, sequence = 0
 function notify(title, type = 'success') { alerts.value.unshift({ id: crypto.randomUUID(), type, title }) }
@@ -30,16 +32,16 @@ async function load() {
   } catch (e) { if (!disposed && e.code !== 'ERR_CANCELED') error.value = llmError(e) }
   finally { if (!disposed && current === sequence) loading.value = false }
 }
-function refresh() { if (dirty.value && !window.confirm(tr("刷新将放弃未保存的配置，确定继续吗？"))) return; load() }
+async function refresh() { if (dirty.value && !await confirmDialog.value.ask({ message: tr("刷新将放弃未保存的配置，确定继续吗？"), confirmText: tr("放弃修改"), danger: true })) return; load() }
 function open(provider) {
   form.value = providerForm(provider)
   savedProvider.value = JSON.stringify(form.value)
   error.value = ''; editing.value = true; editor.value.showModal()
 }
 function add() { const template = state.value?.presets.find(p => p.preset === preset.value); open(template || {}) }
-function close() {
+async function close() {
   if (busy.value || refreshing.value) return
-  if (providerDirty.value && !window.confirm(tr("有未保存的供应商配置，确定放弃修改吗？"))) return
+  if (providerDirty.value && !await confirmDialog.value.ask({ message: tr("有未保存的供应商配置，确定放弃修改吗？"), confirmText: tr("放弃修改"), danger: true })) return
   editor.value.close(); editing.value = false; form.value = providerForm()
 }
 async function saveGlobal() {
@@ -69,7 +71,7 @@ async function saveProvider() {
 async function remove(provider) {
   if (dirty.value) { error.value = tr("请先保存或放弃当前修改。"); return }
   const active = state.value.provider_id === provider.id
-  if (!window.confirm(active ? tr("删除“{0}”并同时暂停 IOC 提取？", [provider.name]) : tr("确定删除供应商“{0}”？", [provider.name]))) return
+  if (!await confirmDialog.value.ask({ message: active ? tr("删除“{0}”并同时暂停 IOC 提取？", [provider.name]) : tr("确定删除供应商“{0}”？", [provider.name]), confirmText: tr("删除"), danger: true })) return
   busy.value = true; error.value = ''
   try {
     await http.delete(`/api/llm/providers/${provider.id}`, { data: { expected_revision: state.value.revision, pause_extraction: active }, signal: requests.signal })
@@ -95,7 +97,8 @@ onBeforeUnmount(() => { disposed = true; requests.abort() })
 
 <template>
   <div class="page-shell space-y-5">
-    <div class="flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("LLM 供应商") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("管理模型接口与公共请求设置，供应商局部配置可覆盖全局。") }}</p></div><button type="button" class="btn btn-outline btn-sm" :disabled="loading || busy" @click="refresh">{{ loading ? tr("加载中…") : tr("刷新") }}</button></div>
+    <ConfirmDialog ref="confirmDialog" />
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("LLM 供应商") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("管理模型接口与公共请求设置，供应商局部配置可覆盖全局。") }}</p></div><button type="button" class="btn btn-outline btn-sm" :disabled="loading || busy" @click="refresh">{{ loading ? tr("加载中…") : tr("刷新") }}</button></div>
     <AppAlert v-for="alert in alerts" :key="alert.id" :type="alert.type" :title="alert.title" @close="alerts = alerts.filter(a => a.id !== alert.id)" />
     <div v-if="error && !editing" role="alert" class="alert alert-error">{{ error }}</div>
     <template v-if="state">

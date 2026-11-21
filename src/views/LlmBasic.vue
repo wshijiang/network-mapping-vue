@@ -3,6 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import LlmHistoryDialog from '@/components/LlmHistoryDialog.vue'
 import LlmInkText from '@/components/LlmInkText.vue'
 import { readDraft, writeDraft, historyParameters } from '@/utils/llmDraft'
@@ -38,7 +39,8 @@ const debugProtocol = computed(() => debugProvider.value?.models.find(m => m.id 
 const selected = computed(() => JSON.stringify([enabled.value, providerId.value, modelId.value, retainIoc.value, retainDebug.value]))
 const selectionDirty = computed(() => state.value && selected.value !== saved.value)
 const dirty = computed(() => selectionDirty.value || promptDirty.value)
-useUnsavedChanges(dirty, saveAll)
+const confirmDialog = ref(null)
+useUnsavedChanges(dirty, saveAll, confirmDialog)
 const requests = new AbortController()
 let disposed = false, chatController, chatVersion = 0
 
@@ -68,7 +70,7 @@ async function load({ preservePrompt = false } = {}) {
   } catch (e) { if (!disposed && e.code !== 'ERR_CANCELED') error.value = llmError(e) }
   finally { if (!disposed) loading.value = false }
 }
-function refresh() { if (dirty.value && !window.confirm(tr("刷新将放弃未保存的设置，确定继续吗？"))) return; load() }
+async function refresh() { if (dirty.value && !await confirmDialog.value.ask({ message: tr("刷新将放弃未保存的设置，确定继续吗？"), confirmText: tr("放弃修改"), danger: true })) return; load() }
 function chooseProvider() { modelId.value = provider.value?.default_model || availableModels(provider.value)[0]?.id || ''; if (!providerId.value) modelId.value = '' }
 async function save() {
   if (!state.value || busy.value) return false
@@ -161,8 +163,8 @@ async function send() {
     if (!disposed && current === chatVersion) messages.value[index].status = e.name === 'AbortError' ? tr("已停止，未完整的回答不会继续发送。") : llmError(e.response ? e : e.message)
   } finally { if (!disposed && current === chatVersion) { messages.value[index].thinking = false; generating.value = false; await scroll() } }
 }
-function loadHistory(data) {
-  if (generating.value || (messages.value.length && !window.confirm(tr("加载历史将替换当前显示的对话，未发送草稿会保留。继续吗？")))) return
+async function loadHistory(data) {
+  if (generating.value || (messages.value.length && !await confirmDialog.value.ask({ message: tr("加载历史将替换当前显示的对话，未发送草稿会保留。继续吗？"), confirmText: tr("继续") }))) return
   newSession()
   chatProvider.value = data.provider_id || ''; chatModel.value = data.model_id || ''
   const system = data.messages.find(m => m.role === 'system')
@@ -174,10 +176,10 @@ function loadHistory(data) {
   scroll()
 }
 function historyDeleted(id) { if (historyId.value === id) newSession() }
-function replayLast() {
+async function replayLast() {
   if (generating.value) return
   const index = messages.value.findLastIndex(m => m.role === 'user')
-  if (index < 0 || (input.value && !window.confirm(tr("重放将替换当前未发送的草稿，继续吗？")))) return
+  if (index < 0 || (input.value && !await confirmDialog.value.ask({ message: tr("重放将替换当前未发送的草稿，继续吗？"), confirmText: tr("继续") }))) return
   input.value = messages.value[index].content
   messages.value = messages.value.slice(0, index)
 }
@@ -187,7 +189,8 @@ onBeforeUnmount(() => { disposed = true; requests.abort(); chatController?.abort
 
 <template>
   <div class="page-shell space-y-5">
-    <div class="flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("LLM 基础") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("选择 IOC 提取使用的供应商和模型，并通过对话调试连接。") }}</p></div><button class="btn btn-outline btn-sm" :disabled="loading || busy" @click="refresh">{{ loading ? tr("加载中…") : tr("刷新") }}</button></div>
+    <ConfirmDialog ref="confirmDialog" />
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("LLM 基础") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("选择 IOC 提取使用的供应商和模型，并通过对话调试连接。") }}</p></div><button class="btn btn-outline btn-sm" :disabled="loading || busy" @click="refresh">{{ loading ? tr("加载中…") : tr("刷新") }}</button></div>
     <AppAlert v-for="alert in alerts" :key="alert.id" :title="alert.title" type="success" @close="alerts = alerts.filter(a => a.id !== alert.id)" />
     <div v-if="error" role="alert" class="alert alert-error">{{ error }}</div>
     <template v-if="state">
@@ -221,7 +224,7 @@ onBeforeUnmount(() => { disposed = true; requests.abort(); chatController?.abort
         </div>
         <p class="text-xs opacity-60">{{ tr("临时调试不改变 IOC 提取配置。启用系统提示词时使用已保存的内容；切换模型或提示词开关会清空会话。启用保留后可加载历史。新建会话会重新生成 session；历史加载会保留原供应商 session，缓存是否命中仍由供应商决定。") }}</p>
         <div v-if="loadedHistory" class="alert text-sm"><span>{{ tr("已加载历史，继续使用当时的系统提示词和 session。继续发送会另存调试记录；接口或协议变化时请新建会话。") }}</span></div>
-        <details v-if="loadedHistory && conversationPrompt" class="collapse collapse-arrow border border-base-300 rounded-box"><summary class="collapse-title text-sm">{{ tr("历史系统提示词") }}</summary><pre class="collapse-content whitespace-pre-wrap break-words text-xs">{{ conversationPrompt }}</pre></details>
+        <details v-if="loadedHistory && conversationPrompt" class="collapse collapse-arrow rounded-box bg-base-200/40"><summary class="collapse-title text-sm">{{ tr("历史系统提示词") }}</summary><pre class="collapse-content whitespace-pre-wrap break-words text-xs">{{ conversationPrompt }}</pre></details>
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
           <div class="min-w-0 flex flex-col gap-4">
             <div ref="transcript" role="log" :aria-label="tr(&quot;调试对话&quot;)" aria-live="polite" class="min-h-64 flex-1 max-h-[36rem] overflow-y-auto rounded-box border border-base-300 p-3">

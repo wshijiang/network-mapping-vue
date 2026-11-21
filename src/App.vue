@@ -490,13 +490,6 @@ async function handleLogout() {
             </router-link>
           </li>
 
-          <li>
-            <router-link active-class="active" exact-active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;Alert 测试&quot;)" to="/testpage">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M8.21 3.61 2.39 17.02A2 2 0 0 0 4.22 20h15.56a2 2 0 0 0 1.83-2.98L15.79 3.61a2 2 0 0 0-3.58 0Z"/></svg>
-              <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("Alert 测试") }}</span>
-            </router-link>
-          </li>
-
           <li v-if="isAdmin">
             <button
               type="button"

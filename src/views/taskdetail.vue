@@ -10,7 +10,12 @@ import WebTechnologies from '@/components/WebTechnologies.vue'
 import AssetFavicon from '@/components/AssetFavicon.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
-import { ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
+import ClampText from '@/components/ClampText.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import TablePagination from '@/components/TablePagination.vue'
+import AutoTooltip from '@/components/AutoTooltip.vue'
+import { aggregateIpIntel } from '@/utils/ipAggregation'
+import { ChevronDown, ChevronsUpDown, ChevronUp, Files } from '@lucide/vue'
 import { compareItems } from '@/utils/tableSort'
 import { formatLocation } from '@/utils/location'
 import { routingLocation, routingSummary } from '@/utils/scanRouting'
@@ -29,13 +34,30 @@ const selectedExecutionId = ref('')
 const dnsComparison = ref([])
 const dnsComparisonLoading = ref(false)
 const dnsComparisonError = ref('')
+const confirmDialog = ref(null)
 let refreshTimer
 let isUnmounted = false
 const refreshableStatuses = new Set(['pending', 'running'])
 
-const displayTaskId = computed(() => taskId.value.length <= 34
-  ? taskId.value
-  : `${taskId.value.slice(0, 18)}...${taskId.value.slice(-8)}`)
+// UUID 标题按可用宽度截断：宽度足够时完整显示，不足时 CSS 截断并挂
+// daisyUI tooltip。截断状态用 ResizeObserver 实测，随窗口/语言变化更新。
+const uuidTextRef = ref(null)
+const uuidTruncated = ref(false)
+let uuidObserver
+function measureUuidTruncation() {
+  const el = uuidTextRef.value
+  uuidTruncated.value = Boolean(el && el.scrollWidth > el.clientWidth)
+}
+watch(uuidTextRef, (el) => {
+  uuidObserver?.disconnect()
+  uuidObserver = undefined
+  if (!el) return
+  measureUuidTruncation()
+  if (typeof ResizeObserver !== 'undefined') {
+    uuidObserver = new ResizeObserver(measureUuidTruncation)
+    uuidObserver.observe(el)
+  }
+})
 
 const statusText = {
   get pending() { return tr("待扫描") }, get running() { return tr("扫描中") }, get succeeded() { return tr("扫描完成") }, get failed() { return tr("扫描失败") }, get cancelled() { return tr("已取消") }, get partial() { return tr("部分完成") }
@@ -191,13 +213,16 @@ const timelineSteps = computed(() => {
   return steps
 })
 const activeStepIndex = computed(() => timelineSteps.value.length - 1)
-const ipIntelRows = computed(() => (task.value?.results || []).map((item, index) => ({
-  index: index + 1,
-  ipCidr: item.ip,
-  asn: item.asn ? (/^AS/i.test(item.asn) ? item.asn : `AS${item.asn}`) : '-',
-  asOrg: item.as_org || item.isp || '-',
-  location: formatLocation(item)
-})))
+// IP 情报：连续且 ASN/组织/ISP/地区完全相同的 IPv4 行合并为最小覆盖网段。
+const ipIntelRows = computed(() => aggregateIpIntel(task.value?.results || []))
+const INTEL_PAGE_SIZE = 10
+const intelPage = ref(1)
+const intelPages = computed(() => Math.max(1, Math.ceil(ipIntelRows.value.length / INTEL_PAGE_SIZE)))
+const pagedIntelRows = computed(() => {
+  const current = Math.min(intelPage.value, intelPages.value)
+  return ipIntelRows.value.slice((current - 1) * INTEL_PAGE_SIZE, current * INTEL_PAGE_SIZE)
+})
+watch([taskId, page, selectedExecutionId], () => { intelPage.value = 1 })
 
 function severityBadge(severity) {
   return {
@@ -298,7 +323,7 @@ async function copyTaskId() {
 }
 
 async function cancelTask() {
-  if (!window.confirm(tr("确定取消该任务吗？运行中的扫描将在扫描器下一次心跳后终止。"))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定取消该任务吗？运行中的扫描将在扫描器下一次心跳后终止。"), confirmText: tr("取消任务"), danger: true })) return
   actionLoading.value = true
   actionMessage.value = ''
   try {
@@ -357,21 +382,27 @@ watch(taskId, () => {
 onBeforeUnmount(() => {
   isUnmounted = true
   window.clearTimeout(refreshTimer)
+  uuidObserver?.disconnect()
 })
 </script>
 
 <template>
   <div class="page-shell">
-    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-2">
+    <ConfirmDialog ref="confirmDialog" />
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
       <div class="min-w-0 flex items-center gap-2">
-        <h1 class="page-title truncate text-left" :title="taskId"> {{ tr("任务 UUID：") }}{{ displayTaskId }}
-        </h1>
-        <div class="tooltip tooltip-bottom" :data-tip="taskId">
-          <button class="btn btn-ghost btn-xs gap-1" @click="copyTaskId">
-            UUID
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-files-icon lucide-files size-3.5"><path d="M15 2h-4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/><path d="M16.706 2.706A2.4 2.4 0 0 0 15 2v5a1 1 0 0 0 1 1h5a2.4 2.4 0 0 0-.706-1.706z"/><path d="M5 7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 1.732-1"/></svg>
+        <h1 class="page-title flex min-w-0 items-center gap-1 text-left">
+          <span class="shrink-0">{{ tr("任务 UUID：") }}</span>
+          <span
+            ref="uuidTextRef"
+            class="min-w-0 truncate font-mono"
+            :class="uuidTruncated ? 'tooltip tooltip-bottom' : ''"
+            :data-tip="uuidTruncated ? taskId : undefined"
+          >{{ taskId }}</span>
+          <button class="btn btn-ghost btn-xs shrink-0" :aria-label="tr(&quot;复制任务 UUID&quot;)" @click="copyTaskId">
+            <Files class="size-3.5" aria-hidden="true" />
           </button>
-        </div>
+        </h1>
       </div>
 
       <div class="flex flex-wrap items-center justify-start md:justify-end gap-2">
@@ -414,17 +445,17 @@ onBeforeUnmount(() => {
         <button
           v-for="execution in task.executions"
           :key="execution.execution_id"
-          class="rounded-lg border p-3 text-left transition-colors"
+          class="min-w-0 rounded-lg border p-3 text-left transition-colors"
           :class="execution.execution_id === task.selected_execution_id ? 'border-base-content/60 bg-base-content/10' : 'border-base-300 bg-base-200/40 hover:border-base-content/30'"
           @click="changeExecution(execution.execution_id)"
         >
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate font-medium">{{ execution.scanner_name || execution.requested_scanner_id || tr("自动分配（待领取）") }}</span>
-            <span class="badge badge-sm" :class="execution.status === 'succeeded' ? 'badge-success' : execution.status === 'failed' ? 'badge-error' : execution.status === 'running' ? 'badge-info' : 'badge-ghost'">{{ statusText[execution.status] || execution.status }}</span>
+            <span class="min-w-0 flex-1 truncate font-medium">{{ execution.scanner_name || execution.requested_scanner_id || tr("自动分配（待领取）") }}</span>
+            <span class="badge badge-sm shrink-0" :class="execution.status === 'succeeded' ? 'badge-success' : execution.status === 'failed' ? 'badge-error' : execution.status === 'running' ? 'badge-info' : 'badge-ghost'">{{ statusText[execution.status] || execution.status }}</span>
           </div>
           <div class="mt-1 truncate text-xs opacity-60">{{ execution.scanner_location || tr("未设置位置") }} · {{ execution.scanner_id || execution.requested_scanner_id || tr("尚未领取") }}</div>
-          <div class="mt-2 flex gap-3 text-xs opacity-70"><span>IP {{ execution.summary.ip_count }}</span><span>{{ tr("端口") }} {{ execution.summary.port_count }}</span><span>{{ tr("观察") }} {{ execution.summary.result_count }}</span></div>
-          <div v-if="execution.failure_reason" class="mt-2 line-clamp-2 text-xs text-error" :title="execution.failure_reason">{{ execution.failure_reason }}</div>
+          <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs opacity-70"><span>IP {{ execution.summary.ip_count }}</span><span>{{ tr("端口") }} {{ execution.summary.port_count }}</span><span>{{ tr("观察") }} {{ execution.summary.result_count }}</span></div>
+          <div v-if="execution.failure_reason" class="mt-2 line-clamp-2 break-words text-xs text-error" :title="execution.failure_reason">{{ execution.failure_reason }}</div>
         </button>
       </div>
     </div>
@@ -457,7 +488,7 @@ onBeforeUnmount(() => {
           <div v-if="!vulnerabilitiesAvailable" class="rounded-lg bg-warning/10 p-4 text-sm text-warning"> {{ tr("漏洞结果索引暂不可用，请稍后刷新。") }} </div>
           <div v-else-if="!task.vulnerabilities?.length" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70"> {{ tr("暂未发现符合当前 Nuclei 策略的漏洞。") }} </div>
           <div v-else class="flex flex-col gap-3">
-            <details v-for="finding in task.vulnerabilities" :key="`${finding.template_id}-${finding.matched_at}-${finding.matcher_name || ''}`" class="collapse collapse-arrow border border-base-300 bg-base-100">
+            <details v-for="finding in task.vulnerabilities" :key="`${finding.template_id}-${finding.matched_at}-${finding.matcher_name || ''}`" class="collapse collapse-arrow rounded-lg bg-base-200/40">
               <summary class="collapse-title min-h-0 py-3">
                 <div class="flex flex-wrap items-center gap-2 pr-6">
                   <span class="badge badge-sm uppercase" :class="severityBadge(finding.severity)">{{ finding.severity || 'unknown' }}</span>
@@ -484,26 +515,27 @@ onBeforeUnmount(() => {
         <div class="card bg-base-100 card-border border-base-300 p-4">
           <h3 class="font-semibold mb-3">{{ tr("任务细节") }}</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ taskDetail.targetLabel }}：</span>{{ taskDetail.target }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ isDnsTask ? tr("查询类型") : 'Port' }}：</span>{{ taskDetail.port }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("地址协议：") }}</span>{{ taskDetail.addressFamily }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("扫描类型：") }}</span>{{ taskDetail.scanType }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("扫描发起人：") }}</span>{{ taskDetail.starter }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("开始时间：") }}</span>{{ taskDetail.startTime }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3"><span class="opacity-60">{{ tr("结束时间：") }}</span>{{ taskDetail.endTime }}</div>
-            <div class="rounded-lg bg-base-200/50 p-3 md:col-span-2"><span class="opacity-60">{{ tr("执行扫描器：") }}</span>{{ taskDetail.scanner }}</div>
-            <div v-if="isDnsTask" class="rounded-lg bg-base-200/50 p-3 md:col-span-2"><span class="opacity-60">{{ tr("解析服务器：") }}</span><span v-if="task.dns_resolvers?.length">{{ task.dns_resolvers.map((resolver) => `${resolver.label} (${resolver.ip}:${resolver.port}/${resolver.transport})`).join('；') }}</span><span v-else>{{ tr("扫描器系统 DNS") }}</span></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ taskDetail.targetLabel }}</div><ClampText class="mt-1" :text="taskDetail.target" /></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ isDnsTask ? tr("查询类型") : 'Port' }}</div><ClampText class="mt-1" :text="taskDetail.port" /></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("地址协议") }}</div><div class="mt-1 break-words">{{ taskDetail.addressFamily }}</div></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("扫描类型") }}</div><div class="mt-1 break-words">{{ taskDetail.scanType }}</div></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("扫描发起人") }}</div><ClampText class="mt-1" :text="taskDetail.starter" /></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("开始时间") }}</div><div class="mt-1 break-words">{{ taskDetail.startTime }}</div></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3"><div class="text-xs opacity-60">{{ tr("结束时间") }}</div><div class="mt-1 break-words">{{ taskDetail.endTime }}</div></div>
+            <div class="min-w-0 rounded-lg bg-base-200/50 p-3 md:col-span-2"><div class="text-xs opacity-60">{{ tr("执行扫描器") }}</div><ClampText class="mt-1" :text="taskDetail.scanner" /></div>
+            <div v-if="isDnsTask" class="min-w-0 rounded-lg bg-base-200/50 p-3 md:col-span-2"><div class="text-xs opacity-60">{{ tr("解析服务器") }}</div><ClampText class="mt-1" :text="task.dns_resolvers?.length ? task.dns_resolvers.map((resolver) => `${resolver.label} (${resolver.ip}:${resolver.port}/${resolver.transport})`).join('；') : tr(&quot;扫描器系统 DNS&quot;)" /></div>
           </div>
         </div>
 
-        <div class="card bg-base-100 card-border border-base-300 p-4">
-          <h3 class="font-semibold mb-3">{{ tr("结果展示") }}</h3>
+        <div class="card bg-base-100 card-border border-base-300 p-4 flex max-h-[100dvh] flex-col">
+          <h3 class="font-semibold mb-3 shrink-0">{{ tr("结果展示") }}</h3>
+          <div class="min-h-0 flex-1 overflow-y-auto">
           <div v-if="isDnsTask" class="flex flex-col gap-3">
             <div v-if="dnsComparisonLoading" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70"><span class="loading loading-spinner loading-xs mr-2"></span>{{ tr("正在加载 DNS 对比结果...") }}</div>
             <div v-else-if="dnsComparisonError" class="rounded-lg bg-warning/10 p-4 text-sm text-warning">{{ dnsComparisonError }}</div>
             <div v-else-if="dnsComparison.length === 0" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70">{{ tr("暂无 DNS 查询观察。") }}</div>
             <template v-else>
-            <div v-for="record in dnsComparison" :key="`${record.name}-${record.record_type}`" class="overflow-hidden rounded-lg border border-base-300 bg-base-100 text-sm">
+            <div v-for="record in dnsComparison" :key="`${record.name}-${record.record_type}`" class="overflow-hidden rounded-lg bg-base-200/40 text-sm">
               <div class="flex flex-wrap items-center justify-between gap-2 bg-base-200/60 px-3 py-2"><span class="font-medium break-all">{{ record.name }}</span><span class="badge badge-outline">{{ record.record_type }}</span></div>
               <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -519,12 +551,12 @@ onBeforeUnmount(() => {
           <div v-else class="flex flex-col gap-2">
             <div v-if="!endpointResultsAvailable" class="rounded-lg bg-warning/10 p-4 text-sm text-warning">{{ tr("扫描结果索引暂不可用，请稍后刷新。") }}</div>
             <div v-else-if="resultByIp.length === 0" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70">{{ tr("暂无扫描结果") }}</div>
-            <div v-for="row in resultByIp" :key="row.ip" class="overflow-hidden rounded-lg border border-base-300 bg-base-100 text-sm">
+            <div v-for="row in resultByIp" :key="row.ip" class="overflow-hidden rounded-lg bg-base-200/40 text-sm">
               <div class="flex flex-wrap items-center justify-between gap-2 bg-base-200/60 px-3 py-2">
-                <span class="font-medium">{{ row.ip }}</span>
-                <div class="text-right text-xs opacity-70">
-                  <div>{{ formatNetworkOwner(row) }}</div>
-                  <div>{{ formatLocation(row) }}</div>
+                <span class="min-w-0 break-all font-medium">{{ row.ip }}</span>
+                <div class="min-w-0 text-right text-xs opacity-70">
+                  <div class="break-words">{{ formatNetworkOwner(row) }}</div>
+                  <div class="break-words">{{ formatLocation(row) }}</div>
                 </div>
               </div>
               <div class="overflow-x-auto">
@@ -545,12 +577,10 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
-          <div v-if="!isDnsTask && endpointResultsAvailable && task.pagination.total_pages > 1" class="mt-4 flex items-center justify-between">
+          </div>
+          <div v-if="!isDnsTask && endpointResultsAvailable && task.pagination.total_pages > 1" class="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-base-300 pt-3">
             <span class="text-sm opacity-70">{{ tr("第") }} {{ task.pagination.page }} / {{ task.pagination.total_pages }} {{ tr("页") }}</span>
-            <div class="join">
-              <button class="join-item btn btn-sm" :disabled="page <= 1 || loading" @click="changePage(page - 1)">{{ tr("上一页") }}</button>
-              <button class="join-item btn btn-sm" :disabled="page >= task.pagination.total_pages || loading" @click="changePage(page + 1)">{{ tr("下一页") }}</button>
-            </div>
+            <TablePagination :page="task.pagination.page" :total-pages="task.pagination.total_pages" :disabled="loading" @change="changePage" />
           </div>
         </div>
       </div>
@@ -559,20 +589,20 @@ onBeforeUnmount(() => {
         <div class="card bg-base-100 card-border border-base-300 p-4">
           <h3 class="font-semibold mb-3">{{ tr("执行状态") }}</h3>
           <div class="flex w-full flex-col text-sm">
-            <div class="card bg-base-200 rounded-box px-3 py-2">{{ tr("当前扫描器状态：") }}{{ taskMeta.status }}</div>
+            <div class="rounded-lg bg-base-200/60 px-3 py-2">{{ tr("当前扫描器状态：") }}{{ taskMeta.status }}</div>
             <div class="card bg-base-200 rounded-box px-3 py-2 mt-2">{{ tr("任务总体状态：") }}{{ statusText[task.task_status] || task.task_status }}</div>
             <div class="card bg-base-200 rounded-box px-3 py-2 mt-2">{{ tr("优先级：") }}{{ taskMeta.priority }}</div>
             <div class="card bg-base-200 rounded-box px-3 py-2 mt-2">{{ tr("领取次数：") }}{{ taskMeta.attemptCount }}</div>
-            <div v-if="taskMeta.failureReason" class="card bg-error/10 rounded-box px-3 py-2 mt-2 text-error">{{ tr("失败原因：") }}{{ taskMeta.failureReason }}</div>
+            <div v-if="taskMeta.failureReason" class="rounded-lg bg-error/10 px-3 py-2 mt-2 text-error">{{ tr("失败原因：") }}{{ taskMeta.failureReason }}</div>
           </div>
 
           <div class="divider my-3">Timeline</div>
 
-          <div>
-            <ul class="timeline timeline-vertical">
+          <div class="min-w-0">
+            <ul class="timeline timeline-vertical w-full [&>li]:min-w-0 [&>li]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
               <li v-for="(step, index) in timelineSteps" :key="step.label">
                 <hr v-if="index > 0" :class="isPrevLineActive(index) ? 'bg-base-content' : ''" />
-                <div class="timeline-start text-xs opacity-70">{{ step.time }}</div>
+                <div class="timeline-start min-w-0 text-xs opacity-70">{{ step.time }}</div>
                 <div class="timeline-middle">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -588,38 +618,54 @@ onBeforeUnmount(() => {
                     />
                   </svg>
                 </div>
-                <div class="timeline-end timeline-box text-sm">{{ step.label }}</div>
+                <div class="timeline-end timeline-box min-w-0 break-words text-sm">{{ step.label }}</div>
                 <hr v-if="index < timelineSteps.length - 1" :class="isNextLineActive(index) ? 'bg-base-content' : ''" />
               </li>
             </ul>
           </div>
         </div>
 
-        <div v-if="!isDnsTask" class="card bg-base-100 card-border border-base-300 p-4">
-          <h3 class="font-semibold mb-3">{{ tr("IP 情报") }}</h3>
+        <div v-if="!isDnsTask" class="card bg-base-100 card-border border-base-300 p-4 flex max-h-[100dvh] flex-col">
+          <h3 class="font-semibold mb-3 shrink-0">{{ tr("IP 情报") }}</h3>
           <div v-if="!endpointResultsAvailable" class="rounded-lg bg-warning/10 p-4 text-sm text-warning">{{ tr("IP 情报依赖扫描结果索引，暂时无法显示。") }}</div>
-          <div v-else class="overflow-x-auto rounded-box border border-base-300">
-            <table class="table table-sm">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>IP/CIDR</th>
-                  <th>ASN</th>
-                  <th>{{ tr("AS 组织") }}</th>
-                  <th>{{ tr("位置") }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in ipIntelRows" :key="`${row.index}-${row.ipCidr}`">
-                  <td>{{ row.index }}</td>
-                  <td>{{ row.ipCidr }}</td>
-                  <td>{{ row.asn }}</td>
-                  <td>{{ row.asOrg }}</td>
-                  <td>{{ row.location }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <div v-else-if="ipIntelRows.length === 0" class="rounded-lg bg-base-200/60 p-6 text-center text-sm opacity-70">{{ tr("暂无 IP 情报") }}</div>
+          <template v-else>
+            <div class="min-h-0 flex-1 overflow-auto rounded-box border border-base-300">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>IP/CIDR</th>
+                    <th>ASN</th>
+                    <th>{{ tr("AS 组织") }}</th>
+                    <th>{{ tr("位置") }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in pagedIntelRows" :key="`${row.index}-${row.ips[0]}`">
+                    <td class="align-top">{{ row.index }}</td>
+                    <td class="max-w-44">
+                      <div class="flex flex-wrap items-center gap-1">
+                        <AutoTooltip v-if="row.cidr" :copy-text="row.ips.join('\n')">
+                          <span class="block truncate font-mono">{{ row.cidr }}</span>
+                          <template #content><div class="space-y-0.5 font-mono"><div v-for="ip in row.ips" :key="ip">{{ ip }}</div></div></template>
+                        </AutoTooltip>
+                        <span v-else class="block truncate font-mono">{{ row.ips[0] }}</span>
+                        <span v-if="row.count > 1" class="badge badge-ghost badge-xs shrink-0">{{ row.count }} {{ tr("个 IP") }}</span>
+                      </div>
+                    </td>
+                    <td class="whitespace-nowrap align-top">{{ row.asn }}</td>
+                    <td class="max-w-40 align-top"><CellText :text="row.asOrg" /></td>
+                    <td class="max-w-44 align-top"><CellText :text="row.location" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-if="intelPages > 1" class="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-base-300 pt-3">
+              <span class="text-xs opacity-70">{{ tr("共") }} {{ ipIntelRows.length }} {{ tr("条") }}</span>
+              <TablePagination :page="intelPage" :total-pages="intelPages" @change="intelPage = $event" />
+            </div>
+          </template>
         </div>
       </div>
     </div>

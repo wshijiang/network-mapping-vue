@@ -7,6 +7,7 @@ import { useRoute } from 'vue-router'
 import AppAlert from '@/components/AppAlert.vue'
 import ConfigCheckPanel from '@/components/ConfigCheckPanel.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
 
@@ -171,12 +172,14 @@ function toggleList(list, value, checked) {
   if (!checked && index >= 0) list.splice(index, 1)
 }
 
-useUnsavedChanges(isDirty, saveConfiguration)
+const confirmDialog = ref(null)
+useUnsavedChanges(isDirty, saveConfiguration, confirmDialog)
 onMounted(loadConfiguration)
 </script>
 
 <template>
   <div class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="pointer-events-none fixed right-4 top-20 z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:w-auto">
       <AppAlert v-for="alert in alerts" :key="alert.id" class="pointer-events-auto" v-bind="alert" @close="closeAlert(alert.id)" />
     </div>

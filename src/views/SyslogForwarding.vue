@@ -3,6 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ChartCsvExport from '@/components/ChartCsvExport.vue'
 import NetworkProxySettings from '@/components/NetworkProxySettings.vue'
@@ -15,6 +16,7 @@ import http from '@/utils/http'
 const ApexChart = defineAsyncComponent(() => import('vue3-apexcharts/core'))
 
 const formFieldId = useId()
+const confirmDialog = ref(null)
 
 const alerts = ref([])
 const loading = ref(false)
@@ -206,9 +208,9 @@ function confirmTarget() {
   targetDialog.value?.close()
 }
 
-function removeTarget(index) {
+async function removeTarget(index) {
   const target = settings.value.targets[index]
-  if (!window.confirm(tr("确定删除服务器「{0}」？保存后生效。", [target.name]))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定删除服务器「{0}」？保存后生效。", [target.name]), confirmText: tr("删除"), danger: true })) return
   settings.value.targets.splice(index, 1)
 }
 
@@ -468,7 +470,7 @@ async function createBackfill() {
 
 async function cancelBackfill(job) {
   if (backfillCanceling.value) return
-  if (!window.confirm(tr("确定取消该回填任务？"))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定取消该回填任务？"), confirmText: tr("确认取消"), danger: true })) return
   backfillCanceling.value = job.id
   try {
     const response = await http.post(`/api/syslog/backfill/${job.id}/cancel`)
@@ -515,6 +517,7 @@ onBeforeUnmount(() => {
   </div>
 
   <main class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="page-title">{{ tr("Syslog 转发") }}</h1>

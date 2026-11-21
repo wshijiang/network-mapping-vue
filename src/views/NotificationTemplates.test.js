@@ -12,9 +12,11 @@ const compiled = compileScript(descriptor, { id: 'notification-template-navigati
 const code = compiled.scriptSetupAst.filter(node => node.type === 'ImportDeclaration').reverse()
   .reduce((text, node) => text.slice(0, node.start) + text.slice(node.end), descriptor.scriptSetup.content)
 function createPage(confirm = () => true) {
-  return localizedVm(`${code}\n;({provider,editor,mailTemplates,selectedEvent,events,initialBotEvent,botVariants,navigationDisabled,historyVersions,historyLoading,restoreVersion,syncSelection,selectProvider,selectEvent,selectProviderFromDropdown,selectEventFromDropdown})`, {
+  const page = localizedVm(`${code}\n;({provider,editor,mailTemplates,selectedEvent,events,initialBotEvent,botVariants,navigationDisabled,historyVersions,historyLoading,restoreVersion,syncSelection,selectProvider,selectEvent,selectProviderFromDropdown,selectEventFromDropdown,confirmDialog})`, {
     computed, nextTick, reactive, ref, notificationProviders, window: { confirm },
   })
+  page.confirmDialog.value = { ask: async () => confirm() }
+  return page
 }
 
 test('history follows the active editor and only restores its non-draft versions', async () => {

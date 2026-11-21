@@ -6,6 +6,7 @@ import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/EmptyState.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import VersionUpdateBadge from '@/components/VersionUpdateBadge.vue'
 import ScannerLatencyChart from '@/components/ScannerLatencyChart.vue'
 import ScannerDiagnostics from '@/components/ScannerDiagnostics.vue'
@@ -17,6 +18,7 @@ const router = useRouter()
 const scannerId = computed(() => String(route.params.id || ''))
 
 const scannerDetail = ref(null)
+const confirmDialog = ref(null)
 const isLoading = ref(false)
 const loadFailed = ref(false)
 const notFound = ref(false)
@@ -141,7 +143,7 @@ async function saveScanner() {
   return saved
 }
 
-const { allowNextRouteLeave } = useUnsavedChanges(hasUnsavedChanges, saveScanner)
+const { allowNextRouteLeave } = useUnsavedChanges(hasUnsavedChanges, saveScanner, confirmDialog)
 
 function toggleScanner() {
   const enabled = scannerDetail.value?.is_enable !== true
@@ -149,7 +151,7 @@ function toggleScanner() {
 }
 
 async function reissueToken() {
-  if (!window.confirm(tr("重签凭据会立即废止当前运行 Token，确定继续吗？"))) return
+  if (!await confirmDialog.value.ask({ message: tr("重签凭据会立即废止当前运行 Token，确定继续吗？"), confirmText: tr("重签凭据"), danger: true })) return
   actionLoading.value = true
   actionMessage.value = ''
   try {
@@ -165,7 +167,7 @@ async function reissueToken() {
 }
 
 async function deleteScanner() {
-  if (!window.confirm(tr("确定删除该扫描器吗？历史任务和结果会保留。"))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定删除该扫描器吗？历史任务和结果会保留。"), confirmText: tr("删除"), danger: true })) return
   actionLoading.value = true
   try {
     await http.delete(`/api/scanner/${scannerId.value}`)
@@ -190,6 +192,7 @@ onBeforeUnmount(() => window.clearInterval(refreshTimer))
 
 <template>
   <div class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row">
       <div>
         <h1 class="page-title">{{ scannerDetail?.name || tr("扫描器详情") }}</h1>

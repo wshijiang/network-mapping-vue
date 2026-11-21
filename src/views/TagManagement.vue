@@ -3,9 +3,11 @@ import { tr } from '../i18n/index.js'
 
 import { computed, onMounted, ref, useId } from 'vue'
 import AssetTags from '../components/AssetTags.vue'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import http from '../utils/http'
 
 const formFieldId = useId()
+const confirmDialog = ref(null)
 const categories = ref([])
 const tags = ref([])
 const loading = ref(false)
@@ -116,7 +118,7 @@ async function saveCategory() {
 }
 
 async function deleteCategory(category) {
-  if (!window.confirm(tr("确定停用分类“{0}”吗？", [category.name]))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定停用分类“{0}”吗？", [category.name]), confirmText: tr("停用"), danger: true })) return
   actionLoading.value = true
   clearMessages()
   try {
@@ -184,7 +186,7 @@ async function saveTag() {
 async function deleteTag(tag) {
   const count = Number(tag.assignment_count || 0)
   const impact = count ? tr("，并从 {0} 个地址绑定中移除", [count]) : ''
-  if (!window.confirm(tr("确定停用标签“{0}”吗{1}？", [tag.name, impact]))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定停用标签“{0}”吗{1}？", [tag.name, impact]), confirmText: tr("停用"), danger: true })) return
   actionLoading.value = true
   clearMessages()
   try {
@@ -262,8 +264,9 @@ onMounted(loadCatalog)
 
 <template>
   <main class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="space-y-5">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 class="page-title">{{ tr("标签管理") }}</h1>
           <p class="mt-1 text-sm opacity-65">{{ tr("集中维护标签分类与名称，并直接为已收录的 IP 地址打标。") }}</p>

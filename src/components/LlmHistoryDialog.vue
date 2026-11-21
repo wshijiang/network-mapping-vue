@@ -3,10 +3,11 @@ import { tr } from '../i18n/index.js'
 
 import { onBeforeUnmount, ref } from 'vue'
 import http from '@/utils/http'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { llmError } from '@/utils/llm'
 import { formatDateTime } from '../i18n/time.js'
 const emit = defineEmits(['loaded', 'deleted'])
-const dialog = ref(null), rows = ref([]), selected = ref(''), offset = ref(0), total = ref(0), loading = ref(false), error = ref('')
+const dialog = ref(null), confirmDialog = ref(null), rows = ref([]), selected = ref(''), offset = ref(0), total = ref(0), loading = ref(false), error = ref('')
 const requests = new AbortController()
 let disposed = false
 async function fetchPage(value = 0) {
@@ -31,7 +32,7 @@ async function loadSelected() {
   finally { if (!disposed) loading.value = false }
 }
 async function remove(row) {
-  if (loading.value || !window.confirm(tr("永久删除这条历史对话（包括思考数据）？"))) return
+  if (loading.value || !await confirmDialog.value.ask({ message: tr("永久删除这条历史对话（包括思考数据）？"), confirmText: tr("删除"), danger: true })) return
   loading.value = true; error.value = ''
   try {
     await http.delete(`/api/llm/conversations/${row.id}`, { signal: requests.signal })
@@ -66,4 +67,5 @@ onBeforeUnmount(() => { disposed = true; requests.abort() })
       <div class="modal-action"><button type="button" class="btn btn-ghost" :disabled="loading" @click="dialog.close()">{{ tr("取消") }}</button><button type="button" class="btn btn-neutral" :disabled="loading || !selected" @click="loadSelected">{{ loading ? tr("加载中…") : tr("加载对话") }}</button></div>
     </div>
   </dialog>
+  <ConfirmDialog ref="confirmDialog" />
 </template>

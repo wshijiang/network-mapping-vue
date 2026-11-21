@@ -4,10 +4,12 @@ import { tr } from '../i18n/index.js'
 import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import http from '@/utils/http'
 
 const formFieldId = useId()
+const confirmDialog = ref(null)
 const alerts = ref([])
 const summary = ref({
   enabled: false,
@@ -202,7 +204,7 @@ async function submitBackup() {
 }
 
 async function runCheck() {
-  if (submitting.value || !window.confirm(tr("执行 pgBackRest 检查并验证 WAL 归档链路吗？"))) return
+  if (submitting.value || !await confirmDialog.value.ask({ message: tr("执行 pgBackRest 检查并验证 WAL 归档链路吗？"), confirmText: tr("确认执行") })) return
   submitting.value = true
   try {
     await http.post('/api/admin/backups/check')
@@ -247,7 +249,8 @@ onBeforeUnmount(() => {
   </div>
 
   <main class="page-shell">
-    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <ConfirmDialog ref="confirmDialog" />
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 class="page-title">{{ tr("数据备份") }}</h1>
         <p class="mt-1 text-sm text-base-content/60">{{ tr("管理 pgBackRest 备份集、手动任务和 WAL 归档检查。") }}</p>
@@ -414,7 +417,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <details class="collapse collapse-arrow border border-base-300 bg-base-100" open>
+        <details class="collapse collapse-arrow rounded-lg bg-base-200/40" open>
           <summary class="collapse-title font-semibold">{{ tr("1. 首次启用前需要完成什么？") }}</summary>
           <div class="collapse-content space-y-3 text-sm text-base-content/75">
             <ol class="list-decimal space-y-2 pl-5">
@@ -432,7 +435,7 @@ sudo -u postgres pgbackrest --stanza={{ summary.stanza || 'network_mapping' }} i
           </div>
         </details>
 
-        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+        <details class="collapse collapse-arrow rounded-lg bg-base-200/40">
           <summary class="collapse-title font-semibold">{{ tr("2. 如何安全地让 postgres 执行？") }}</summary>
           <div class="collapse-content space-y-3 text-sm text-base-content/75">
             <p>{{ tr("当 pgBackRest 必须以") }} <code class="rounded bg-base-200 px-1">postgres</code> {{ tr("运行时，不要把 Network Mapping 改成 root。请使用仓库提供的精确 sudoers 模板，让服务账户只能执行 info、check 和三种 backup 命令。") }}</p>
@@ -465,7 +468,7 @@ sudo -u network-mapping sudo -n -u postgres -- /bin/sh -c id</code></pre>
           </div>
         </details>
 
-        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+        <details class="collapse collapse-arrow rounded-lg bg-base-200/40">
           <summary class="collapse-title font-semibold">{{ tr("3. 如何判断页面状态？") }}</summary>
           <div class="collapse-content space-y-3 text-sm text-base-content/75">
             <p><strong>{{ tr("命令可用") }}</strong>{{ tr("只表示后端能运行并解析") }} <code>pgbackrest info --output=json</code>{{ tr("；还必须检查 stanza 自身的状态码。") }}</p>
@@ -488,7 +491,7 @@ sudo -u network-mapping sudo -n -u postgres -- /bin/sh -c id</code></pre>
           </div>
         </details>
 
-        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+        <details class="collapse collapse-arrow rounded-lg bg-base-200/40">
           <summary class="collapse-title font-semibold">{{ tr("4. 全量、差异和增量怎样选择？") }}</summary>
           <div class="collapse-content space-y-3 text-sm text-base-content/75">
             <div class="grid gap-3 md:grid-cols-3">
@@ -506,7 +509,7 @@ sudo -u network-mapping sudo -n -u postgres -- /bin/sh -c id</code></pre>
           </div>
         </details>
 
-        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+        <details class="collapse collapse-arrow rounded-lg bg-base-200/40">
           <summary class="collapse-title font-semibold">{{ tr("5. “运行检查”会做什么？") }}</summary>
           <div class="collapse-content space-y-2 text-sm text-base-content/75">
             <p>{{ tr("检查任务不会创建备份。它会核对 stanza、数据目录、数据库身份、归档配置，并通过 WAL 切换确认归档文件能到达仓库。") }}</p>
@@ -515,7 +518,7 @@ sudo -u network-mapping sudo -n -u postgres -- /bin/sh -c id</code></pre>
           </div>
         </details>
 
-        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+        <details class="collapse collapse-arrow rounded-lg bg-base-200/40">
           <summary class="collapse-title font-semibold">{{ tr("6. 定时任务在哪里运行？") }}</summary>
           <div class="collapse-content space-y-3 text-sm text-base-content/75">
             <p>{{ tr("定时任务由数据库主机上的 systemd timer 直接运行，不依赖 Network Mapping Web 服务。页面当前只展示仓库结果，不在线修改 timer。") }}</p>
@@ -537,7 +540,7 @@ journalctl -u pgbackrest-backup@full.service -n 100 --no-pager</code></pre>
           </div>
         </details>
 
-        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+        <details class="collapse collapse-arrow rounded-lg bg-base-200/40">
           <summary class="collapse-title font-semibold">{{ tr("7. 常见错误怎样处理？") }}</summary>
           <div class="collapse-content space-y-3 text-sm text-base-content/75">
             <div class="space-y-2">
@@ -552,7 +555,7 @@ journalctl -u pgbackrest-backup@full.service -n 100 --no-pager</code></pre>
           </div>
         </details>
 
-        <details class="collapse collapse-arrow border border-base-300 bg-base-100">
+        <details class="collapse collapse-arrow rounded-lg bg-base-200/40">
           <summary class="collapse-title font-semibold">{{ tr("8. 恢复和安全边界") }}</summary>
           <div class="collapse-content space-y-2 text-sm text-base-content/75">
             <ul class="list-disc space-y-2 pl-5">

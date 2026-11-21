@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, toValue } from 'vue'
 
 const STORAGE_KEY = 'network_mapping_search_column_widths'
 const MAX_WIDTH = 600
@@ -14,14 +14,20 @@ const MAX_CONTENT = 480
 // always sums to the container width when there is room for the minimums, so the
 // table fills the card without a spurious scrollbar; it only scrolls when the
 // user drags columns wider or the viewport is narrower than the minimums.
+//
+// `columns` may be a plain array or a ref/computed: hidden columns drop out of
+// the layout (width allocation and content measurement) while their persisted
+// widths are kept, so re-showing a column restores its previous size.
 export function useColumnResize(columns, wrapperRef) {
-  const defaults = Object.fromEntries(columns.map((c) => [c.key, c.default]))
-  const mins = Object.fromEntries(columns.map((c) => [c.key, c.min]))
+  const allColumns = toValue(columns)
+  const activeColumns = () => toValue(columns)
+  const defaults = Object.fromEntries(allColumns.map((c) => [c.key, c.default]))
+  const mins = Object.fromEntries(allColumns.map((c) => [c.key, c.min]))
   const widths = reactive({ ...defaults })
   const userResized = ref(false)
   const containerWidth = ref(0)
   const contentNeed = reactive({})
-  const totalWidth = computed(() => columns.reduce((sum, c) => sum + widths[c.key], 0))
+  const totalWidth = computed(() => activeColumns().reduce((sum, c) => sum + (widths[c.key] ?? c.default), 0))
   const needsScroll = computed(() => totalWidth.value > containerWidth.value + 1)
   let observer = null
   let dragging = null
@@ -31,7 +37,7 @@ export function useColumnResize(columns, wrapperRef) {
       const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
       if (!parsed) return
       let valid = false
-      for (const c of columns) {
+      for (const c of allColumns) {
         const value = parsed[c.key]
         if (Number.isFinite(value) && value >= c.min && value <= MAX_WIDTH) {
           widths[c.key] = value
@@ -53,7 +59,7 @@ export function useColumnResize(columns, wrapperRef) {
     const table = wrapperRef.value?.querySelector('table')
     if (!table) return
     const rows = table.querySelectorAll('tbody tr')
-    columns.forEach((c, index) => {
+    activeColumns().forEach((c, index) => {
       if (c.natural) return
       let need = 0
       for (const row of rows) {
@@ -86,19 +92,20 @@ export function useColumnResize(columns, wrapperRef) {
     if (!el) return
     containerWidth.value = availableWidth()
     measureContent()
-    const desired = Object.fromEntries(columns.map((c) => [c.key, desiredFor(c)]))
-    const desiredSum = columns.reduce((s, c) => s + desired[c.key], 0)
-    const minSum = columns.reduce((s, c) => s + c.min, 0)
+    const visible = activeColumns()
+    const desired = Object.fromEntries(visible.map((c) => [c.key, desiredFor(c)]))
+    const desiredSum = visible.reduce((s, c) => s + desired[c.key], 0)
+    const minSum = visible.reduce((s, c) => s + c.min, 0)
     const available = containerWidth.value
     if (available >= desiredSum) {
       const surplus = available - desiredSum
-      for (const c of columns) widths[c.key] = Math.round(desired[c.key] + surplus * (desired[c.key] / desiredSum))
+      for (const c of visible) widths[c.key] = Math.round(desired[c.key] + surplus * (desired[c.key] / desiredSum))
     } else if (available >= minSum) {
       const extra = available - minSum
       const span = desiredSum - minSum
-      for (const c of columns) widths[c.key] = Math.round(c.min + extra * ((desired[c.key] - c.min) / span))
+      for (const c of visible) widths[c.key] = Math.round(c.min + extra * ((desired[c.key] - c.min) / span))
     } else {
-      for (const c of columns) widths[c.key] = c.min
+      for (const c of visible) widths[c.key] = c.min
     }
   }
 
@@ -113,7 +120,7 @@ export function useColumnResize(columns, wrapperRef) {
   }
 
   function resetAll() {
-    for (const c of columns) widths[c.key] = c.default
+    for (const c of allColumns) widths[c.key] = c.default
     userResized.value = false
     try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
     autoFit()

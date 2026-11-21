@@ -6,7 +6,9 @@ import { webLabel } from '@/utils/webDetection'
 import { formatDateTime } from '../i18n/time.js'
 import WebTechnologyLabel from '@/components/WebTechnologyLabel.vue'
 
-const props = defineProps({ value: { type: Object, default: null }, compact: { type: Boolean, default: false } })
+// inline: render the evidence content directly (no collapsible wrapper), for
+// hosts that already provide their own expansion, e.g. the port detail panel.
+const props = defineProps({ value: { type: Object, default: null }, compact: { type: Boolean, default: false }, inline: { type: Boolean, default: false } })
 const label = computed(() => webLabel(props.value))
 const technologies = computed(() => ['identified', 'partial'].includes(props.value?.status) && Array.isArray(props.value?.technologies) ? props.value.technologies.slice(0, 64) : [])
 const confidence = { get high() { return tr("高") }, get medium() { return tr("中") }, get low() { return tr("低") } }
@@ -20,8 +22,8 @@ const usage = { get referenced_resource() { return tr("页面引用资源") }, g
     </span>
     <span v-else class="text-xs opacity-50">-</span>
   </template>
-  <details v-else-if="value && value.status !== 'not_web'" class="min-w-32 text-xs">
-    <summary class="cursor-pointer leading-6">
+  <component :is="inline ? 'div' : 'details'" v-else-if="value && value.status !== 'not_web'" :class="inline ? 'whitespace-normal text-xs' : 'min-w-32 text-xs'">
+    <summary v-if="!inline" class="cursor-pointer leading-6">
       <span v-if="technologies.length" class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 align-middle">
         <WebTechnologyLabel v-for="technology in technologies.slice(0, 3)" :key="technology.id" :technology="technology" />
         <span v-if="technologies.length > 3">{{ tr("等") }} {{ technologies.length }} {{ tr("项") }}</span>
@@ -30,7 +32,11 @@ const usage = { get referenced_resource() { return tr("页面引用资源") }, g
       <span v-if="value.status === 'partial' && technologies.length" class="ml-1 text-warning">{{ tr("证据不完整") }}</span>
       <span v-if="value.stale" class="ml-1 text-warning">{{ tr("证据可能过期") }}</span>
     </summary>
-    <div class="my-2 max-w-xl space-y-2 rounded-lg border border-base-300 bg-base-200/50 p-3 whitespace-normal">
+    <p v-if="inline && ((value.status === 'partial' && technologies.length) || value.stale)" class="text-warning">
+      <span v-if="value.status === 'partial' && technologies.length">{{ tr("证据不完整") }}</span>
+      <span v-if="value.stale" class="ml-1">{{ tr("证据可能过期") }}</span>
+    </p>
+    <div :class="inline ? 'space-y-2' : 'my-2 max-w-xl space-y-2 rounded-lg border border-base-300 bg-base-200/50 p-3 whitespace-normal'">
       <p>{{ tr("根据扫描时该 IP 端点的 HTTP 响应识别；域名虚拟主机和隐藏依赖可能具有不同的技术栈。") }}</p>
       <p v-if="value.status === 'pending'">{{ tr("后台正在处理已有证据，稍后刷新查看。") }}</p>
       <p v-else-if="value.status === 'unsupported'">{{ tr("当前证据格式暂不支持识别。") }}</p>
@@ -51,6 +57,6 @@ const usage = { get referenced_resource() { return tr("页面引用资源") }, g
       </ul>
       <p class="opacity-50">{{ tr("规则版本：") }}{{ value.ruleset_version }}{{ tr("。置信度为规则分级；引用资源不代表运行时使用。") }}</p>
     </div>
-  </details>
+  </component>
   <span v-else class="text-xs opacity-50">{{ label }}</span>
 </template>

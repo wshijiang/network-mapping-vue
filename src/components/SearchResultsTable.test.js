@@ -44,10 +44,12 @@ test('search results table renders fixed columns, compact cells and the tech bad
     ]
     const html = await renderToString(createSSRApp(component, { items }))
 
-    // Eleven fixed columns and eleven sortable headers.
+    // Eleven data columns; the settings button overlays the last header cell
+    // instead of owning a column, so it costs the data columns no width.
     assert.equal((html.match(/<col /g) || []).length, 11)
     assert.equal((html.match(/aria-sort=/g) || []).length, 11)
     assert.match(html, /table-fixed/)
+    assert.match(html, /管理显示列/)
 
     // Tech chips render fully with icons. The "共N条" badge only appears when the
     // chips overflow the column, so at rest (SSR) it is absent.

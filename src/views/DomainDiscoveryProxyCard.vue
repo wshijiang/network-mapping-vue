@@ -2,6 +2,7 @@
 import { tr } from '../i18n/index.js'
 import { computed, inject, ref, useId, watch } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { formatDateTime } from '../i18n/time.js'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
@@ -9,6 +10,7 @@ import { discoveryReason } from '@/utils/domainDiscovery'
 
 const isAdmin = inject('isAdmin', ref(false))
 const formFieldId = useId()
+const confirmDialog = ref(null)
 const loading = ref(false)
 const saving = ref(false)
 const testing = ref(false)
@@ -115,7 +117,7 @@ async function test() {
 
 async function clearCredentials() {
   if (clearing.value || !form.value.proxy_configured) return
-  if (!window.confirm(tr("确定清除已保存的代理地址和认证信息吗？"))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定清除已保存的代理地址和认证信息吗？"), confirmText: tr("清除"), danger: true })) return
   clearing.value = true
   alert.value = null
   try {
@@ -134,12 +136,13 @@ async function clearCredentials() {
   }
 }
 
-useUnsavedChanges(hasUnsavedChanges, save)
+useUnsavedChanges(hasUnsavedChanges, save, confirmDialog)
 watch(isAdmin, (value) => { if (value) load() }, { immediate: true })
 </script>
 
 <template>
   <section v-if="isAdmin" class="card border border-base-300 bg-base-100 p-4 space-y-3">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 class="font-semibold">{{ tr("域名发现出站代理") }}</h2>

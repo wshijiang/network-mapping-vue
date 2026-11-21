@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
+import { Bolt, ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
 import { tr } from '../i18n/index.js'
 import { formatDate, timeSettings, timezoneOffsetLabel } from '../i18n/time.js'
 import { formatLocation } from '@/utils/location'
@@ -8,6 +8,8 @@ import { originLabel } from '@/utils/federation.js'
 import { certificateStatus, formatNetworkOwner } from '@/utils/searchFormat'
 import { useTableSort } from '@/composables/useTableSort'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useColumnVisibility } from '@/composables/useColumnVisibility'
+import ColumnSettingsModal from '@/components/ColumnSettingsModal.vue'
 import ServiceLabel from '@/components/ServiceLabel.vue'
 import AssetTags from '@/components/AssetTags.vue'
 import IntelEvidence from '@/components/IntelEvidence.vue'
@@ -40,12 +42,23 @@ const columns = computed(() => [
   { key: 'scan_time', label: tr("扫描时间"), default: 168, min: 160, natural: true },
 ])
 
+// 列显隐记忆不过期；表头末尾的内嵌 Bolt 按钮打开管理 modal。
+const { hiddenKeys, visibleColumns, isDefault, toggle, reset } = useColumnVisibility('network_mapping_search_column_visibility', columns)
+const settingsOpen = ref(false)
+const columnSettingsRef = ref(null)
+function openSettings() {
+  settingsOpen.value = true
+  columnSettingsRef.value?.open()
+}
+
+// 设置按钮绝对定位嵌在最后一个表头单元格内，不单独占列宽，避免挤压数据列。
+const lastVisibleKey = computed(() => visibleColumns.value.at(-1)?.key)
 const wrapper = ref(null)
-// 列宽只依赖 key/min/default/natural（与语言无关），传入 setup 期结构快照即可。
-const { widths, totalWidth, needsScroll, userResized, refresh, onPointerDown, onKeydown, resetColumn, resetAll } = useColumnResize(columns.value, wrapper)
+const { widths, totalWidth, needsScroll, userResized, refresh, onPointerDown, onKeydown, resetColumn, resetAll } = useColumnResize(visibleColumns, wrapper)
 const itemsRef = computed(() => props.items)
-const { pageSort, displayItems, toggle } = useTableSort(itemsRef)
+const { pageSort, displayItems, toggle: toggleSort } = useTableSort(itemsRef)
 watch(itemsRef, () => refresh())
+watch(visibleColumns, () => refresh())
 
 function sortIcon(key) {
   if (pageSort.value.key !== key) return ChevronsUpDown
@@ -72,12 +85,12 @@ function rowKey(item) {
     <div ref="wrapper" :class="needsScroll ? 'overflow-x-auto overflow-y-clip' : 'overflow-visible'">
       <table class="table table-zebra table-sm table-fixed" :style="{ width: `${totalWidth}px` }">
         <colgroup>
-          <col v-for="column in columns" :key="column.key" :style="{ width: `${widths[column.key]}px` }">
+          <col v-for="column in visibleColumns" :key="column.key" :style="{ width: `${widths[column.key] ?? column.default}px` }">
         </colgroup>
         <thead>
           <tr>
-            <th v-for="column in columns" :key="column.key" class="relative" :aria-sort="ariaSort(column.key)">
-              <button type="button" class="flex w-full items-center gap-1 overflow-hidden" @click="toggle(column.key)">
+            <th v-for="column in visibleColumns" :key="column.key" class="relative" :aria-sort="ariaSort(column.key)">
+              <button type="button" class="flex w-full items-center gap-1 overflow-hidden" :class="column.key === lastVisibleKey ? 'pr-7' : ''" @click="toggleSort(column.key)">
                 <span class="truncate">{{ column.label }}</span>
                 <Transition name="sort-chevron" mode="out-in">
                   <component :is="sortIcon(column.key)" :key="sortState(column.key)" class="size-3.5 shrink-0" aria-hidden="true" />
@@ -93,62 +106,84 @@ function rowKey(item) {
                 @dblclick="resetColumn(column.key)"
                 @keydown="onKeydown($event, column.key)"
               ></span>
+              <button
+                v-if="column.key === lastVisibleKey"
+                type="button"
+                class="btn btn-ghost btn-xs btn-square absolute right-2 top-1/2 -translate-y-1/2"
+                :aria-label="tr(&quot;管理显示列&quot;)"
+                :title="tr(&quot;管理显示列&quot;)"
+                :aria-expanded="settingsOpen"
+                @click="openSettings"
+              >
+                <Bolt class="size-4 transition-transform duration-300 ease-out" :class="settingsOpen ? 'rotate-180' : ''" aria-hidden="true" />
+              </button>
             </th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in displayItems" :key="rowKey(item)">
-            <td>
-              <div class="space-y-1">
-                <AutoTooltip :content="item.ip_address">
-                  <a class="link block truncate font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer">{{ item.ip_address }}</a>
-                </AutoTooltip>
-                <div v-if="(item.tags || []).length || item.intel || originLabel(item)" class="flex flex-wrap items-center gap-1">
-                  <AssetTags :tags="item.tags || []" :limit="3" size="xs" />
-                  <IntelEvidence :intel="item.intel" :label="tr(&quot;端点情报&quot;)" />
-                  <span v-if="originLabel(item)" class="badge badge-outline badge-xs" :title="(item.federation_sources || []).join(', ')">{{ originLabel(item) }}</span>
+            <template v-for="column in visibleColumns" :key="column.key">
+              <td v-if="column.key === 'ip'">
+                <div class="space-y-1">
+                  <AutoTooltip :content="item.ip_address">
+                    <a class="link block truncate font-mono" :href="`/asset.html?ip=${encodeURIComponent(item.ip_address)}`" target="_blank" rel="noopener noreferrer">{{ item.ip_address }}</a>
+                  </AutoTooltip>
+                  <div v-if="(item.tags || []).length || item.intel || originLabel(item)" class="flex flex-wrap items-center gap-1">
+                    <AssetTags :tags="item.tags || []" :limit="3" size="xs" />
+                    <IntelEvidence :intel="item.intel" :label="tr(&quot;端点情报&quot;)" />
+                    <span v-if="originLabel(item)" class="badge badge-outline badge-xs" :title="(item.federation_sources || []).join(', ')">{{ originLabel(item) }}</span>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td>{{ item.port ?? '-' }}</td>
-            <td>{{ item.protocol ?? '-' }}</td>
-            <td class="service-cell"><ServiceLabel :service="item.service" :data="item.data" /></td>
-            <td><CellText :text="item.banner ?? '-'" /></td>
-            <td><OsFingerprint compact :value="item.os" /></td>
-            <td><TechStackCell :web="item.web" /></td>
-            <td>
-              <div v-if="item.title || item.tls_subject || item.tls_version || item.favicon" class="space-y-1">
-                <div class="flex items-center gap-1.5">
-                  <AssetFavicon v-if="item.favicon" :ip="item.ip_address" :port="item.port" :protocol="item.protocol" :icon-md5="item.icon_md5" :size="16" />
-                  <AutoTooltip v-if="item.title" :content="item.title">
-                    <div class="truncate font-medium">{{ item.title }}</div>
+              </td>
+              <td v-else-if="column.key === 'port'">{{ item.port ?? '-' }}</td>
+              <td v-else-if="column.key === 'protocol'">{{ item.protocol ?? '-' }}</td>
+              <td v-else-if="column.key === 'service'" class="service-cell"><ServiceLabel :service="item.service" :data="item.data" /></td>
+              <td v-else-if="column.key === 'banner'"><CellText :text="item.banner ?? '-'" /></td>
+              <td v-else-if="column.key === 'os'"><OsFingerprint compact :value="item.os" /></td>
+              <td v-else-if="column.key === 'tech'"><TechStackCell :web="item.web" /></td>
+              <td v-else-if="column.key === 'web'">
+                <div v-if="item.title || item.tls_subject || item.tls_version || item.favicon" class="space-y-1">
+                  <div class="flex items-center gap-1.5">
+                    <AssetFavicon v-if="item.favicon" :ip="item.ip_address" :port="item.port" :protocol="item.protocol" :icon-md5="item.icon_md5" :size="16" />
+                    <AutoTooltip v-if="item.title" :content="item.title">
+                      <div class="truncate font-medium">{{ item.title }}</div>
+                    </AutoTooltip>
+                  </div>
+                  <div v-if="certificateStatus(item)" class="flex flex-wrap items-center gap-1">
+                    <span class="badge badge-sm" :class="certificateStatus(item).class">{{ certificateStatus(item).text }}</span>
+                    <span v-if="item.tls_mode" class="badge badge-ghost badge-sm">{{ item.tls_mode }}</span>
+                  </div>
+                  <AutoTooltip v-if="item.tls_subject" :content="item.tls_subject">
+                    <div class="truncate font-mono text-xs opacity-70">{{ item.tls_subject }}</div>
                   </AutoTooltip>
                 </div>
-                <div v-if="certificateStatus(item)" class="flex flex-wrap items-center gap-1">
-                  <span class="badge badge-sm" :class="certificateStatus(item).class">{{ certificateStatus(item).text }}</span>
-                  <span v-if="item.tls_mode" class="badge badge-ghost badge-sm">{{ item.tls_mode }}</span>
-                </div>
-                <AutoTooltip v-if="item.tls_subject" :content="item.tls_subject">
-                  <div class="truncate font-mono text-xs opacity-70">{{ item.tls_subject }}</div>
-                </AutoTooltip>
-              </div>
-              <span v-else>-</span>
-            </td>
-            <td><CellText :text="formatNetworkOwner(item)" /></td>
-            <td><CellText :text="formatLocation(item)" /></td>
-            <td class="whitespace-nowrap">
-              <span v-if="item.scan_time" class="inline-flex items-center gap-1">
-                {{ formatDate(item.scan_time) }}
-                <AutoTooltip :content="timeSettings.timezone">
-                  <span class="badge badge-ghost badge-xs">{{ timezoneOffsetLabel(item.scan_time) }}</span>
-                </AutoTooltip>
-              </span>
-              <span v-else>-</span>
-            </td>
+                <span v-else>-</span>
+              </td>
+              <td v-else-if="column.key === 'asn'"><CellText :text="formatNetworkOwner(item)" /></td>
+              <td v-else-if="column.key === 'location'"><CellText :text="formatLocation(item)" /></td>
+              <td v-else-if="column.key === 'scan_time'" class="whitespace-nowrap">
+                <span v-if="item.scan_time" class="inline-flex items-center gap-1">
+                  {{ formatDate(item.scan_time) }}
+                  <AutoTooltip :content="timeSettings.timezone">
+                    <span class="badge badge-ghost badge-xs">{{ timezoneOffsetLabel(item.scan_time) }}</span>
+                  </AutoTooltip>
+                </span>
+                <span v-else>-</span>
+              </td>
+            </template>
           </tr>
         </tbody>
       </table>
     </div>
+    <ColumnSettingsModal
+      ref="columnSettingsRef"
+      :columns="columns"
+      :hidden-keys="hiddenKeys"
+      :is-default="isDefault"
+      @toggle="toggle"
+      @reset="reset"
+      @close="settingsOpen = false"
+    />
   </div>
 </template>
 

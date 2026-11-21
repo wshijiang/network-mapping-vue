@@ -57,9 +57,21 @@ export const sortKeys = {
     const time = new Date(item.scan_time).getTime()
     return Number.isFinite(time) ? time : null
   },
+  // Asset-detail port columns (millisecond timestamps or ISO strings).
+  first_seen_at: (item) => {
+    if (item.first_seen_at == null || item.first_seen_at === '') return null
+    const time = new Date(item.first_seen_at).getTime()
+    return Number.isFinite(time) ? time : null
+  },
+  last_seen_at: (item) => {
+    if (item.last_seen_at == null || item.last_seen_at === '') return null
+    const time = new Date(item.last_seen_at).getTime()
+    return Number.isFinite(time) ? time : null
+  },
+  source: (item) => item.source || null,
 }
 
-const numericKeys = new Set(['port', 'asn', 'scan_time'])
+const numericKeys = new Set(['port', 'asn', 'scan_time', 'first_seen_at', 'last_seen_at'])
 
 export function compareValues(key, a, b) {
   if (numericKeys.has(key)) return a - b

@@ -26,7 +26,10 @@
     "test:routing": "node --test src/utils/scanRouting.test.js",
     "test:open-api": "node --test src/utils/openApi.test.js",
     "test:web": "node --test src/utils/webDetection.test.js src/components/WebTechnologies.test.js src/components/WebTechnologies.compact.test.js src/views/taskdetail.test.js",
-    "test:search": "node --test src/utils/tableSort.test.js src/composables/useTableSort.test.js src/components/AutoTooltip.test.js src/components/TechStackCell.test.js src/components/SearchResultsTable.test.js",
+    "test:search": "node --test src/utils/tableSort.test.js src/composables/useTableSort.test.js src/composables/useColumnVisibility.test.js src/components/AutoTooltip.test.js src/components/TechStackCell.test.js src/components/SearchResultsTable.test.js",
+    "test:ip-aggregation": "node --test src/utils/ipAggregation.test.js",
+    "test:port-evidence": "node --test src/utils/portEvidence.test.js",
+    "test:task-visibility": "node --test src/utils/systemTaskVisibility.test.js",
     "test:i18n": "node --test src/i18n/*.test.js"
   },
   "dependencies": {

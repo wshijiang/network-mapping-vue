@@ -3,7 +3,8 @@ import { tr } from '../i18n/index.js'
 
 import ServiceLabel from '@/components/ServiceLabel.vue'
 import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
-import { computed, markRaw, onMounted, ref } from 'vue'
+import { computed, markRaw, onMounted, ref, watch } from 'vue'
+import { Bolt, ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
 import ApexMaps from 'vue-apexmaps'
 import 'apexmaps/apexmaps.css'
 import AssetTags from '../components/AssetTags.vue'
@@ -12,8 +13,12 @@ import WebTechnologies from '@/components/WebTechnologies.vue'
 import AssetFavicon from '@/components/AssetFavicon.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
+import ColumnSettingsModal from '@/components/ColumnSettingsModal.vue'
+import PortDetailPanel from '@/components/PortDetailPanel.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useTheme } from '@/composables/useTheme'
+import { useTableSort } from '@/composables/useTableSort'
+import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import http from '../utils/http'
 import { formatLocation } from '../utils/location'
 import ChartCsvExport from '@/components/ChartCsvExport.vue'
@@ -65,6 +70,52 @@ const mapError = ref('')
 const worldCountriesGeometry = ref(null)
 const assetMapRef = ref(null)
 const mapRenderKey = ref(0)
+
+// 端口表：列显隐记忆（不过期）、页内排序（与搜索页一致的 无→升→降→无）、
+// 行尾展开更多观察信息。computed 表头随语言切换更新。
+const portColumns = computed(() => [
+  { key: 'port', label: tr("端口") },
+  { key: 'service', label: tr("协议 / 服务") },
+  { key: 'banner', label: 'Banner' },
+  { key: 'os', label: tr("系统线索") },
+  { key: 'tech', label: tr("技术栈") },
+  { key: 'first_seen_at', label: tr("首次发现") },
+  { key: 'last_seen_at', label: tr("最近发现") },
+  { key: 'source', label: tr("来源") },
+])
+const { hiddenKeys: portHiddenKeys, visibleColumns: visiblePortColumns, isDefault: portColumnsDefault, toggle: togglePortColumn, reset: resetPortColumns } = useColumnVisibility('network_mapping_asset_port_columns', portColumns)
+// table-fixed + 固定列宽：展开行的 colspan 内容不再参与列宽计算，
+// 打开/关闭展开行不会引起数据列宽度抖动。
+const PORT_COLUMN_WIDTHS = { port: 70, service: 190, banner: 200, os: 140, tech: 160, first_seen_at: 150, last_seen_at: 150, source: 120 }
+const portSettingsOpen = ref(false)
+const portSettingsRef = ref(null)
+function openPortSettings() {
+  portSettingsOpen.value = true
+  portSettingsRef.value?.open()
+}
+const portsRef = computed(() => ports.value)
+const { pageSort: portSort, displayItems: displayPorts, toggle: togglePortSort } = useTableSort(portsRef)
+function portSortIcon(key) {
+  if (portSort.value.key !== key) return ChevronsUpDown
+  return portSort.value.direction === 1 ? ChevronUp : ChevronDown
+}
+function portSortState(key) {
+  if (portSort.value.key !== key) return 'none'
+  return portSort.value.direction === 1 ? 'asc' : 'desc'
+}
+function portAriaSort(key) {
+  if (portSort.value.key !== key) return 'none'
+  return portSort.value.direction === 1 ? 'ascending' : 'descending'
+}
+const expandedPortKey = ref(null)
+function portRowKey(port) {
+  return `${port.protocol || 'unknown'}:${port.port}`
+}
+function togglePortExpand(port) {
+  const key = portRowKey(port)
+  expandedPortKey.value = expandedPortKey.value === key ? null : key
+}
+watch(ports, () => { expandedPortKey.value = null })
 
 const assetIp = ref(new URLSearchParams(window.location.search).get('ip')?.trim() || '')
 const portsPage = computed(() => Math.floor(portsOffset.value / PORT_PAGE_SIZE) + 1)
@@ -479,7 +530,7 @@ onMounted(() => {
 <template>
   <main class="page-shell min-h-screen bg-base-200">
     <div class="space-y-5">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="page-title">{{ tr("资产详情") }}</h1>
           <p class="mt-1 text-sm opacity-65">{{ tr("展示单个 IP 的网络属性、发现概况和端口服务。") }}</p>
@@ -587,38 +638,95 @@ onMounted(() => {
         </div>
 
         <section class="rounded-xl border border-base-300 bg-base-100 shadow-sm">
-          <div class="flex items-center justify-between border-b border-base-300 px-4 py-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-300 px-4 py-3">
             <h2 class="font-semibold"><span class="font-mono">{{ assetIp || '-' }}</span> {{ tr("的端口") }}</h2>
-            <span class="text-sm opacity-60">{{ tr("共") }} {{ portsTotal }} {{ tr("个") }}</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-sm opacity-60">{{ tr("共") }} {{ portsTotal }} {{ tr("条") }}</span>
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs btn-square"
+                :aria-label="tr(&quot;管理显示列&quot;)"
+                :title="tr(&quot;管理显示列&quot;)"
+                :aria-expanded="portSettingsOpen"
+                @click="openPortSettings"
+              >
+                <Bolt class="size-4 transition-transform duration-300 ease-out" :class="portSettingsOpen ? 'rotate-180' : ''" aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <div v-if="portsLoading" class="flex justify-center py-16"><span class="loading loading-spinner loading-lg"></span></div>
           <div v-else-if="ports.length === 0" class="py-16 text-center opacity-60">{{ tr("暂无端口观察记录。") }}</div>
           <div v-else class="overflow-x-auto">
-            <table class="table table-zebra">
+            <table class="table table-fixed w-full min-w-[1080px]">
+              <colgroup>
+                <col v-for="column in visiblePortColumns" :key="column.key" :style="{ width: `${PORT_COLUMN_WIDTHS[column.key]}px` }">
+                <col style="width: 120px">
+              </colgroup>
               <thead>
-                <tr><th>{{ tr("端口") }}</th><th>{{ tr("协议 / 服务") }}</th><th>Banner</th><th>{{ tr("系统线索") }}</th><th>{{ tr("技术栈") }}</th><th>{{ tr("首次发现") }}</th><th>{{ tr("最近发现") }}</th><th>{{ tr("来源") }}</th><th></th></tr>
+                <tr>
+                  <th v-for="column in visiblePortColumns" :key="column.key" :aria-sort="portAriaSort(column.key)">
+                    <button type="button" class="flex w-full items-center gap-1 overflow-hidden" @click="togglePortSort(column.key)">
+                      <span class="truncate">{{ column.label }}</span>
+                      <Transition name="sort-chevron" mode="out-in">
+                        <component :is="portSortIcon(column.key)" :key="portSortState(column.key)" class="size-3.5 shrink-0" aria-hidden="true" />
+                      </Transition>
+                    </button>
+                  </th>
+                  <th></th>
+                </tr>
               </thead>
               <tbody>
-                <tr v-for="port in ports" :key="`${port.protocol || 'unknown'}:${port.port}`">
-                  <td><span class="font-mono font-semibold">{{ port.port }}</span><IntelEvidence :intel="port.intel" :label="tr(&quot;端点情报&quot;)" /></td>
-                  <td>
-                    <div class="flex items-center gap-1.5">
-                      <AssetFavicon v-if="port.favicon" :ip="summary.ip" :port="port.port" :protocol="port.protocol" :icon-md5="port.icon_md5" :size="16" />
-                      <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" /></span></div>
-                    </div>
-                    <div v-if="port.service_stale" class="mt-1 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</div>
-                  </td>
-                  <td class="max-w-xs"><CellText :text="port.banner || '-'" /></td>
-                  <td><OsFingerprint compact :value="port.os" /></td>
-                  <td><WebTechnologies compact :value="port.web" /></td>
-                  <td class="whitespace-nowrap">{{ formatTime(port.first_seen_at) }}</td>
-                  <td class="whitespace-nowrap">{{ formatTime(port.last_seen_at) }}</td>
-                  <td>
-                    <div>{{ port.source }}</div>
-                    <div v-if="port.service_source" class="text-xs opacity-60">{{ tr("服务：") }}{{ port.service_source }}</div>
-                  </td>
-                  <td><button class="btn btn-ghost btn-sm whitespace-nowrap" @click="openHistory(port)">{{ tr("历史") }}</button></td>
-                </tr>
+                <template v-for="(port, index) in displayPorts" :key="portRowKey(port)">
+                  <tr :class="index % 2 === 1 ? 'bg-base-200/40' : ''">
+                    <template v-for="column in visiblePortColumns" :key="column.key">
+                      <td v-if="column.key === 'port'"><span class="font-mono font-semibold">{{ port.port }}</span><IntelEvidence :intel="port.intel" :label="tr(&quot;端点情报&quot;)" /></td>
+                      <td v-else-if="column.key === 'service'">
+                        <div class="flex items-center gap-1.5">
+                          <AssetFavicon v-if="port.favicon" :ip="summary.ip" :port="port.port" :protocol="port.protocol" :icon-md5="port.icon_md5" :size="16" />
+                          <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" /></span></div>
+                        </div>
+                        <div v-if="port.service_stale" class="mt-1 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</div>
+                      </td>
+                      <td v-else-if="column.key === 'banner'" class="max-w-xs"><CellText :text="port.banner || '-'" /></td>
+                      <td v-else-if="column.key === 'os'"><OsFingerprint compact :value="port.os" /></td>
+                      <td v-else-if="column.key === 'tech'"><WebTechnologies compact :value="port.web" /></td>
+                      <td v-else-if="column.key === 'first_seen_at'" class="whitespace-nowrap">{{ formatTime(port.first_seen_at) }}</td>
+                      <td v-else-if="column.key === 'last_seen_at'" class="whitespace-nowrap">{{ formatTime(port.last_seen_at) }}</td>
+                      <td v-else-if="column.key === 'source'">
+                        <div>{{ port.source }}</div>
+                        <div v-if="port.service_source" class="text-xs opacity-60">{{ tr("服务：") }}{{ port.service_source }}</div>
+                      </td>
+                    </template>
+                    <td class="whitespace-nowrap">
+                      <div class="flex items-center justify-end gap-1">
+                        <button class="btn btn-ghost btn-sm" @click="openHistory(port)">{{ tr("历史") }}</button>
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-sm btn-square"
+                          :aria-label="expandedPortKey === portRowKey(port) ? tr(&quot;收起详情&quot;) : tr(&quot;展开详情&quot;)"
+                          :aria-expanded="expandedPortKey === portRowKey(port)"
+                          @click="togglePortExpand(port)"
+                        >
+                          <Transition name="sort-chevron" mode="out-in">
+                            <ChevronUp v-if="expandedPortKey === portRowKey(port)" key="up" class="size-4" aria-hidden="true" />
+                            <ChevronDown v-else key="down" class="size-4" aria-hidden="true" />
+                          </Transition>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td :colspan="visiblePortColumns.length + 1" class="p-0">
+                      <Transition name="port-detail">
+                        <div v-show="expandedPortKey === portRowKey(port)" class="port-detail-transition">
+                          <div class="max-h-[36rem] overflow-y-auto bg-base-200/60 p-4">
+                            <PortDetailPanel :port="port" :ip="summary.ip" />
+                          </div>
+                        </div>
+                      </Transition>
+                    </td>
+                  </tr>
+                </template>
               </tbody>
             </table>
           </div>
@@ -627,6 +735,15 @@ onMounted(() => {
             <button class="btn btn-sm" :disabled="portsLoading || portsOffset === 0" @click="loadPorts(Math.max(0, portsOffset - PORT_PAGE_SIZE))">{{ tr("上一页") }}</button>
             <button class="btn btn-sm" :disabled="portsLoading || portsOffset + PORT_PAGE_SIZE >= portsTotal" @click="loadPorts(portsOffset + PORT_PAGE_SIZE)">{{ tr("下一页") }}</button>
           </div>
+          <ColumnSettingsModal
+            ref="portSettingsRef"
+            :columns="portColumns"
+            :hidden-keys="portHiddenKeys"
+            :is-default="portColumnsDefault"
+            @toggle="togglePortColumn"
+            @reset="resetPortColumns"
+            @close="portSettingsOpen = false"
+          />
         </section>
       </template>
     </div>
@@ -780,6 +897,47 @@ onMounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .history-detail-enter-active,
   .history-detail-leave-active {
+    transition: none;
+  }
+}
+
+.port-detail-enter-active,
+.port-detail-leave-active {
+  overflow: hidden;
+  transition: max-height 240ms ease, opacity 240ms ease;
+}
+.port-detail-enter-from,
+.port-detail-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.port-detail-enter-to,
+.port-detail-leave-from {
+  max-height: 40rem;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .port-detail-enter-active,
+  .port-detail-leave-active {
+    transition: none;
+  }
+}
+
+.sort-chevron-enter-active,
+.sort-chevron-leave-active {
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+.sort-chevron-enter-from {
+  opacity: 0;
+  transform: translateY(2px);
+}
+.sort-chevron-leave-to {
+  opacity: 0;
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sort-chevron-enter-active,
+  .sort-chevron-leave-active {
     transition: none;
   }
 }

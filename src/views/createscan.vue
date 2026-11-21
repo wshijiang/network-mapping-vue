@@ -3,6 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import { computed, onMounted, ref, watch, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
 import { parseScanTargets, targetTypeLabel } from '@/utils/scanTargets'
@@ -392,10 +393,12 @@ async function submitTask() {
   }
 }
 
-useUnsavedChanges(hasUnsavedChanges, submitTask)
+const confirmDialog = ref(null)
+useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
 </script>
 
 <template>
+  <ConfirmDialog ref="confirmDialog" />
   <div class="pointer-events-none fixed right-4 top-20 z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:w-auto">
     <AppAlert
       v-for="alert in alerts"
@@ -410,7 +413,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask)
   </div>
 
   <div class="page-shell">
-    <h1 class="page-title mb-5">{{ tr("创建任务") }}</h1>
+    <h1 class="page-title mb-4">{{ tr("创建任务") }}</h1>
     <div class="card bg-base-100 card-border border-base-300 w-full p-5">
       <div class="grid grid-cols-1 gap-4">
         <fieldset class="fieldset min-w-0 w-full">
@@ -440,7 +443,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask)
         </fieldset>
 
         <div class="space-y-3">
-          <details name="create-task-options" class="create-task-accordion collapse collapse-arrow border border-base-300 bg-base-100" open>
+          <details name="create-task-options" class="create-task-accordion collapse collapse-arrow rounded-lg bg-base-200/40" open>
             <summary class="collapse-title min-h-0 py-3 pr-12">
               <span class="block font-medium">{{ tr("扫描模式") }}</span>
               <span class="mt-0.5 block text-xs text-base-content/60">
@@ -540,7 +543,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask)
             </div>
           </details>
 
-          <details name="create-task-options" class="create-task-accordion collapse collapse-arrow border border-base-300 bg-base-100">
+          <details name="create-task-options" class="create-task-accordion collapse collapse-arrow rounded-lg bg-base-200/40">
             <summary class="collapse-title min-h-0 py-3 pr-12">
               <span class="block font-medium">{{ tr("执行扫描器") }}</span>
               <span class="mt-0.5 block text-xs text-base-content/60">{{ tr("当前：") }}{{ dispatchModeSummary }}</span>
@@ -653,14 +656,11 @@ useUnsavedChanges(hasUnsavedChanges, submitTask)
 }
 
 .create-task-accordion {
-  transition:
-    border-color 200ms ease,
-    box-shadow 200ms ease;
+  transition: background-color 200ms ease;
 }
 
 .create-task-accordion[open] {
-  border-color: color-mix(in oklab, var(--color-neutral) 35%, var(--color-base-300));
-  box-shadow: 0 1px 3px color-mix(in oklab, var(--color-base-content) 8%, transparent);
+  background-color: var(--color-base-200);
 }
 
 .create-task-accordion > summary {

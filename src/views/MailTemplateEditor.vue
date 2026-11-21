@@ -7,6 +7,7 @@ import DOMPurify from 'dompurify'
 import TemplateCodeEditor from '@/components/TemplateCodeEditor.vue'
 import TemplateVariables from '@/components/TemplateVariables.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
 
@@ -18,6 +19,7 @@ const emit = defineEmits(['templates-loaded', 'selected'])
 const formFieldId = useId()
 
 const alerts = ref([])
+const confirmDialog = ref(null)
 const templates = ref([])
 const currentTemplate = ref(null)
 const source = ref(emptySource())
@@ -162,7 +164,7 @@ async function initialize() {
 async function selectTemplate(templateKey) {
   if (templateKey === currentTemplate.value?.templateKey) return
   if (hasUnsavedChanges.value) {
-    const shouldContinue = window.confirm(tr("当前模板有未保存修改，确定切换模板吗？"))
+    const shouldContinue = await confirmDialog.value.ask({ message: tr("当前模板有未保存修改，确定切换模板吗？"), confirmText: tr("放弃修改"), danger: true })
     if (!shouldContinue) return
   }
   await loadTemplate(templateKey)
@@ -266,7 +268,7 @@ async function selectNotificationState(change) {
 
 async function publishTemplate() {
   if (!currentTemplate.value || actionBusy.value) return
-  const confirmed = window.confirm(tr("确定发布当前模板吗？发布后，后续对应事件的邮件将使用这个版本；已归档报告保持原正文。"))
+  const confirmed = await confirmDialog.value.ask({ message: tr("确定发布当前模板吗？发布后，后续对应事件的邮件将使用这个版本；已归档报告保持原正文。"), confirmText: tr("发布") })
   if (!confirmed) return
   if (hasUnsavedChanges.value) {
     const saved = await saveDraft({ silent: true })
@@ -298,7 +300,7 @@ async function publishTemplate() {
 async function restoreVersion(version) {
   if (!currentTemplate.value || actionBusy.value) return
   const warning = hasUnsavedChanges.value ? tr("当前未保存修改将被覆盖。") : ''
-  const confirmed = window.confirm(tr("{0}确定将版本 {1} 恢复为新草稿吗？", [warning, version]))
+  const confirmed = await confirmDialog.value.ask({ message: tr("{0}确定将版本 {1} 恢复为新草稿吗？", [warning, version]), confirmText: tr("继续"), danger: Boolean(warning) })
   if (!confirmed) return
   restoringVersion.value = version
   try {
@@ -376,9 +378,9 @@ function insertVariable(variableKey) {
   view.focus()
 }
 
-function useDefaultTemplate() {
+async function useDefaultTemplate() {
   if (!currentTemplate.value?.defaultSource || actionBusy.value) return
-  if (hasUnsavedChanges.value && !window.confirm(tr("载入默认模板将替换当前未保存的编辑内容，是否继续？"))) return
+  if (hasUnsavedChanges.value && !await confirmDialog.value.ask({ message: tr("载入默认模板将替换当前未保存的编辑内容，是否继续？"), confirmText: tr("继续"), danger: true })) return
   source.value = cloneSource(currentTemplate.value.defaultSource)
   preview.value = null
   pushAlert('info', tr("已载入默认模板"), tr("请确认预览，再保存草稿并发布。现有归档报告不会改变。"))
@@ -417,7 +419,7 @@ function formatTime(value) {
   return formatSystemDateTime(date)
 }
 
-useUnsavedChanges(hasUnsavedChanges, saveDraft)
+useUnsavedChanges(hasUnsavedChanges, saveDraft, confirmDialog)
 onMounted(initialize)
 onBeforeUnmount(() => {
   disposed = true
@@ -426,6 +428,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <ConfirmDialog ref="confirmDialog" />
   <div class="pointer-events-none fixed right-4 top-20 z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:w-auto">
     <AppAlert
       v-for="alert in alerts"

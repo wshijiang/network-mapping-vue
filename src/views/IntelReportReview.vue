@@ -76,7 +76,7 @@ onBeforeUnmount(stop)
 
 <template>
   <main class="page-shell flex flex-col gap-5">
-    <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="-mb-1 flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0"><h1 class="page-title">{{ tr("审核报告") }}</h1><p class="mt-2 text-sm opacity-65">{{ tr("同一报告集中审核；点击 IOC 查看其原文位置，可逐条接纳、拒绝或暂不处理。") }}</p></div>
       <router-link :to="backTo" class="btn btn-ghost btn-sm">{{ backTab === 'articles' ? tr("返回文章列表") : tr("返回审核列表") }}</router-link>
     </div>

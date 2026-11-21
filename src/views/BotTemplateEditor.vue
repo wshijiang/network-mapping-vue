@@ -7,6 +7,7 @@ import http from '@/utils/http'
 import { notificationEvents, providerLabel, deliveryReason } from '@/utils/notifications'
 import TemplateCodeEditor from '@/components/TemplateCodeEditor.vue'
 import TemplateVariables from '@/components/TemplateVariables.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { formatDateTime } from '../i18n/time.js'
 
@@ -41,7 +42,8 @@ const bodyEditor = shallowRef(null)
 const titleInput = ref(null)
 const activeField = ref('body')
 const hasUnsavedChanges = computed(() => saved.value !== JSON.stringify(source.value))
-useUnsavedChanges(hasUnsavedChanges, async () => { await act('draft'); return !hasUnsavedChanges.value })
+const confirmDialog = ref(null)
+useUnsavedChanges(hasUnsavedChanges, async () => { await act('draft'); return !hasUnsavedChanges.value }, confirmDialog)
 defineExpose({
   hasUnsavedChanges, selectEvent, restoreVersion, loading,
   versions: computed(() => detail.value?.versions || []),
@@ -93,7 +95,7 @@ async function load() {
 }
 async function selectEvent(value) {
   if (value === event.value || loading.value || busy.value || testing.value) return
-  if (hasUnsavedChanges.value && !window.confirm(tr("当前模板有未保存修改，确定切换事件吗？"))) return
+  if (hasUnsavedChanges.value && !await confirmDialog.value.ask({ message: tr("当前模板有未保存修改，确定切换事件吗？"), confirmText: tr("放弃修改"), danger: true })) return
   clearTimeout(timer)
   previewAbort?.abort()
   previewSequence++
@@ -202,7 +204,7 @@ async function save() {
 }
 async function act(action, version) {
   if (busy.value || loading.value || testing.value || !detail.value) return
-  if (action === 'restore' && hasUnsavedChanges.value && !window.confirm(tr("恢复历史版本会替换未保存修改，确定继续吗？"))) return
+  if (action === 'restore' && hasUnsavedChanges.value && !await confirmDialog.value.ask({ message: tr("恢复历史版本会替换未保存修改，确定继续吗？"), confirmText: tr("继续"), danger: true })) return
   busy.value = true
   error.value = ''
   notice.value = ''
@@ -220,15 +222,15 @@ async function act(action, version) {
   } catch (e) { if (!disposed) error.value = e.response?.data?.message || e.message || tr("模板操作失败") }
   finally { if (!disposed) busy.value = false }
 }
-function reset() {
-  if (hasUnsavedChanges.value && !window.confirm(tr("载入默认模板会替换未保存修改，确定继续吗？"))) return
+async function reset() {
+  if (hasUnsavedChanges.value && !await confirmDialog.value.ask({ message: tr("载入默认模板会替换未保存修改，确定继续吗？"), confirmText: tr("继续"), danger: true })) return
   source.value = clone(detail.value.defaultSource)
 }
 function restoreVersion(version) {
   return act('restore', version)
 }
-function reload() {
-  if (hasUnsavedChanges.value && !window.confirm(tr("重新加载会放弃本地修改，确定继续吗？"))) return
+async function reload() {
+  if (hasUnsavedChanges.value && !await confirmDialog.value.ask({ message: tr("重新加载会放弃本地修改，确定继续吗？"), confirmText: tr("放弃修改"), danger: true })) return
   load()
 }
 onMounted(() => Promise.allSettled([load(),loadChannels()]))
@@ -245,6 +247,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="template-workspace min-w-0 w-full space-y-4 p-5">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="alert alert-info text-sm alert-soft"><span>{{ providerLabel(provider) }} {{ tr("支持在线模拟预览。此处未接入官方客户端原样预览，字体、主题、链接提示等以实际客户端为准。预览使用固定示例数据，不会发送消息。") }}</span></div>
     <p v-if="error" role="alert" class="alert alert-error">{{ error }} <button v-if="!busy && !loading" class="btn btn-sm" @click="reload">{{ tr("重新加载") }}</button></p>
     <p v-if="notice" role="status" class="alert alert-success">{{ notice }}</p>

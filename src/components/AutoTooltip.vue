@@ -18,6 +18,9 @@ const props = defineProps({
   copyable: { type: Boolean, default: true },
   open: { type: Boolean, default: false },
   prefer: { type: String, default: 'bottom' },
+  // When disabled the trigger renders normally but never opens the panel
+  // (used by clamp helpers that only need a tip while text is truncated).
+  disabled: { type: Boolean, default: false },
 })
 
 const GAP = 12
@@ -111,6 +114,7 @@ function scheduleHide() {
   hideTimer = setTimeout(() => { hovered.value = false }, HIDE_DELAY)
 }
 function show() {
+  if (props.disabled) return
   cancelHide()
   hovered.value = true
   updatePosition()

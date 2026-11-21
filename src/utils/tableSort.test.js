@@ -57,3 +57,19 @@ test('ASN sorts numerically ignoring the AS prefix', () => {
 test('unknown column key is a no-op comparator', () => {
   assert.equal(compareItems('nope', 1, { port: 1 }, { port: 2 }), 0)
 })
+
+test('asset-detail timestamps sort numerically with missing values last', () => {
+  const rows = [
+    { first_seen_at: 3000, last_seen_at: '2026-01-03T00:00:00Z', source: 'scanner' },
+    { first_seen_at: 1000, last_seen_at: '2026-01-01T00:00:00Z', source: 'federation' },
+    { first_seen_at: null, last_seen_at: null, source: '' },
+    { first_seen_at: 2000, last_seen_at: '2026-01-02T00:00:00Z', source: 'import' },
+  ]
+  const byFirst = [...rows].sort((a, b) => compareItems('first_seen_at', 1, a, b))
+  assert.deepEqual(byFirst.map((r) => r.first_seen_at), [1000, 2000, 3000, null])
+  const byLastDesc = [...rows].sort((a, b) => compareItems('last_seen_at', -1, a, b))
+  assert.equal(byLastDesc[0].last_seen_at, '2026-01-03T00:00:00Z')
+  assert.equal(byLastDesc.at(-1).last_seen_at, null)
+  const bySource = [...rows].sort((a, b) => compareItems('source', 1, a, b))
+  assert.deepEqual(bySource.map((r) => r.source), ['federation', 'import', 'scanner', ''])
+})
