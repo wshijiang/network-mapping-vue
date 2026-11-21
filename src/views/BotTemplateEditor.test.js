@@ -19,13 +19,14 @@ function createPage(request = async () => response(initial), post = async () => 
   let dispose
   let exposed
   const events = []
-  const page = localizedVm(`${code}\n;({load,apply,act,refreshPreview,source,saved,detail,preview,previewDocument,previewError,error,hasUnsavedChanges,sendTest,channelId,channels,loadChannels,sampleSeverity,testDelivery,testNotice,selectEvent,event,selectStateFromDropdown})`, {
+  const page = localizedVm(`${code}\n;({load,apply,act,refreshPreview,source,saved,detail,preview,previewDocument,previewError,error,hasUnsavedChanges,sendTest,channelId,channels,loadChannels,sampleSeverity,testDelivery,testNotice,selectEvent,event,selectStateFromDropdown,confirmDialog})`, {
     computed, nextTick, ref, shallowRef, watch, useId: () => 'bot-template-test', notificationEvents, providerLabel, deliveryReason, AbortController,
     defineProps: () => ({provider, initialEvent, eventVariants}), defineExpose: value => { exposed = value }, defineEmits: () => (...args) => events.push(args),
     http:Object.assign(request,{post}), setTimeout, clearTimeout,
     DOMPurify:{sanitize:value=>value}, formatDateTime:value=>value,
     useUnsavedChanges:()=>{}, onMounted:()=>{}, onBeforeUnmount:fn=>{dispose=fn}, window:{confirm},
   })
+  page.confirmDialog.value = { ask: async () => confirm() }
   return {...page,events,exposed,dispose:()=>dispose()}
 }
 

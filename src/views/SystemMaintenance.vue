@@ -4,8 +4,10 @@ import { tr } from '../i18n/index.js'
 import { formatDateTime as formatSystemDateTime, toLocalInputValue as systemInputValue, parseSystemDate } from '../i18n/time.js'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import http from '@/utils/http'
 
+const confirmDialog = ref(null)
 const alerts = ref([])
 const loading = ref(false)
 const submitting = ref(false)
@@ -146,7 +148,7 @@ async function enterMaintenance() {
     pushAlert('warning', tr("请输入维护说明"))
     return
   }
-  if (!window.confirm(tr("进入后将停止分配新任务，并通知活动 Scanner 继续在本地完成扫描。约 60 秒后即可关闭服务端，结果将在退出维护后补传。确认继续吗？"))) return
+  if (!await confirmDialog.value.ask({ message: tr("进入后将停止分配新任务，并通知活动 Scanner 继续在本地完成扫描。约 60 秒后即可关闭服务端，结果将在退出维护后补传。确认继续吗？"), confirmText: tr("进入维护"), danger: true })) return
   submitting.value = true
   try {
     const response = await http.post('/api/admin/system-maintenance/enter', requestPayload())
@@ -182,7 +184,7 @@ async function updateMaintenance() {
 }
 
 async function exitMaintenance() {
-  if (!window.confirm(tr("确认手动退出维护模式吗？Scanner 将在下一次探测后恢复，最长约 10 分钟。"))) return
+  if (!await confirmDialog.value.ask({ message: tr("确认手动退出维护模式吗？Scanner 将在下一次探测后恢复，最长约 10 分钟。"), confirmText: tr("退出维护") })) return
   submitting.value = true
   try {
     const response = await http.post('/api/admin/system-maintenance/exit', {
@@ -211,6 +213,7 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="fixed right-4 top-20 z-50 flex w-[min(28rem,calc(100vw-2rem))] flex-col gap-2">
       <AppAlert
         v-for="alert in alerts"

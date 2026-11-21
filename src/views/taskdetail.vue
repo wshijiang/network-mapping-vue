@@ -10,6 +10,7 @@ import WebTechnologies from '@/components/WebTechnologies.vue'
 import AssetFavicon from '@/components/AssetFavicon.vue'
 import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { ChevronDown, ChevronsUpDown, ChevronUp } from '@lucide/vue'
 import { compareItems } from '@/utils/tableSort'
 import { formatLocation } from '@/utils/location'
@@ -29,6 +30,7 @@ const selectedExecutionId = ref('')
 const dnsComparison = ref([])
 const dnsComparisonLoading = ref(false)
 const dnsComparisonError = ref('')
+const confirmDialog = ref(null)
 let refreshTimer
 let isUnmounted = false
 const refreshableStatuses = new Set(['pending', 'running'])
@@ -298,7 +300,7 @@ async function copyTaskId() {
 }
 
 async function cancelTask() {
-  if (!window.confirm(tr("确定取消该任务吗？运行中的扫描将在扫描器下一次心跳后终止。"))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定取消该任务吗？运行中的扫描将在扫描器下一次心跳后终止。"), confirmText: tr("取消任务"), danger: true })) return
   actionLoading.value = true
   actionMessage.value = ''
   try {
@@ -362,6 +364,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-2">
       <div class="min-w-0 flex items-center gap-2">
         <h1 class="page-title truncate text-left" :title="taskId"> {{ tr("任务 UUID：") }}{{ displayTaskId }}

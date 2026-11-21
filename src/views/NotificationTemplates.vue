@@ -4,11 +4,13 @@ import { tr } from '../i18n/index.js'
 import { computed, nextTick, reactive, ref } from 'vue'
 import MailTemplateEditor from './MailTemplateEditor.vue'
 import BotTemplateEditor from './BotTemplateEditor.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { notificationProviders } from '@/utils/notifications'
 import { formatDateTime } from '../i18n/time.js'
 
 const provider = ref('email')
 const editor = ref(null)
+const confirmDialog = ref(null)
 const mailTemplates = ref([])
 const eventDefinitions = [
   { value: 'login_success', get label() { return tr("登录成功") }, botEvents: ['user.login'] },
@@ -49,7 +51,7 @@ async function selectProvider(value) {
   if (value === provider.value || navigationDisabled.value || !notificationProviders.some(item => item.value === value)) return
   switching.value = true
   try {
-    if (editor.value?.hasUnsavedChanges && !window.confirm(tr("当前模板有未保存修改，确定切换通知渠道吗？"))) return
+    if (editor.value?.hasUnsavedChanges && !await confirmDialog.value.ask({ message: tr("当前模板有未保存修改，确定切换通知渠道吗？"), confirmText: tr("放弃修改"), danger: true })) return
     provider.value = value
     await nextTick()
   } finally {
@@ -89,6 +91,7 @@ async function restoreVersion(version) {
 
 <template>
   <div class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="mb-5">
       <h1 class="page-title">{{ tr("通知模板") }}</h1>
       <p class="mt-1 text-xs opacity-60">{{ tr("分别配置邮件、飞书和 Telegram 的模板。各渠道独立保存和发布，同类渠道共用对应事件的已发布模板。") }}</p>

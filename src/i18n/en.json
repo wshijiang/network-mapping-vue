@@ -4665,5 +4665,16 @@
   "末页": "Last page",
   "管理显示列": "Manage visible columns",
   "选择表格中显示的列，设置保存在本浏览器中，不会过期。": "Choose which columns the table shows. The preference is stored in this browser and never expires.",
-  "重置为默认": "Reset to defaults"
+  "重置为默认": "Reset to defaults",
+  "进入维护": "Enter maintenance",
+  "退出维护": "Exit maintenance",
+  "解绑": "Unbind",
+  "清除": "Clear",
+  "发布": "Publish",
+  "确认取消": "Confirm cancellation",
+  "未保存的修改": "Unsaved changes",
+  "当前页面有未保存的修改。是否保存后离开？": "This page has unsaved changes. Save before leaving?",
+  "保存后离开": "Save and leave",
+  "修改尚未保存，确定放弃修改并离开吗？": "Changes are not saved. Discard them and leave?",
+  "放弃修改并离开": "Discard and leave"
 }

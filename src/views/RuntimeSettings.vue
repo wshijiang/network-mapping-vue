@@ -4,6 +4,7 @@ import { tr } from '../i18n/index.js'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Info } from '@lucide/vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import AutoTooltip from '@/components/AutoTooltip.vue'
 import MonitorRulesEditor from '@/components/MonitorRulesEditor.vue'
 import { normalizeMonitor, policyDiff, scannerHealthDefaults, scannerHealthFields, validateMonitor, validateScannerHealth } from '@/utils/monitorRules'
@@ -404,11 +405,13 @@ async function saveAllChanges() {
   return true
 }
 
-useUnsavedChanges(hasUnsavedChanges, saveAllChanges)
+const confirmDialog = ref(null)
+useUnsavedChanges(hasUnsavedChanges, saveAllChanges, confirmDialog)
 onMounted(loadAll)
 </script>
 
 <template>
+  <ConfirmDialog ref="confirmDialog" />
   <div class="pointer-events-none fixed right-4 top-20 z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:w-auto">
     <AppAlert v-for="alert in alerts" :key="alert.id" class="pointer-events-auto" v-bind="alert" @close="closeAlert(alert.id)" />
   </div>

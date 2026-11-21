@@ -2,11 +2,13 @@
 import { tr } from '../i18n/index.js'
 import { computed, onMounted, ref, useId, watch } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { formatDateTime } from '../i18n/time.js'
 import http from '@/utils/http'
 
 const emit = defineEmits(['dirty'])
 const formFieldId = useId()
+const confirmDialog = ref(null)
 const loading = ref(false)
 const saving = ref(false)
 const testing = ref(false)
@@ -116,7 +118,7 @@ async function save() {
 
 async function clearCredentials() {
   if (clearing.value || !form.value.proxy_configured) return
-  if (!window.confirm(tr("确定清除已保存的代理地址和认证信息吗？"))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定清除已保存的代理地址和认证信息吗？"), confirmText: tr("清除"), danger: true })) return
   clearing.value = true
   alert.value = null
   try {
@@ -169,6 +171,7 @@ onMounted(load)
 
 <template>
   <div class="card bg-base-100 card-border border-base-300 p-4">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h3 class="font-semibold">{{ tr("网络") }}</h3>

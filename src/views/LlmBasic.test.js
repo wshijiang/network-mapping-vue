@@ -16,7 +16,8 @@ const fixture = () => ({ revision: 7, enabled: true, provider_id: 'one', model_i
 function page({ http, chatRequest, localStorage } = {}) {
   let dispose
   const context = { ...llm, ...debug, ...draft, computed, ref, nextTick, watch, TextEncoder, crypto: { randomUUID: () => 'session-id' }, AbortController, window: { confirm: () => true, localStorage }, onMounted: () => {}, onBeforeUnmount: fn => { dispose = fn }, useUnsavedChanges: () => {}, http: http || { get: async () => ({ data: { data: fixture() } }) }, chatRequest: chatRequest || (async () => {}) }
-  const p = localizedVm(`${source}\n;({state,enabled,providerId,modelId,chatProvider,chatModel,messages,input,load,save,chooseProvider,chooseChatProvider,newSession,send,stop,generating,error,promptDraft,promptDirty,promptEditing,editPrompt,cancelPrompt,selectionDirty,dirty,savePrompt,restorePrompt,saveAll,useSystemPrompt,debugParameters,retainIoc,retainDebug,historyId,session,loadHistory,replayLast,draftError})`, context)
+  const p = localizedVm(`${source}\n;({state,enabled,providerId,modelId,chatProvider,chatModel,messages,input,load,save,chooseProvider,chooseChatProvider,newSession,send,stop,generating,error,promptDraft,promptDirty,promptEditing,editPrompt,cancelPrompt,selectionDirty,dirty,savePrompt,restorePrompt,saveAll,useSystemPrompt,debugParameters,retainIoc,retainDebug,historyId,session,loadHistory,replayLast,draftError,confirmDialog})`, context)
+  p.confirmDialog.value = { ask: async () => true }
   return { ...p, dispose: () => dispose() }
 }
 

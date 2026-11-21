@@ -4,6 +4,7 @@ import { tr } from '../i18n/index.js'
 import { formatDateTime } from '../i18n/time.js'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import SearchExportDialog from '@/components/SearchExportDialog.vue'
 import http from '@/utils/http'
@@ -19,6 +20,7 @@ import {
 } from '@/utils/dataExport.js'
 
 const alerts = ref([])
+const confirmDialog = ref(null)
 
 function pushAlert(type, title, description = '', timeout = 7000) {
   alerts.value.unshift({ id: crypto.randomUUID(), type, title, description, timeout })
@@ -172,6 +174,7 @@ async function downloadTask(task) {
 }
 
 async function cancelTask(task) {
+  if (!await confirmDialog.value.ask({ message: tr('确定取消此导出任务吗？'), confirmText: tr('确认取消'), danger: true })) return
   try {
     const response = await http.post(`/api/data-export/tasks/${task.id}/cancel`)
     if (response.data?.success === true) {
@@ -187,7 +190,7 @@ async function cancelTask(task) {
 }
 
 async function deleteTask(task) {
-  if (!window.confirm(tr('删除后任务记录与导出文件将被移除。确定删除？'))) return
+  if (!await confirmDialog.value.ask({ message: tr('删除后任务记录与导出文件将被移除。确定删除？'), confirmText: tr('删除'), danger: true })) return
   try {
     const response = await http.delete(`/api/data-export/tasks/${task.id}`)
     if (response.data?.success === true) {
@@ -210,6 +213,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <ConfirmDialog ref="confirmDialog" />
   <div class="pointer-events-none fixed right-4 top-20 z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:w-auto">
     <AppAlert
       v-for="alert in alerts"

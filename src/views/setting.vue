@@ -3,6 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import { computed, inject, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import GeneralSettings from '@/components/GeneralSettings.vue'
 import NetworkProxySettings from '@/components/NetworkProxySettings.vue'
 import ConfigCheckPanel from '@/components/ConfigCheckPanel.vue'
@@ -339,7 +340,8 @@ async function saveAllSettings() {
   return true
 }
 
-useUnsavedChanges(hasUnsavedChanges, saveAllSettings)
+const confirmDialog = ref(null)
+useUnsavedChanges(hasUnsavedChanges, saveAllSettings, confirmDialog)
 
 onMounted(() => {
   fetchListenConfig()
@@ -349,6 +351,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <ConfirmDialog ref="confirmDialog" />
   <div class="pointer-events-none fixed right-4 top-20 z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:w-auto">
     <AppAlert
       v-for="alert in alerts"

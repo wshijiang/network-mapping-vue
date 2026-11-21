@@ -4,6 +4,7 @@ import { tr } from '../i18n/index.js'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ReportTrendChart from '@/components/ReportTrendChart.vue'
 import http from '@/utils/http'
@@ -12,6 +13,7 @@ import { deliveryReason } from '@/utils/notifications'
 
 const route = useRoute()
 const router = useRouter()
+const confirmDialog = ref(null)
 const report = ref(null)
 const deliveries = ref([])
 const recipients = ref([])
@@ -110,7 +112,7 @@ async function send() {
 }
 
 async function revokeImage() {
-  if (!window.confirm(tr("撤销后将停止从服务器加载这份报告的趋势图，待发送邮件会取消。邮箱已缓存的图像无法收回。是否继续？"))) return
+  if (!await confirmDialog.value.ask({ message: tr("撤销后将停止从服务器加载这份报告的趋势图，待发送邮件会取消。邮箱已缓存的图像无法收回。是否继续？"), confirmText: tr("撤销"), danger: true })) return
   actionLoading.value = true
   try {
     await http.post(`/api/reports/${report.value.id}/mail-image/revoke`)
@@ -136,6 +138,7 @@ onBeforeUnmount(() => { disposed = true; clearTimeout(timer); controller?.abort(
 
 <template>
   <div class="page-shell report-detail space-y-6">
+    <ConfirmDialog ref="confirmDialog" />
     <AppAlert v-for="item in alerts" :key="item.id" v-bind="item" @close="alerts = alerts.filter((a) => a.id !== item.id)" />
     <div class="report-controls flex flex-wrap items-center justify-between gap-3">
       <router-link class="btn btn-sm btn-ghost" to="/reports">{{ tr("← 报告中心") }}</router-link>

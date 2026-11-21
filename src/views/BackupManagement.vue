@@ -4,10 +4,12 @@ import { tr } from '../i18n/index.js'
 import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import http from '@/utils/http'
 
 const formFieldId = useId()
+const confirmDialog = ref(null)
 const alerts = ref([])
 const summary = ref({
   enabled: false,
@@ -202,7 +204,7 @@ async function submitBackup() {
 }
 
 async function runCheck() {
-  if (submitting.value || !window.confirm(tr("执行 pgBackRest 检查并验证 WAL 归档链路吗？"))) return
+  if (submitting.value || !await confirmDialog.value.ask({ message: tr("执行 pgBackRest 检查并验证 WAL 归档链路吗？"), confirmText: tr("确认执行") })) return
   submitting.value = true
   try {
     await http.post('/api/admin/backups/check')
@@ -247,6 +249,7 @@ onBeforeUnmount(() => {
   </div>
 
   <main class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 class="page-title">{{ tr("数据备份") }}</h1>

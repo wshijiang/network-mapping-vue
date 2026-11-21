@@ -3,6 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { formatDateTime } from '../i18n/time.js'
 import { channelForm, channelPayload, deliveryReason, deliveryStatuses, eventLabel, notificationEvents, notificationProviders, providerLabel, validateChannel } from '@/utils/notifications'
@@ -17,7 +18,8 @@ const filterChannel = ref(''), filterStatus = ref(''), nextBefore = ref(null)
 const historyLoading = ref(false), historyFailed = ref(false), lastRefresh = ref(null)
 const browsingHistory = ref(false)
 const dirty = computed(() => Boolean(editor.value?.open) && JSON.stringify(form.value) !== savedForm.value)
-useUnsavedChanges(dirty, save)
+const confirmDialog = ref(null)
+useUnsavedChanges(dirty, save, confirmDialog)
 let sequence = 0, timer, bindingTimer, bindingController, disposed = false
 const readControllers = new Set()
 
@@ -86,8 +88,8 @@ function openEditor(channel) {
   savedForm.value = JSON.stringify(form.value)
   editor.value?.showModal()
 }
-function closeEditor() {
-  if (dirty.value && !window.confirm(tr("有未保存的渠道配置，确定放弃修改吗？"))) return
+async function closeEditor() {
+  if (dirty.value && !await confirmDialog.value.ask({ message: tr("有未保存的渠道配置，确定放弃修改吗？"), confirmText: tr("放弃修改"), danger: true })) return
   editor.value?.close()
   form.value = channelForm()
   savedForm.value = ''
@@ -111,7 +113,7 @@ async function save() {
 }
 async function action(channel, kind) {
   if (busy.value) return
-  if (kind === 'delete' && !window.confirm(tr("确定删除“{0}”并取消其待处理通知吗？", [channel.name]))) return
+  if (kind === 'delete' && !await confirmDialog.value.ask({ message: tr("确定删除“{0}”并取消其待处理通知吗？", [channel.name]), confirmText: tr("删除"), danger: true })) return
   busy.value = true
   try {
     if (kind === 'test') {
@@ -182,7 +184,7 @@ async function cancelBinding() {
   finally { bindingBusy.value = false }
 }
 async function unbindRecipient(channel) {
-  if (busy.value || bindingBusy.value || !window.confirm(tr("解除个人绑定会停用渠道并取消待处理通知，确定继续吗？"))) return
+  if (busy.value || bindingBusy.value || !await confirmDialog.value.ask({ message: tr("解除个人绑定会停用渠道并取消待处理通知，确定继续吗？"), confirmText: tr("解绑"), danger: true })) return
   busy.value = true
   try {
     dataOf(await http.delete(`/api/notifications/channels/${channel.id}/feishu-binding/recipient`, { data: { expected_revision: channel.revision } }))
@@ -212,6 +214,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="page-shell space-y-6">
+    <ConfirmDialog ref="confirmDialog" />
     <AppAlert v-for="item in alerts" :key="item.id" v-bind="item" @close="alerts = alerts.filter(value => value.id !== item.id)" />
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div><h1 class="page-title">{{ tr("通知渠道") }}</h1><p class="mt-2 text-sm opacity-60">{{ tr("统一管理邮件、飞书和 Telegram。各渠道独立启停、订阅通知，同一事件可同时发送到多个渠道。") }}</p></div>

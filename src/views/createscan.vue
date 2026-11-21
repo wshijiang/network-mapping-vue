@@ -3,6 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import { computed, onMounted, ref, watch, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
 import { parseScanTargets, targetTypeLabel } from '@/utils/scanTargets'
@@ -392,10 +393,12 @@ async function submitTask() {
   }
 }
 
-useUnsavedChanges(hasUnsavedChanges, submitTask)
+const confirmDialog = ref(null)
+useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
 </script>
 
 <template>
+  <ConfirmDialog ref="confirmDialog" />
   <div class="pointer-events-none fixed right-4 top-20 z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:w-auto">
     <AppAlert
       v-for="alert in alerts"

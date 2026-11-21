@@ -3,6 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import { computed, onBeforeUnmount, onMounted, reactive, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import http from '@/utils/http'
 import {
@@ -21,6 +22,7 @@ import {
 } from '@/utils/federation.js'
 
 const formFieldId = useId()
+const confirmDialog = ref(null)
 const alerts = ref([])
 
 function pushAlert(type, title, description = '', timeout = 7000) {
@@ -206,7 +208,7 @@ async function saveSource() {
 }
 
 async function removeSource(source) {
-  if (!window.confirm(tr('删除后该数据源不再参与联测，确定删除？'))) return
+  if (!await confirmDialog.value.ask({ message: tr('删除后该数据源不再参与联测，确定删除？'), confirmText: tr('删除'), danger: true })) return
   try {
     const response = await http.delete(`/api/federation/sources/${source.id}`, {
       params: { expected_revision: source.revision },
@@ -438,7 +440,7 @@ async function cancelRun(run) {
 }
 
 async function removeRun(run) {
-  if (!window.confirm(tr('删除后 run 记录与结果缓存将被移除，已入库资产保留。确定删除？'))) return
+  if (!await confirmDialog.value.ask({ message: tr('删除后 run 记录与结果缓存将被移除，已入库资产保留。确定删除？'), confirmText: tr('删除'), danger: true })) return
   try {
     const response = await http.delete(`/api/federation/runs/${run.id}`)
     if (response.data?.success) {
@@ -523,6 +525,7 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
   </div>
 
   <div class="space-y-4 p-4 sm:p-6">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-xl font-semibold">{{ tr("联测") }}</h1>

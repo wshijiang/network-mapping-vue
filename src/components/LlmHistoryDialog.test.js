@@ -11,11 +11,12 @@ const compiled = compileScript(descriptor, { id: 'history-dialog-test' })
 const source = compiled.scriptSetupAst.filter(n => n.type === 'ImportDeclaration').reverse().reduce((s, n) => s.slice(0, n.start) + s.slice(n.end), descriptor.scriptSetup.content)
 function page(http) {
   const events = []; let dispose
-  const p = localizedVm(`${source};({dialog,rows,selected,offset,total,loading,error,fetchPage,loadSelected,remove})`, {
+  const p = localizedVm(`${source};({dialog,rows,selected,offset,total,loading,error,fetchPage,loadSelected,remove,confirmDialog})`, {
     ref, llmError, http, AbortController, defineEmits: () => (...args) => events.push(args), defineExpose() {},
     onBeforeUnmount: fn => { dispose = fn }, window: { confirm: () => true },
   })
   p.dialog.value = { showModal() {}, close() {} }
+  p.confirmDialog.value = { ask: async () => true }
   return { ...p, events, dispose: () => dispose() }
 }
 test('modal selects a historical snapshot and deletion refreshes the correct page', async () => {

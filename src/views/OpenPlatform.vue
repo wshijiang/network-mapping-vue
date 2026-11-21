@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import http from '../utils/http'
 import { formatDateTime } from '../i18n/time.js'
 import OpenApiPolicyEditor from '../components/OpenApiPolicyEditor.vue'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { apiError, applicationStatus, cloneDocument, curlExample, endpointPath, isMutation, redactInvocationResult, samplePayload } from '../utils/openApi'
 
 const formFieldId = useId()
@@ -16,7 +17,7 @@ const selected = ref(null), details = ref(null), appTab = ref('overview'), appFi
 const settings = ref({ document: { enabled: false, retention_days: 30, audit_retention_days: 180, webhook_allowed_hosts: [] }, revision: 1 })
 const allowedHostsText = ref(''), roles = ref([]), roleForm = ref({ user_id: '', role: 'auditor' })
 const policyDraft = ref(null), metadataDraft = ref({ name: '', purpose: '' }), approval = ref(null), approvalPolicy = ref(null), approvalNote = ref('')
-const createDialog = ref(null), keyDialog = ref(null), secretDialog = ref(null), verificationDialog = ref(null), approvalDialog = ref(null), webhookDialog = ref(null)
+const createDialog = ref(null), keyDialog = ref(null), secretDialog = ref(null), verificationDialog = ref(null), approvalDialog = ref(null), webhookDialog = ref(null), confirmDialog = ref(null)
 const createForm = ref({ name: '', purpose: '', kind: 'personal', environment: 'production', owner_user_id: '', policy: {} })
 const keyForm = ref({ name: '', expires_days: 90, ip_allowlist: '', scopes: [], overlap_hours: 0, rotate: null })
 const secret = ref(''), secretTitle = ref(''), verification = ref({ password: '', totp: '' }), subscriptions = ref([])
@@ -132,7 +133,8 @@ async function createApplication() {
   }, tr("应用申请已提交，审批通过后可创建凭据。"))
 }
 async function changeState(status) {
-  if (!window.confirm(tr("确定{0}“{1}”吗？", [status === 'active' ? '启用' : status === 'paused' ? '暂停' : '归档', details.value.application.name]))) return
+  const stateVerb = status === 'active' ? tr("启用") : status === 'paused' ? tr("暂停") : tr("归档")
+  if (!await confirmDialog.value.ask({ message: tr("确定{0}“{1}”吗？", [stateVerb, details.value.application.name]), confirmText: stateVerb, danger: status !== 'active' && status !== 'paused' })) return
   await act(async () => { await api('POST', `apps/${selected.value}/state`, { status, expected_revision: details.value.application.revision }); await loadApp(selected.value); await loadApplications() }, tr("应用状态已更新。"))
 }
 async function saveMetadata() {
@@ -158,7 +160,7 @@ async function issueKey() {
   })
 }
 async function revokeKey(key) {
-  if (!window.confirm(tr("撤销“{0}”后，新调用和关联后台任务将失去授权。确定撤销吗？", [key.name]))) return
+  if (!await confirmDialog.value.ask({ message: tr("撤销“{0}”后，新调用和关联后台任务将失去授权。确定撤销吗？", [key.name]), confirmText: tr("撤销"), danger: true })) return
   await act(async () => { await api('POST', `apps/${selected.value}/credentials/${key.id}/revoke`, {}); await loadApp(selected.value, false) }, tr("凭据已撤销。"))
 }
 function review(item) {
@@ -180,7 +182,7 @@ async function runExample() {
   if (parameters.value.some(k => !parameterValues.value[k])) { notify('error', tr("请填写路径参数。")); return }
   let payload
   try { payload = JSON.parse(payloadText.value) } catch { notify('error', tr("请求参数必须为有效 JSON。")); return }
-  if (isMutation(endpoint.value.method, endpoint.value.path) && !window.confirm(tr("执行 {0} 会变更当前应用的业务资源。确定执行吗？", [endpoint.value.summary]))) return
+  if (isMutation(endpoint.value.method, endpoint.value.path) && !await confirmDialog.value.ask({ message: tr("执行 {0} 会变更当前应用的业务资源。确定执行吗？", [endpoint.value.summary]), confirmText: tr("确认执行"), danger: true })) return
   invocationBusy.value = true
   const client = selected.value, credential = credentialId.value
   try {
@@ -202,11 +204,11 @@ async function downloadJob(job) {
   })
 }
 async function jobAction(job, action) {
-  if (!window.confirm(action === 'cancel' ? tr("确定取消此导出任务吗？") : tr("确定删除此导出生成物吗？"))) return
+  if (!await confirmDialog.value.ask({ message: action === 'cancel' ? tr("确定取消此导出任务吗？") : tr("确定删除此导出生成物吗？"), confirmText: action === 'cancel' ? tr("确认取消") : tr("删除"), danger: true })) return
   await act(async () => { if (selected.value !== job.client_id) await loadApp(job.client_id); await invoke(action === 'cancel' ? 'POST' : 'DELETE', `/exports/${job.id}${action === 'cancel' ? '/cancel' : ''}`); await loadApp(selected.value, false); if (section.value === 'jobs') await loadSection() }, tr("导出已更新。"))
 }
 async function retryDelivery(item) {
-  if (!window.confirm(tr("确定重新投递此事件吗？接收方需要按事件 ID 去重。"))) return
+  if (!await confirmDialog.value.ask({ message: tr("确定重新投递此事件吗？接收方需要按事件 ID 去重。"), confirmText: tr("继续") })) return
   await act(async () => { if (selected.value !== item.client_id) await loadApp(item.client_id); await invoke('POST', `/webhook-deliveries/${item.id}/retry`); await loadSection() }, tr("投递已重新入队。"))
 }
 async function fetchSubscriptions() {
@@ -241,6 +243,7 @@ onBeforeUnmount(() => { ++sectionSequence; ++applicationSequence; ++subscription
 
 <template>
   <main class="page-shell space-y-5">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="flex flex-wrap items-center justify-between gap-3"><div><h1 class="page-title">{{ tr("开放平台") }}</h1><p class="mt-1 text-sm opacity-60">{{ tr("管理应用接入、授权范围和业务自动化。") }}</p></div><div class="flex items-center gap-2"><span class="badge badge-outline">{{ { admin: tr("平台管理员"), operator: tr("运营人员"), auditor: tr("审计人员"), developer: tr("开发者") }[role] }}</span><button class="btn btn-sm btn-ghost" :disabled="loading" @click="loadSection()">{{ tr("刷新") }}</button></div></div>
     <div v-if="message" role="alert" class="alert" :class="message.kind === 'error' ? 'alert-error' : 'alert-success'"><div><p>{{ message.text }}</p><p v-if="message.requestId" class="mt-1 font-mono text-xs">{{ tr("请求 ID：") }}{{ message.requestId }}</p></div><button class="btn btn-ghost btn-xs" :aria-label="tr(&quot;关闭提示&quot;)" @click="message = null">{{ tr("关闭") }}</button></div>
     <nav class="flex flex-wrap gap-1 rounded-xl bg-base-100 p-2"><router-link v-for="[id, label] in nav" :key="id" :to="{ path: id === 'overview' ? '/open-platform' : `/open-platform/${id}`, query: selected ? { app: selected } : {} }" class="btn btn-sm" :class="section === id ? 'btn-neutral' : 'btn-ghost'">{{ label }}</router-link></nav>

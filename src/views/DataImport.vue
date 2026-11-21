@@ -4,6 +4,7 @@ import { tr } from '../i18n/index.js'
 import { formatDateTime } from '../i18n/time.js'
 import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import http from '@/utils/http'
 import { autoMatchHeaders, readCsvHeader, validateHeaderMapping } from '@/utils/csvHeader.js'
@@ -21,6 +22,7 @@ import {
 } from '@/utils/dataImport.js'
 
 const formFieldId = useId()
+const confirmDialog = ref(null)
 const alerts = ref([])
 
 function pushAlert(type, title, description = '', timeout = 7000) {
@@ -321,7 +323,7 @@ function overwriteLabel(policy) {
 }
 
 async function runAction(task, path, { successTitle, confirmKey } = {}) {
-  if (confirmKey && !window.confirm(tr(confirmKey))) return
+  if (confirmKey && !await confirmDialog.value.ask({ message: tr(confirmKey), confirmText: tr('确认取消'), danger: true })) return
   try {
     const response = await http.post(`/api/data-import/tasks/${task.id}/${path}`)
     if (response.data?.success === true) {
@@ -348,7 +350,7 @@ function cancelTask(task) {
 }
 
 async function deleteTask(task) {
-  if (!window.confirm(tr('删除后任务记录与文件将被移除，已导入数据保留。确定删除？'))) return
+  if (!await confirmDialog.value.ask({ message: tr('删除后任务记录与文件将被移除，已导入数据保留。确定删除？'), confirmText: tr('删除'), danger: true })) return
   try {
     const response = await http.delete(`/api/data-import/tasks/${task.id}`)
     if (response.data?.success === true) {
@@ -481,6 +483,7 @@ onBeforeUnmount(() => {
   </div>
 
   <div class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="mb-4">
       <h1 class="page-title">{{ tr("数据导入") }}</h1>
       <p class="text-xs opacity-60">{{ tr("上传 CSV 资产端点文件，核对头部映射后导入资产库。") }}</p>

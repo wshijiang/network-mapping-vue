@@ -11,8 +11,9 @@ const compiled = compileScript(descriptor, { id: 'llm-provider-test' })
 const source = compiled.scriptSetupAst.filter(n => n.type === 'ImportDeclaration').reverse().reduce((s, n) => s.slice(0, n.start) + s.slice(n.end), descriptor.scriptSetup.content)
 function page(http) {
   let dispose
-  const p = localizedVm(`${source}\n;({form,global,state,editor,open,saveProvider,saveGlobal,remove,refreshModels,load,error,editing})`, { ...llm, computed, ref, AbortController, crypto: { randomUUID: () => 'id' }, window: { confirm: () => true }, onMounted: () => {}, onBeforeUnmount: fn => { dispose = fn }, useUnsavedChanges: () => {}, http })
+  const p = localizedVm(`${source}\n;({form,global,state,editor,open,saveProvider,saveGlobal,remove,refreshModels,load,error,editing,confirmDialog})`, { ...llm, computed, ref, AbortController, crypto: { randomUUID: () => 'id' }, window: { confirm: () => true }, onMounted: () => {}, onBeforeUnmount: fn => { dispose = fn }, useUnsavedChanges: () => {}, http })
   p.editor.value = { showModal() {}, close() {} }
+  p.confirmDialog.value = { ask: async () => true }
   return { ...p, dispose: () => dispose() }
 }
 const provider = () => llm.providerForm({ id: 'one', name: 'saved', credential_configured: true, database_credential_configured: true, transport: { ...llm.transportForm(), headers: [{ name: 'X-Token', value: '', configured: true }] } })

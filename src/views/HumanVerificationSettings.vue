@@ -3,11 +3,13 @@ import { tr } from '../i18n/index.js'
 
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import http from '@/utils/http'
 import { settingsForm, settingsPayload, validateSettings } from '@/utils/humanVerificationSettings.js'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 
 const fieldId = useId()
+const confirmDialog = ref(null)
 const endpoint = '/api/config/human-verification'
 const form = ref(null)
 const saved = ref('')
@@ -31,7 +33,7 @@ function apply(data) {
 }
 
 async function load() {
-  if (saving.value || (dirty.value && !window.confirm(tr("重新加载会放弃未保存的修改，是否继续？")))) return
+  if (saving.value || (dirty.value && !await confirmDialog.value.ask({ message: tr("重新加载会放弃未保存的修改，是否继续？"), confirmText: tr("放弃修改"), danger: true }))) return
   readController?.abort()
   const controller = new AbortController()
   readController = controller
@@ -77,13 +79,14 @@ async function save() {
   }
 }
 
-useUnsavedChanges(dirty, save)
+useUnsavedChanges(dirty, save, confirmDialog)
 onMounted(load)
 onBeforeUnmount(() => { disposed = true; readController?.abort(); if (form.value) form.value.secret_key = '' })
 </script>
 
 <template>
   <div class="page-shell space-y-5">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div><h1 class="page-title">{{ tr("登录保护") }}</h1><p class="mt-2 text-sm opacity-60">{{ tr("配置密码登录的人机验证。保存后应用于新的登录，现有会话和两步验证沿用原有规则。") }}</p></div>
       <button type="button" class="btn btn-outline btn-sm" :disabled="loading || saving" @click="load">{{ tr("重新加载") }}</button>

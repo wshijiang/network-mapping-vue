@@ -4,10 +4,12 @@ import { tr } from '../i18n/index.js'
 import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
 import { computed, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import http from '@/utils/http'
 
 const formFieldId = useId()
+const confirmDialog = ref(null)
 const alerts = ref([])
 const users = ref([])
 const stats = ref({ total: 0, active: 0, disabled: 0, locked: 0, activeSessions: 0 })
@@ -191,13 +193,13 @@ async function runUserAction(user, request, successTitle, successDescription = '
   }
 }
 
-function toggleUser(user) {
+async function toggleUser(user) {
   const enabled = user.status === 'disabled'
   const actionLabel = enabled ? tr("启用") : tr("禁用")
   const warning = enabled
     ? tr("确定启用用户“{0}”吗？", [user.username])
     : tr("确定禁用用户“{0}”吗？该用户的现有会话会立即失效。", [user.username])
-  if (!window.confirm(warning)) return
+  if (!await confirmDialog.value.ask({ message: warning, confirmText: actionLabel, danger: !enabled })) return
   runUserAction(
     user,
     () => http.patch(`/api/admin/users/${user.id}/status`, { enabled }),
@@ -205,8 +207,8 @@ function toggleUser(user) {
   )
 }
 
-function kickUser(user) {
-  if (!window.confirm(tr("确定踢出用户“{0}”吗？该用户需要重新登录。", [user.username]))) return
+async function kickUser(user) {
+  if (!await confirmDialog.value.ask({ message: tr("确定踢出用户“{0}”吗？该用户需要重新登录。", [user.username]), confirmText: tr("踢出"), danger: true })) return
   runUserAction(
     user,
     () => http.post(`/api/admin/users/${user.id}/kick`),
@@ -345,6 +347,7 @@ onMounted(() => loadUsers({ page: 1 }))
   </div>
 
   <div class="page-shell">
+    <ConfirmDialog ref="confirmDialog" />
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 class="page-title">{{ tr("用户管理") }}</h1>

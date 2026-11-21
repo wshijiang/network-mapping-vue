@@ -17,7 +17,7 @@ function createPage({ initialTemplateKey = '', confirm = () => true, failDetail 
   const calls = [], events = [], posts = []
   const timers = new Map(), stopWatchers = []
   let exposed, cleanup, nextTimer = 0
-  const page = localizedVm(`${code}\n;({initialize,selectTemplate,applyTemplateDetail,currentTemplate,source,hasUnsavedChanges,selectNotificationState,notificationState,validateAndPreview,sendTestMail,testRecipient,previewing,preview,previewError,alerts,useDefaultTemplate})`, {
+  const page = localizedVm(`${code}\n;({initialize,selectTemplate,applyTemplateDetail,currentTemplate,source,hasUnsavedChanges,selectNotificationState,notificationState,validateAndPreview,sendTestMail,testRecipient,previewing,preview,previewError,alerts,useDefaultTemplate,confirmDialog})`, {
     computed, nextTick, ref, shallowRef, AbortController, useId: () => 'mail-navigation',
     watch: (...args) => { if (autoPreview) stopWatchers.push(watch(...args)) },
     setTimeout: callback => { const id = ++nextTimer; timers.set(id, callback); return id }, clearTimeout: id => timers.delete(id),
@@ -33,6 +33,7 @@ function createPage({ initialTemplateKey = '', confirm = () => true, failDetail 
       return response(detail(url.split('/').at(-1)))
     },post:async (url, data, config) => { calls.push(url); posts.push({url,data,config}); return post ? post(url,data,config) : response(detail(url.split('/')[4])) }},
   })
+  page.confirmDialog.value = { ask: async () => confirm() }
   return {...page,calls,events,posts,exposed,timers,
     dispose: () => { cleanup(); stopWatchers.forEach(stop => stop()) },
     runPreviews: async () => {
