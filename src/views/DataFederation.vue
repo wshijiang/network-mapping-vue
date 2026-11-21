@@ -524,11 +524,11 @@ onBeforeUnmount(() => clearTimeout(runRefreshTimer))
     />
   </div>
 
-  <div class="space-y-4 p-4 sm:p-6">
+  <div class="page-shell space-y-4">
     <ConfirmDialog ref="confirmDialog" />
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 class="text-xl font-semibold">{{ tr("联测") }}</h1>
+        <h1 class="page-title">{{ tr("联测") }}</h1>
         <p class="mt-1 text-sm opacity-65">{{ tr("搜索时按策略联合 Hunter / Quake / FOFA / Shodan 查询，聚合去重后返回并按策略入库。") }}</p>
       </div>
       <button type="button" class="btn btn-neutral btn-sm" @click="openManualRun">{{ tr("查询") }}</button>
