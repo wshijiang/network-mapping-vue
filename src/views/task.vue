@@ -6,6 +6,7 @@ import { computed, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import http from '@/utils/http'
+import { loadSystemTaskVisibility, saveSystemTaskVisibility } from '@/utils/systemTaskVisibility'
 
 const formFieldId = useId()
 const alerts = ref([])
@@ -15,7 +16,8 @@ const isLoadingData = ref(false)
 const initialLoadFailed = ref(false)
 const hasLoadedTasks = ref(false)
 const selectedCount = ref('20')
-const includeSystemTasks = ref(false)
+// 默认不显示系统任务；偏好自上次变更起记忆一个月（见 systemTaskVisibility）。
+const includeSystemTasks = ref(loadSystemTaskVisibility())
 function getDefaultFilters() {
   return {
     taskId: '',
@@ -207,6 +209,7 @@ async function refreshWithCount() {
 }
 
 async function refreshSystemTaskVisibility() {
+  saveSystemTaskVisibility(includeSystemTasks.value)
   if (isLoadingData.value) return
   await reloadFromFirstPage()
 }
