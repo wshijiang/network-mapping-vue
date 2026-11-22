@@ -20,6 +20,7 @@
     "test:os": "node --test src/utils/osDetection.test.js src/components/OsFingerprint.test.js src/components/OsFingerprint.compact.test.js",
     "test:notifications": "node --test src/utils/notifications.test.js src/views/Notifications.test.js src/views/BotTemplateEditor.test.js src/views/NotificationTemplates.test.js src/views/MailTemplateEditor.test.js src/components/TemplateVariables.test.js",
     "test:inbox": "node --test src/utils/inbox.test.js src/composables/useInboxNotifications.test.js src/components/NotificationBell.test.js src/views/NotificationInbox.test.js",
+    "test:target-monitor": "node --test src/utils/targetMonitor.test.js src/views/TargetMonitor.test.js",
     "test:health": "node --test src/utils/healthAlerts.test.js src/views/Health.test.js",
     "test:theme": "node --test src/utils/theme.test.js",
     "test:versions": "node --test src/utils/versionUpdates.test.js",

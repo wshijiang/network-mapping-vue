@@ -3,7 +3,7 @@ import { tr } from './i18n/index.js'
 
 import { computed, onBeforeUnmount, onMounted, provide, readonly, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
-import { BookOpenText } from '@lucide/vue'
+import { BookOpenText, Radar } from '@lucide/vue'
 import { expireCookie } from './utils/csrf'
 import http from './utils/http'
 import ReLoginModal from './components/ReLoginModal.vue'
@@ -307,6 +307,13 @@ async function handleLogout() {
                 </li>
               </ul>
             </Transition>
+          </li>
+
+          <li>
+            <router-link active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;目标监控&quot;)" to="/monitor">
+              <Radar class="my-1.5 inline-block size-4" aria-hidden="true" />
+              <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("目标监控") }}</span>
+            </router-link>
           </li>
 
           <li><router-link to="/domain-discovery" active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;域名发现&quot;)"><span class="my-1.5 inline-block size-4" aria-hidden="true">◎</span><span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("域名发现") }}</span></router-link></li>
