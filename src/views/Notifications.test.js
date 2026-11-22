@@ -5,7 +5,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import { computed, ref } from 'vue'
 import { compileScript, parse } from 'vue/compiler-sfc'
-import { channelForm, channelPayload, validateChannel } from '../utils/notifications.js'
+import { channelForm, channelPayload, defaultNotificationPrefs, validateChannel, validateNotificationPrefs } from '../utils/notifications.js'
 
 const { descriptor } = parse(readFileSync(new URL('./Notifications.vue', import.meta.url), 'utf8'))
 const compiled = compileScript(descriptor, { id: 'notification-lifecycle-test' })
@@ -21,8 +21,8 @@ function createPage(get, request = async () => ({ data: { success: true, data: {
   let mount, dispose
   const timers = new Map()
   let nextTimer = 0
-  const page = localizedVm(`${source}\n;({ loadChannels, loadHistory, channels, deliveries, loadFailed, historyFailed, form, save, bindingDialog, bindingCode, bindingStatus, startBinding, closeBinding })`, {
-    computed, ref, useId: () => 'notification-test-field', channelForm, channelPayload, validateChannel, AbortController, crypto: globalThis.crypto,
+  const page = localizedVm(`${source}\n;({ loadChannels, loadHistory, channels, deliveries, loadFailed, historyFailed, form, save, bindingDialog, bindingCode, bindingStatus, startBinding, closeBinding, prefs, prefsDirty, prefsFailed, loadPrefs, savePrefs })`, {
+    computed, ref, useId: () => 'notification-test-field', channelForm, channelPayload, defaultNotificationPrefs, validateChannel, validateNotificationPrefs, AbortController, crypto: globalThis.crypto,
     http: Object.assign(request, { get }), useUnsavedChanges: () => {},
     onMounted: (callback) => { mount = callback },
     onBeforeUnmount: (callback) => { dispose = callback },
@@ -83,7 +83,7 @@ test('normal polling is removed on unmount and an already queued callback cannot
   page.dispose()
   callback()
   assert.equal(page.timers.size, 0)
-  assert.equal(requests.length, 2)
+  assert.equal(requests.length, 3)
 })
 
 test('a cancelled initial request does not set an error after unmount', async () => {
@@ -186,3 +186,29 @@ function localizedVm(code, context, options) {
   i18n.global.locale.value = 'zh-CN'
   return vm.runInNewContext(code, { tr, ...context }, options)
 }
+
+test('global preferences load, validate and save independently of channels', async () => {
+  const puts = []
+  const request = async config => ({ data: { success: true, data: config.data } })
+  request.put = async (url, data) => { puts.push({ url, data }); return { data: { success: true, data } } }
+  const page = createPage(async url => {
+    if (url.endsWith('/channels')) return channels
+    if (url.endsWith('/preferences')) return { data: { success: true, data: { notifyOnCancel: true, inboxRetentionDays: 30 } } }
+    return history
+  }, request)
+  await page.mount()
+  assert.equal(page.prefs.value.notifyOnCancel, true)
+  assert.equal(page.prefs.value.inboxRetentionDays, 30)
+  assert.equal(page.prefs.value.notifyOnComplete, true)
+  assert.equal(page.prefsDirty.value, false)
+  page.prefs.value.inboxRetentionDays = 3
+  await page.savePrefs()
+  assert.equal(puts.length, 0)
+  page.prefs.value.inboxRetentionDays = 60
+  await page.savePrefs()
+  assert.equal(puts.length, 1)
+  assert.equal(puts[0].url, '/api/notifications/preferences')
+  assert.equal(puts[0].data.inboxRetentionDays, 60)
+  assert.equal(page.prefsDirty.value, false)
+  page.dispose()
+})
