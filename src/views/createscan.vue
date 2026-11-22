@@ -12,6 +12,8 @@ import { routingLocation, routingReason } from '@/utils/scanRouting'
 
 const formFieldId = useId()
 const LEGACY_DRAFT_KEY = 'createscan_draft'
+// Mirrors the backend DEFAULT_SCAN_PORTS used when the port field is blank.
+const DEFAULT_SCAN_PORTS = '1-11000,11211,20000,27017,47808,11210,11300,11371,12174,13720,13721,16379,16992,16993,17185,19071,26379,27018,27019,28015,29015,34962-34964,37777,44818,50000,50090,51413,51820,60010,60030,61613,61616,62078,64738'
 const scanProfiles = [
   {value: 'udp_inventory', get title() { return tr("UDP 服务识别") }, get description() { return tr("仅向明确的 UDP 端口发送最小发现请求；最多 256 个地址、32 个端口，超时不判定端口状态。") }, ipOnly: true},
   {
@@ -277,7 +279,7 @@ async function previewPlacement() {
   try {
     const response = await http.post('/api/task/placement-preview', {
       targets: targets.targets, scan_profile: isDnsTask.value ? 'dns_records' : scanProfile.value,
-      port: port.value.trim() || (isDnsTask.value ? '53' : scanProfile.value === 'udp_inventory' ? '' : '1-65535'), required_services: requiredServices.value, service_probe_options:serviceProbeOptions.value, dns_resolvers: isDnsTask.value ? selectedDnsResolvers.value : []
+      port: port.value.trim() || (isDnsTask.value ? '53' : scanProfile.value === 'udp_inventory' ? '' : DEFAULT_SCAN_PORTS), required_services: requiredServices.value, service_probe_options:serviceProbeOptions.value, dns_resolvers: isDnsTask.value ? selectedDnsResolvers.value : []
     })
     if (request === placementRequest) placement.value = response.data?.data || null
   } catch (error) { if (request === placementRequest) showAlert('warning', tr("分配预览暂不可用"), error.response?.data?.message || tr("请稍后重试。")) }
@@ -605,7 +607,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
             v-model="port"
             class="task_input_items peer w-full"
             type="text"
-            :placeholder="scanProfile === &#39;udp_inventory&#39; ? tr(&quot;请填写明确的 UDP 端口，如 53,44818,47808&quot;) : isDnsTask ? tr(&quot;请输入解析 IP 的目标端口，留空默认全端口&quot;) : tr(&quot;请输入目标端口，留空默认全端口&quot;)"
+            :placeholder="scanProfile === &#39;udp_inventory&#39; ? tr(&quot;请填写明确的 UDP 端口，如 53,44818,47808&quot;) : isDnsTask ? tr(&quot;请输入解析 IP 的目标端口，留空默认 1-11000 及常用高端口&quot;) : tr(&quot;请输入目标端口，留空默认 1-11000 及常用高端口&quot;)"
             pattern="^((6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3})(-(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3}))?)(,((6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3})(-(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3}))?))*$"
           />
           <div class="max-h-0 overflow-hidden opacity-0 transition-all duration-200 ease-in-out peer-[&:not(:placeholder-shown):invalid]:mt-1 peer-[&:not(:placeholder-shown):invalid]:max-h-10 peer-[&:not(:placeholder-shown):invalid]:opacity-100 text-error text-xs"> {{ tr("请输入正确的端口") }} </div>
