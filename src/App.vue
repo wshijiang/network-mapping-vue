@@ -8,8 +8,10 @@ import { expireCookie } from './utils/csrf'
 import http from './utils/http'
 import ReLoginModal from './components/ReLoginModal.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import NotificationBell from '@/components/NotificationBell.vue'
 import SidebarVersionUpdates from '@/components/SidebarVersionUpdates.vue'
 import SidebarConfigCheck from '@/components/SidebarConfigCheck.vue'
+import { inboxNotifications } from '@/composables/useInboxNotifications'
 import packageInfo from '../package.json'
 
 const route = useRoute()
@@ -78,9 +80,11 @@ async function loadCurrentRole() {
     const currentUser = Array.isArray(response.data) ? response.data[0] : response.data
     isAdmin.value = currentUser?.role === 1
     if (isAdmin.value) await loadMaintenanceStatus()
+    inboxNotifications.start()
   } catch (error) {
     console.error('load current role failed', error)
     isAdmin.value = false
+    inboxNotifications.stop()
   }
 }
 
@@ -158,6 +162,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('session-expired', onSessionExpired)
   if (maintenanceRefreshTimer) window.clearInterval(maintenanceRefreshTimer)
+  inboxNotifications.dispose()
 })
 
 async function handleLogout() {
@@ -209,6 +214,7 @@ async function handleLogout() {
         <div class="px-4">{{ navbarTitle }}</div>
 
         <div class="ml-auto mr-2.5 flex items-center gap-2">
+          <NotificationBell />
           <LanguageSelect />
           <ThemeToggle />
           <div class="p-2.5">
