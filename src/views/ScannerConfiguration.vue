@@ -30,7 +30,7 @@ const savedDocument = ref(null)
 const dnsRecordTypes = ['A', 'AAAA', 'CNAME', 'NS', 'MX', 'PTR', 'SRV', 'TXT', 'CAA', 'SOA', 'SVCB', 'HTTPS']
 
 const form = reactive({
-  masscan: { rate: 100000 },
+  masscan: { rate: 10000 },
   service_detection: {
     enabled: true,
     strategy: 'adaptive',
