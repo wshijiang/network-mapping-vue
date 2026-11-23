@@ -2,7 +2,7 @@ import { i18n } from '../i18n/index.js'
 i18n.global.locale.value = 'zh-CN'
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { csvCell, reportCsv, reportDate } from './reports.js'
+import { csvCell, defaultReportSubscriptions, reportCsv, reportDate, reportPeriodTypes, reportSubscriptionPayload } from './reports.js'
 
 test('CSV cells preserve quotes and prevent spreadsheet formula interpretation', () => {
   assert.equal(csvCell('https "v2"'), '"https ""v2"""')
@@ -27,4 +27,11 @@ test('report dates use Shanghai time regardless of the browser timezone', () => 
   assert.equal(reportDate('2026-09-20T16:00:00Z'), '2026-09-21')
   assert.equal(reportDate(null), '-')
   assert.equal(reportDate('invalid'), '-')
+})
+
+test('report subscription defaults cover every period and normalize booleans', () => {
+  assert.deepEqual(defaultReportSubscriptions(), { daily: false, weekly: false, monthly: false })
+  assert.deepEqual(reportPeriodTypes.map(type => type.value), ['daily', 'weekly', 'monthly'])
+  assert.deepEqual(reportSubscriptionPayload({ daily: 1, weekly: null, monthly: undefined }), { daily: true, weekly: false, monthly: false })
+  assert.deepEqual(reportSubscriptionPayload(undefined), { daily: false, weekly: false, monthly: false })
 })

@@ -4,6 +4,7 @@ export const notificationEvents = [
   { value: 'scanner.offline', get label() { return tr("Scanner 掉线") } },
   { value: 'scanner.recovered', get label() { return tr("Scanner 恢复") } },
   { value: 'user.login', get label() { return tr("用户登录") } },
+  { value: 'report.daily', get label() { return tr("日报生成") } },
   { value: 'report.weekly', get label() { return tr("周报生成") } },
   { value: 'report.monthly', get label() { return tr("月报生成") } },
   { value: 'task.completed', get label() { return tr("任务完成") } },
