@@ -274,6 +274,7 @@ onBeforeUnmount(() => {
             <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("健康告警通知") }}</span><input v-model="prefs.healthAlertEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
             <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("Scanner 掉线通知") }}</span><input v-model="prefs.scannerOfflineEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
             <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("Scanner 恢复通知") }}</span><input v-model="prefs.scannerRecoveryEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("日报生成通知") }}</span><input v-model="prefs.reportDaily" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
             <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("周报生成通知") }}</span><input v-model="prefs.reportWeekly" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
             <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("月报生成通知") }}</span><input v-model="prefs.reportMonthly" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
             <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("站内通知") }}</span><input v-model="prefs.inAppEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
