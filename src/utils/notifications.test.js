@@ -2,7 +2,7 @@ import { i18n } from '../i18n/index.js'
 i18n.global.locale.value = 'zh-CN'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { channelForm, channelPayload, validateChannel, deliveryReason } from './notifications.js'
+import { channelForm, channelPayload, defaultNotificationPrefs, validateChannel, validateNotificationPrefs, deliveryReason } from './notifications.js'
 
 test('editing preserves credentials and copies subscriptions without modifying the channel', () => {
   const original = { id: 'channel', revision: 3, name: '运维', enabled: true, event_types: ['health.alert'], signing_secret_configured: true }
@@ -145,4 +145,30 @@ test('proxy credentials are write-only and saved proxies survive normal channel 
   form.proxy_mode = 'direct'
   assert.equal(channelPayload(form).proxy_url, '')
   assert.equal(validateChannel(form), '')
+})
+
+test('task events are subscribable and info severity is validated', () => {
+  const form = channelForm()
+  assert(form.event_types.includes('task.completed'))
+  assert(form.event_types.includes('task.failed'))
+  assert(form.event_types.includes('task.cancelled'))
+  form.name = '运维'
+  form.webhook_url = 'https://open.feishu.cn/open-apis/bot/v2/hook/00000000-0000-4000-8000-000000000001'
+  form.minimum_severity = 'info'
+  assert.equal(validateChannel(form), '')
+  form.minimum_severity = 'debug'
+  assert.notEqual(validateChannel(form), '')
+})
+test('notification preference ranges are enforced', () => {
+  const prefs = defaultNotificationPrefs()
+  assert.equal(validateNotificationPrefs(prefs), '')
+  prefs.inboxRetentionDays = 6
+  assert.notEqual(validateNotificationPrefs(prefs), '')
+  prefs.inboxRetentionDays = 90
+  prefs.inboxMaxPerUser = 99
+  assert.notEqual(validateNotificationPrefs(prefs), '')
+  prefs.inboxMaxPerUser = 10000
+  assert.equal(validateNotificationPrefs(prefs), '')
+  prefs.inboxRetentionDays = 90.5
+  assert.notEqual(validateNotificationPrefs(prefs), '')
 })

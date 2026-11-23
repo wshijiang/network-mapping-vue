@@ -6,7 +6,7 @@ import AppAlert from '@/components/AppAlert.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { formatDateTime } from '../i18n/time.js'
-import { channelForm, channelPayload, deliveryReason, deliveryStatuses, eventLabel, notificationEvents, notificationProviders, providerLabel, validateChannel } from '@/utils/notifications'
+import { channelForm, channelPayload, defaultNotificationPrefs, deliveryReason, deliveryStatuses, eventLabel, notificationEvents, notificationProviders, providerLabel, validateChannel, validateNotificationPrefs } from '@/utils/notifications'
 import http from '@/utils/http'
 
 const formFieldId = useId()
@@ -22,6 +22,9 @@ const confirmDialog = ref(null)
 useUnsavedChanges(dirty, save, confirmDialog)
 let sequence = 0, timer, bindingTimer, bindingController, disposed = false
 const readControllers = new Set()
+const prefs = ref(defaultNotificationPrefs()), savedPrefs = ref('')
+const prefsLoading = ref(false), prefsSaving = ref(false), prefsFailed = ref(false)
+const prefsDirty = computed(() => JSON.stringify(prefs.value) !== savedPrefs.value)
 
 function notify(type, title, description = '') {
   alerts.value.unshift({ id: crypto.randomUUID(), type, title, description, timeout: 7000 })
@@ -195,8 +198,40 @@ async function unbindRecipient(channel) {
   finally { busy.value = false }
 }
 async function refresh() { await loadChannels(); if (!disposed && !forbidden.value) await loadHistory() }
+async function loadPrefs() {
+  if (disposed) return
+  prefsLoading.value = true
+  try {
+    const data = dataOf(await http.get('/api/notifications/preferences'))
+    if (disposed) return
+    prefs.value = { ...defaultNotificationPrefs(), ...data }
+    savedPrefs.value = JSON.stringify(prefs.value)
+    prefsFailed.value = false
+  } catch (error) {
+    if (disposed) return
+    prefsFailed.value = true
+    if (error.response?.status === 403) forbidden.value = true
+  } finally {
+    if (!disposed) prefsLoading.value = false
+  }
+}
+async function savePrefs() {
+  if (prefsSaving.value) return
+  const problem = validateNotificationPrefs(prefs.value)
+  if (problem) { notify('warning', tr("请检查通知设置"), problem); return }
+  prefsSaving.value = true
+  try {
+    const data = dataOf(await http.put('/api/notifications/preferences', prefs.value))
+    prefs.value = { ...defaultNotificationPrefs(), ...data }
+    savedPrefs.value = JSON.stringify(prefs.value)
+    notify('success', tr("通知设置已保存"))
+  } catch (error) { notify('error', tr("保存失败"), errorText(error)) }
+  finally { prefsSaving.value = false }
+}
 onMounted(async () => {
   await refresh()
+  if (disposed) return
+  if (!forbidden.value) await loadPrefs()
   if (disposed) return
   timer = window.setInterval(() => {
     if (!disposed && !document.hidden && !busy.value && !historyLoading.value && !forbidden.value && !browsingHistory.value) loadHistory()
@@ -224,6 +259,36 @@ onBeforeUnmount(() => {
     <template v-else>
       <div v-if="loadFailed" class="alert alert-error" role="alert"><span>{{ tr("渠道加载失败，请刷新后重试。") }}</span><button class="btn btn-sm" @click="refresh">{{ tr("重试") }}</button></div>
       <section class="rounded-xl bg-base-100 p-4 md:p-6">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div><h2 class="text-lg font-semibold">{{ tr("全局通知设置") }}</h2><p class="mt-1 text-sm opacity-60">{{ tr("控制各类通知事件是否产生，以及站内通知的接收与保留。渠道订阅决定外部推送；个人接收偏好在站内通知页设置。") }}</p></div>
+          <button class="btn btn-neutral btn-sm" :disabled="prefsSaving || prefsLoading || prefsFailed || !prefsDirty" @click="savePrefs">{{ prefsSaving ? tr("正在保存…") : tr("保存设置") }}</button>
+        </div>
+        <p v-if="prefsLoading" class="py-6" role="status">{{ tr("正在加载通知设置…") }}</p>
+        <div v-else-if="prefsFailed" class="alert alert-warning mt-4" role="alert"><span>{{ tr("通知设置加载失败。") }}</span><button class="btn btn-sm" @click="loadPrefs">{{ tr("重试") }}</button></div>
+        <template v-else>
+          <div class="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("任务完成通知") }}</span><input v-model="prefs.notifyOnComplete" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("任务失败通知") }}</span><input v-model="prefs.notifyOnStuck" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("任务取消通知") }}</span><input v-model="prefs.notifyOnCancel" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("用户登录通知") }}</span><input v-model="prefs.loginNotifyEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("健康告警通知") }}</span><input v-model="prefs.healthAlertEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("Scanner 掉线通知") }}</span><input v-model="prefs.scannerOfflineEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("Scanner 恢复通知") }}</span><input v-model="prefs.scannerRecoveryEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("日报生成通知") }}</span><input v-model="prefs.reportDaily" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("周报生成通知") }}</span><input v-model="prefs.reportWeekly" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("月报生成通知") }}</span><input v-model="prefs.reportMonthly" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("站内通知") }}</span><input v-model="prefs.inAppEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("目标监控变化通知") }}</span><input v-model="prefs.monitorNotifyEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+            <label class="flex items-center justify-between gap-3 text-sm"><span>{{ tr("允许用户自助创建监控") }}</span><input v-model="prefs.monitorUserEnabled" type="checkbox" class="toggle toggle-neutral toggle-sm" /></label>
+          </div>
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-inbox-retention`">{{ tr("站内通知保留天数（7–365）") }}</label></legend><input :id="`${formFieldId}-inbox-retention`" v-model.number="prefs.inboxRetentionDays" type="number" min="7" max="365" class="input input-bordered w-full" /></fieldset>
+            <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-inbox-cap`">{{ tr("每用户站内通知上限（100–10000）") }}</label></legend><input :id="`${formFieldId}-inbox-cap`" v-model.number="prefs.inboxMaxPerUser" type="number" min="100" max="10000" class="input input-bordered w-full" /></fieldset>
+          </div>
+          <p class="mt-2 text-xs opacity-60">{{ tr("超出保留期或容量上限的站内通知会被自动清理，容量超限时优先清理最旧的已读通知。") }}</p>
+        </template>
+      </section>
+      <section class="rounded-xl bg-base-100 p-4 md:p-6">
         <h2 class="text-lg font-semibold">{{ tr("渠道与事件订阅") }}</h2>
         <p class="mt-1 text-sm opacity-60">{{ tr("三种渠道提供相同的通知类型，可以只启用一种，也可以同时启用。修改或停用会取消旧配置下尚未完成的投递。") }}</p>
         <p v-if="loading" class="py-6" role="status">{{ tr("正在加载渠道…") }}</p>
@@ -235,7 +300,7 @@ onBeforeUnmount(() => {
             <span v-if="channel.provider === 'feishu'" class="badge badge-outline badge-sm mt-2 ml-2">{{ channel.settings?.feishu_bot_type === 'app' ? tr("应用机器人") : tr("群聊自定义机器人") }}</span>
             <span v-if="channel.provider === 'feishu' && channel.settings?.feishu_bot_type === 'app'" class="badge badge-outline badge-sm mt-2 ml-2">{{ channel.settings?.feishu_target_type === 'user' ? tr("个人聊天") : tr("群聊") }}</span>
             <p class="mt-2 text-sm">{{ channel.event_types.map(eventLabel).join(' · ') }}</p>
-            <p class="mt-2 text-xs opacity-60">{{ channel.minimum_severity === 'critical' ? tr("仅严重通知") : tr("警告及严重通知") }} · {{ channel.provider === 'feishu' ? (channel.settings?.feishu_bot_type === 'app' ? tr("已配置应用凭据") : (channel.signing_secret_configured ? tr("已配置签名") : tr("未配置签名"))) : (channel.credential_configured ? tr("已配置凭据") : tr("待配置凭据")) }} {{ tr("· 版本") }} {{ channel.revision }}</p>
+            <p class="mt-2 text-xs opacity-60">{{ channel.minimum_severity === 'critical' ? tr("仅严重通知") : channel.minimum_severity === 'info' ? tr("全部级别通知（含信息）") : tr("警告及严重通知") }} · {{ channel.provider === 'feishu' ? (channel.settings?.feishu_bot_type === 'app' ? tr("已配置应用凭据") : (channel.signing_secret_configured ? tr("已配置签名") : tr("未配置签名"))) : (channel.credential_configured ? tr("已配置凭据") : tr("待配置凭据")) }} {{ tr("· 版本") }} {{ channel.revision }}</p>
             <p v-if="channel.provider === 'feishu'" class="mt-1 text-xs opacity-60">{{ channel.feishu_app_secret_configured ? tr("报告趋势图：已配置上传凭据") : tr("报告趋势图：仅文本，未配置上传凭据") }}</p>
             <p class="mt-1 text-xs opacity-60 break-all">{{ tr("代理：") }}{{ channel.proxy_mode === 'custom' ? channel.proxy_endpoint : channel.proxy_mode === 'direct' ? tr("直接连接") : tr("跟随全局") }}</p>
             <div class="mt-4 flex flex-wrap gap-2">
@@ -301,7 +366,7 @@ onBeforeUnmount(() => {
           <p class="text-xs opacity-60">{{ tr("留空时，登录通知发给登录用户本人；报告按报告计划选择管理员，其余通知发给当前启用的管理员。填写后发送到指定邮箱。") }}</p>
         </template>
         <fieldset><legend class="mb-2 text-sm">{{ tr("通知事件") }}</legend><label v-for="event in notificationEvents" :key="event.value" class="mb-2 flex items-center gap-2 text-sm"><input v-model="form.event_types" :value="event.value" type="checkbox" class="checkbox checkbox-sm" />{{ event.label }}</label></fieldset>
-        <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-11`">{{ tr("最低通知级别") }}</label></legend><select :id="`${formFieldId}-11`" :aria-label="tr(&quot;最低通知级别&quot;)" v-model="form.minimum_severity" class="select select-bordered w-full"><option value="warning">{{ tr("警告及严重（全部已选通知类型）") }}</option><option value="critical">{{ tr("仅严重健康告警（不发送登录、Scanner 或报告通知）") }}</option></select></fieldset>
+        <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-11`">{{ tr("最低通知级别") }}</label></legend><select :id="`${formFieldId}-11`" :aria-label="tr(&quot;最低通知级别&quot;)" v-model="form.minimum_severity" class="select select-bordered w-full"><option value="info">{{ tr("信息及更高级别（含任务完成、取消）") }}</option><option value="warning">{{ tr("警告及严重（默认，不含任务完成等信息性通知）") }}</option><option value="critical">{{ tr("仅严重健康告警（不发送登录、Scanner 或报告通知）") }}</option></select><p class="mt-1 text-xs opacity-60">{{ tr("任务完成与取消为 info 级；保持默认 warning 时不会收到，需显式选择 info。") }}</p></fieldset>
         <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-proxy-mode`">{{ tr("投递代理") }}</label></legend><select :id="`${formFieldId}-proxy-mode`" v-model="form.proxy_mode" class="select select-bordered w-full"><option value="system">{{ tr("跟随全局（未配置时使用系统环境代理）") }}</option><option value="direct">{{ tr("直接连接") }}</option><option value="custom">{{ tr("指定代理") }}</option></select></fieldset>
         <fieldset v-if="form.proxy_mode === 'custom'" class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-proxy-url`">{{ tr("代理地址") }}{{ form.proxy_configured ? tr("（留空保留）") : '' }}</label></legend><input :id="`${formFieldId}-proxy-url`" v-model="form.proxy_url" type="text" autocomplete="off" maxlength="2048" class="input input-bordered w-full" :placeholder="tr(&quot;socks5h://用户名:密码@代理主机:1080&quot;)" /><p v-if="form.proxy_configured" class="text-xs break-all opacity-60">{{ tr("已配置：") }}{{ form.proxy_endpoint }}{{ tr("（认证信息不回显）") }}</p><p class="text-xs opacity-60">{{ tr("支持 HTTP、HTTPS、SOCKS5 与 SOCKS5H，适用于邮件和机器人。SOCKS5H 由代理解析目标域名。失败时不会回退直连。局部“指定代理”或“直接连接”会覆盖全局。") }}</p></fieldset>
         <p v-else-if="form.proxy_configured" class="text-xs opacity-60">{{ tr("保存此模式将清除该渠道已保存的代理地址和认证信息。") }}</p>

@@ -3,13 +3,15 @@ import { tr } from './i18n/index.js'
 
 import { computed, onBeforeUnmount, onMounted, provide, readonly, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
-import { BookOpenText } from '@lucide/vue'
+import { Bell, BookOpenText, Radar } from '@lucide/vue'
 import { expireCookie } from './utils/csrf'
 import http from './utils/http'
 import ReLoginModal from './components/ReLoginModal.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import NotificationBell from '@/components/NotificationBell.vue'
 import SidebarVersionUpdates from '@/components/SidebarVersionUpdates.vue'
 import SidebarConfigCheck from '@/components/SidebarConfigCheck.vue'
+import { inboxNotifications } from '@/composables/useInboxNotifications'
 import packageInfo from '../package.json'
 
 const route = useRoute()
@@ -21,6 +23,7 @@ const activeSettingsTab = ref('system')
 const reLoginModalRef = ref(null)
 const isAdmin = ref(false)
 provide('isAdmin', readonly(isAdmin))
+const inboxUnreadCount = inboxNotifications.unreadCount
 const frontendVersion = packageInfo.version
 const serverVersion = ref('')
 const maintenanceStatus = ref(null)
@@ -78,9 +81,11 @@ async function loadCurrentRole() {
     const currentUser = Array.isArray(response.data) ? response.data[0] : response.data
     isAdmin.value = currentUser?.role === 1
     if (isAdmin.value) await loadMaintenanceStatus()
+    inboxNotifications.start()
   } catch (error) {
     console.error('load current role failed', error)
     isAdmin.value = false
+    inboxNotifications.stop()
   }
 }
 
@@ -158,6 +163,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('session-expired', onSessionExpired)
   if (maintenanceRefreshTimer) window.clearInterval(maintenanceRefreshTimer)
+  inboxNotifications.dispose()
 })
 
 async function handleLogout() {
@@ -209,6 +215,7 @@ async function handleLogout() {
         <div class="px-4">{{ navbarTitle }}</div>
 
         <div class="ml-auto mr-2.5 flex items-center gap-2">
+          <NotificationBell />
           <LanguageSelect />
           <ThemeToggle />
           <div class="p-2.5">
@@ -301,6 +308,13 @@ async function handleLogout() {
                 </li>
               </ul>
             </Transition>
+          </li>
+
+          <li>
+            <router-link active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;目标监控&quot;)" to="/monitor">
+              <Radar class="my-1.5 inline-block size-4" aria-hidden="true" />
+              <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("目标监控") }}</span>
+            </router-link>
           </li>
 
           <li><router-link to="/domain-discovery" active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;域名发现&quot;)"><span class="my-1.5 inline-block size-4" aria-hidden="true">◎</span><span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("域名发现") }}</span></router-link></li>
@@ -407,7 +421,7 @@ async function handleLogout() {
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("开放平台") }}</span>
             </router-link>
           </li>
-          <li v-if="isAdmin">
+          <li>
             <router-link active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;报告中心&quot;)" to="/reports">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("报告中心") }}</span>
@@ -624,6 +638,14 @@ async function handleLogout() {
             <router-link active-class="active" exact-active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;安全设置&quot;)" to="/user/security">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M6.376 18.91a6 6 0 0 1 11.249.003"/><circle cx="12" cy="11" r="4"/></svg>
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("安全设置") }}</span>
+            </router-link>
+          </li>
+
+          <li>
+            <router-link active-class="active" exact-active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;站内通知&quot;)" to="/notifications">
+              <Bell class="my-1.5 inline-block size-4" aria-hidden="true" />
+              <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("站内通知") }}</span>
+              <span v-if="inboxUnreadCount > 0" class="badge badge-error badge-xs ml-auto is-drawer-close:hidden">{{ inboxUnreadCount > 99 ? '99+' : inboxUnreadCount }}</span>
             </router-link>
           </li>
         </ul>

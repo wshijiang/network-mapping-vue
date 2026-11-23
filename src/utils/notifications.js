@@ -4,8 +4,12 @@ export const notificationEvents = [
   { value: 'scanner.offline', get label() { return tr("Scanner 掉线") } },
   { value: 'scanner.recovered', get label() { return tr("Scanner 恢复") } },
   { value: 'user.login', get label() { return tr("用户登录") } },
+  { value: 'report.daily', get label() { return tr("日报生成") } },
   { value: 'report.weekly', get label() { return tr("周报生成") } },
   { value: 'report.monthly', get label() { return tr("月报生成") } },
+  { value: 'task.completed', get label() { return tr("任务完成") } },
+  { value: 'task.failed', get label() { return tr("任务失败") } },
+  { value: 'task.cancelled', get label() { return tr("任务取消") } },
 ]
 
 export const notificationProviders = [{ value: 'email', get label() { return tr("邮件") } }, { value: 'feishu', get label() { return tr("飞书") } }, { value: 'telegram', label: 'Telegram' }]
@@ -46,6 +50,22 @@ const reasons = {
 }
 
 export function deliveryReason(value) { return reasons[value] || (value ? tr("投递异常，请检查服务状态") : '—') }
+
+// 全局通知偏好（管理员）：事件产生闸 + 站内通知配置。与后端 NotificationPreferences  camelCase 对齐。
+export function defaultNotificationPrefs() {
+  return {
+    loginNotifyEnabled: true, notifyOnStuck: true, notifyOnComplete: true, notifyOnCancel: false,
+    reportDaily: false, reportWeekly: true, reportMonthly: false,
+    healthAlertEnabled: true, scannerOfflineEnabled: false, scannerRecoveryEnabled: true,
+    inAppEnabled: true, monitorNotifyEnabled: true, monitorUserEnabled: false,
+    inboxRetentionDays: 90, inboxMaxPerUser: 2000,
+  }
+}
+export function validateNotificationPrefs(prefs) {
+  if (!Number.isInteger(prefs.inboxRetentionDays) || prefs.inboxRetentionDays < 7 || prefs.inboxRetentionDays > 365) return tr("站内通知保留天数须在 7 至 365 之间。")
+  if (!Number.isInteger(prefs.inboxMaxPerUser) || prefs.inboxMaxPerUser < 100 || prefs.inboxMaxPerUser > 10000) return tr("每用户站内通知上限须在 100 至 10000 之间。")
+  return ''
+}
 export function eventLabel(value) {
   return value === 'notification.test' ? tr("测试通知") : notificationEvents.find((item) => item.value === value)?.label || value
 }
@@ -96,6 +116,7 @@ export function channelPayload(form) {
   }
 }
 export function validateChannel(form) {
+  if (!['info', 'warning', 'critical'].includes(form.minimum_severity)) return tr("请选择有效的最低通知级别。")
   if (!['system', 'direct', 'custom'].includes(form.proxy_mode)) return tr("请选择有效的代理模式。")
   if (form.proxy_mode === 'custom' && (form.proxy_url || !form.proxy_configured)) {
     try {

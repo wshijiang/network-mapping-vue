@@ -21,6 +21,30 @@ export function reportTimezone(report) {
   return report.timezone || report.payload?.period?.timezone || 'Asia/Shanghai'
 }
 
+export function reportTypeLabel(value) {
+  if (value === 'daily') return tr("日报")
+  if (value === 'weekly') return tr("周报")
+  return tr("月报")
+}
+
+export const reportPeriodTypes = [
+  { value: 'daily', get label() { return tr("日报") } },
+  { value: 'weekly', get label() { return tr("周报") } },
+  { value: 'monthly', get label() { return tr("月报") } },
+]
+
+export function defaultReportSubscriptions() {
+  return { daily: false, weekly: false, monthly: false }
+}
+
+export function reportSubscriptionPayload(state) {
+  return {
+    daily: Boolean(state?.daily),
+    weekly: Boolean(state?.weekly),
+    monthly: Boolean(state?.monthly),
+  }
+}
+
 export function reportPeriod(report) {
   return `${reportDate(report.period_start, false, reportTimezone(report))} 至 ${reportDate(report.period_end, false, reportTimezone(report))}（不含）`
 }
@@ -33,7 +57,7 @@ export function csvCell(value) {
 
 export function reportCsv(report) {
   const payload = report.payload || {}
-  const rows = [['报告类型', report.period_type === 'weekly' ? '周报' : '月报'], ['周期', reportPeriod(report)], ['修订号', report.revision], ['时区', reportTimezone(report)]]
+  const rows = [['报告类型', reportTypeLabel(report.period_type)], ['周期', reportPeriod(report)], ['修订号', report.revision], ['时区', reportTimezone(report)]]
   for (const [key, label] of Object.entries({ created: '新建任务', succeeded: '成功任务', failed: '失败任务', partial: '部分完成任务', cancelled: '取消任务', success_rate: '任务成功率（%）' })) {
     rows.push([label, payload.tasks?.[key]])
   }

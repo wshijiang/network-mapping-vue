@@ -1,18 +1,19 @@
 <script setup>
 import { tr } from '../i18n/index.js'
 
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppAlert from '@/components/AppAlert.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ReportTrendChart from '@/components/ReportTrendChart.vue'
 import http from '@/utils/http'
-import { deliveryStatuses, reportCsv, reportDate, reportTimezone, reportPeriod, reportStatuses } from '@/utils/reports'
+import { deliveryStatuses, reportCsv, reportDate, reportTimezone, reportPeriod, reportStatuses, reportTypeLabel } from '@/utils/reports'
 import { deliveryReason } from '@/utils/notifications'
 
 const route = useRoute()
 const router = useRouter()
+const isAdmin = inject('isAdmin', ref(false))
 const confirmDialog = ref(null)
 const report = ref(null)
 const deliveries = ref([])
@@ -56,6 +57,7 @@ async function load({ silent = false } = {}) {
     report.value = response.data.data
     error.value = ''
     forbidden.value = false
+    if (!isAdmin.value) return
     const deliveryResponse = await http.get(`/api/reports/${id}/deliveries`, { signal: request.signal }).catch((e) => {
       if (!request.signal.aborted) deliveryError.value = e.response?.data?.message || tr("投递状态加载失败")
       return null
@@ -133,6 +135,7 @@ function exportCsv() {
 function printReport() { window.print() }
 
 watch(() => route.params.id, () => { report.value = null; deliveries.value = []; deliveryError.value = ''; load() }, { immediate: true })
+watch(isAdmin, (value) => { if (value && report.value && !disposed) load({ silent: true }) })
 onBeforeUnmount(() => { disposed = true; clearTimeout(timer); controller?.abort() })
 </script>
 
@@ -144,19 +147,19 @@ onBeforeUnmount(() => { disposed = true; clearTimeout(timer); controller?.abort(
       <router-link class="btn btn-sm btn-ghost" to="/reports">{{ tr("← 报告中心") }}</router-link>
       <div class="flex flex-wrap gap-2">
         <button class="btn btn-sm btn-ghost" :disabled="loading" @click="load({ silent: true })">{{ tr("刷新") }}</button>
-        <button v-if="report?.status === 'failed'" class="btn btn-sm btn-neutral" :disabled="actionLoading" @click="action('retry')">{{ tr("重试生成") }}</button>
-        <button v-if="report && ['ready', 'failed'].includes(report.status)" class="btn btn-sm" :disabled="actionLoading" @click="action('revisions')">{{ tr("生成修订版") }}</button>
+        <button v-if="isAdmin && report?.status === 'failed'" class="btn btn-sm btn-neutral" :disabled="actionLoading" @click="action('retry')">{{ tr("重试生成") }}</button>
+        <button v-if="isAdmin && report && ['ready', 'failed'].includes(report.status)" class="btn btn-sm" :disabled="actionLoading" @click="action('revisions')">{{ tr("生成修订版") }}</button>
         <template v-if="report?.status === 'ready'">
           <button class="btn btn-sm" @click="exportCsv">{{ tr("导出 CSV") }}</button><button class="btn btn-sm" @click="printReport">{{ tr("打印") }}</button>
-          <button class="btn btn-sm btn-neutral" :disabled="actionLoading" @click="prepareSend">{{ tr("发送报告") }}</button>
+          <button v-if="isAdmin" class="btn btn-sm btn-neutral" :disabled="actionLoading" @click="prepareSend">{{ tr("发送报告") }}</button>
         </template>
       </div>
     </div>
     <div v-if="loading" class="grid min-h-80 place-items-center"><span class="loading loading-spinner loading-lg" /></div>
-    <EmptyState v-else-if="error" type="error" :title="forbidden ? tr(&quot;仅管理员可以访问平台报告&quot;) : tr(&quot;报告加载失败&quot;)" :message="error" />
+    <EmptyState v-else-if="error" type="error" :title="forbidden ? tr(&quot;无权访问该报告&quot;) : tr(&quot;报告加载失败&quot;)" :message="error" />
     <template v-else-if="report">
       <div class="card border border-base-300 bg-base-100 p-5">
-        <div class="flex flex-wrap items-center gap-3"><h1 class="page-title">{{ tr("平台") }}{{ report.period_type === 'weekly' ? tr("周报") : tr("月报") }}</h1><span class="badge badge-outline">{{ tr("修订 #") }}{{ report.revision }}</span><span class="badge" :class="reportStatuses[report.status]?.class">{{ reportStatuses[report.status]?.label }}</span></div>
+        <div class="flex flex-wrap items-center gap-3"><h1 class="page-title">{{ tr("平台") }}{{ reportTypeLabel(report.period_type) }}</h1><span class="badge badge-outline">{{ tr("修订 #") }}{{ report.revision }}</span><span class="badge" :class="reportStatuses[report.status]?.class">{{ reportStatuses[report.status]?.label }}</span></div>
         <p class="mt-3 text-sm">{{ reportPeriod(report) }} · {{ reportTimezone(report) }}</p>
         <p class="mt-1 text-xs text-base-content/60">{{ tr("输入固定于") }} {{ reportDate(report.cutoff_at, true) }} {{ tr("· 归档于") }} {{ reportDate(report.generated_at, true) }}</p>
         <router-link v-if="report.supersedes_report_id" class="link mt-2 text-xs" :to="`/reports/${report.supersedes_report_id}`">{{ tr("查看上一修订版") }}</router-link>
@@ -164,7 +167,7 @@ onBeforeUnmount(() => { disposed = true; clearTimeout(timer); controller?.abort(
       <div v-if="report.status !== 'ready'" role="status" class="alert" :class="report.status === 'failed' ? 'alert-error' : 'alert-info'">
         <span>{{ report.last_error || tr("报告已排队，正在等待生成。") }}<span v-if="report.quality?.current"> {{ tr("· 统计执行") }} {{ report.quality.current.ready }} / {{ report.quality.current.expected }}</span></span>
       </div>
-      <div v-if="report.quality?.mail_error" role="alert" class="alert alert-warning"><span>{{ tr("报告已归档，邮件内容不可用：") }}{{ report.quality.mail_error }}{{ tr("。检查邮件模板后可生成修订版。") }}</span></div>
+      <div v-if="isAdmin && report.quality?.mail_error" role="alert" class="alert alert-warning"><span>{{ tr("报告已归档，邮件内容不可用：") }}{{ report.quality.mail_error }}{{ tr("。检查邮件模板后可生成修订版。") }}</span></div>
       <template v-if="payload">
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><div v-for="card in cards" :key="card.title" class="card border border-base-300 bg-base-100 p-5"><div class="text-sm opacity-60">{{ card.title }}</div><div class="mt-2 break-words text-2xl font-semibold">{{ card.value }}</div></div></div>
         <div class="grid gap-4 lg:grid-cols-2">
@@ -177,8 +180,8 @@ onBeforeUnmount(() => { disposed = true; clearTimeout(timer); controller?.abort(
         <div class="card border border-base-300 bg-base-100 p-5"><h2 class="font-semibold">{{ tr("处理建议") }}</h2><ul v-if="payload.recommendations.length" class="mt-3 list-inside list-disc space-y-2 text-sm"><li v-for="item in payload.recommendations" :key="item">{{ item }}</li></ul><p v-else class="mt-3 text-sm opacity-60">{{ tr("本期未发现需要提示的任务异常。") }}</p></div>
         <div class="card border border-base-300 bg-base-100 p-5"><h2 class="font-semibold">{{ tr("统计口径与完整性") }}</h2><p class="mt-3 text-sm">{{ tr("成功执行统计已完成：") }}{{ report.quality.current.ready }} / {{ report.quality.current.expected }}</p><p v-for="note in payload.notes" :key="note" class="mt-2 text-xs opacity-60">{{ note }}</p><p class="mt-3 break-all font-mono text-xs opacity-50">SHA-256：{{ report.content_checksum }}</p></div>
       </template>
-      <div v-if="report.mail_image" class="report-controls card border border-base-300 bg-base-100 p-5"><h2 class="font-semibold">{{ tr("邮件趋势图片") }}</h2><p class="mt-3 text-sm">{{ report.mail_image.revoked_at ? tr("图片已撤销") : tr("有效期至 {0}", [reportDate(report.mail_image.expires_at, true)]) }}</p><p class="mt-2 text-xs opacity-60">{{ tr("图片与当前报告版本固定对应；撤销后需要生成修订版才能再次发送。邮箱已缓存的图像可能继续显示。") }}</p><button v-if="!report.mail_image.revoked_at" class="btn btn-sm btn-outline mt-3 self-start" :disabled="actionLoading" @click="revokeImage">{{ tr("撤销图片访问") }}</button></div>
-      <div class="report-controls card border border-base-300 bg-base-100 p-5"><h2 class="font-semibold">{{ tr("报告投递记录") }}</h2><p v-if="deliveryError" class="mt-3 text-sm text-error">{{ deliveryError }}</p><div v-else-if="deliveries.length" class="mt-3 overflow-x-auto"><table class="table table-sm"><thead><tr><th>{{ tr("收件人 / 渠道") }}</th><th>{{ tr("批次") }}</th><th>{{ tr("状态") }}</th><th>{{ tr("尝试次数") }}</th><th>{{ tr("说明") }}</th></tr></thead><tbody><tr v-for="delivery in deliveries" :key="delivery.id"><td>{{ delivery.recipient }}</td><td>{{ delivery.dispatch_seq ? `#${delivery.dispatch_seq}` : '—' }}</td><td>{{ deliveryStatuses[delivery.status] || delivery.status }}</td><td>{{ delivery.attempts }}</td><td class="max-w-sm break-words text-xs">{{ delivery.last_error ? (delivery.dispatch_seq ? delivery.last_error : deliveryReason(delivery.last_error)) : (delivery.status === 'sent' ? reportDate(delivery.sent_at, true) : '') }}</td></tr></tbody></table></div><p v-else class="mt-3 text-sm opacity-60">{{ tr("尚无投递记录。") }}</p></div>
+      <div v-if="isAdmin && report.mail_image" class="report-controls card border border-base-300 bg-base-100 p-5"><h2 class="font-semibold">{{ tr("邮件趋势图片") }}</h2><p class="mt-3 text-sm">{{ report.mail_image.revoked_at ? tr("图片已撤销") : tr("有效期至 {0}", [reportDate(report.mail_image.expires_at, true)]) }}</p><p class="mt-2 text-xs opacity-60">{{ tr("图片与当前报告版本固定对应；撤销后需要生成修订版才能再次发送。邮箱已缓存的图像可能继续显示。") }}</p><button v-if="!report.mail_image.revoked_at" class="btn btn-sm btn-outline mt-3 self-start" :disabled="actionLoading" @click="revokeImage">{{ tr("撤销图片访问") }}</button></div>
+      <div v-if="isAdmin" class="report-controls card border border-base-300 bg-base-100 p-5"><h2 class="font-semibold">{{ tr("报告投递记录") }}</h2><p v-if="deliveryError" class="mt-3 text-sm text-error">{{ deliveryError }}</p><div v-else-if="deliveries.length" class="mt-3 overflow-x-auto"><table class="table table-sm"><thead><tr><th>{{ tr("收件人 / 渠道") }}</th><th>{{ tr("批次") }}</th><th>{{ tr("状态") }}</th><th>{{ tr("尝试次数") }}</th><th>{{ tr("说明") }}</th></tr></thead><tbody><tr v-for="delivery in deliveries" :key="delivery.id"><td>{{ delivery.recipient }}</td><td>{{ delivery.dispatch_seq ? `#${delivery.dispatch_seq}` : '—' }}</td><td>{{ deliveryStatuses[delivery.status] || delivery.status }}</td><td>{{ delivery.attempts }}</td><td class="max-w-sm break-words text-xs">{{ delivery.last_error ? (delivery.dispatch_seq ? delivery.last_error : deliveryReason(delivery.last_error)) : (delivery.status === 'sent' ? reportDate(delivery.sent_at, true) : '') }}</td></tr></tbody></table></div><p v-else class="mt-3 text-sm opacity-60">{{ tr("尚无投递记录。") }}</p></div>
     </template>
     <dialog ref="sendDialog" class="modal"><div class="modal-box"><h2 class="text-lg font-semibold">{{ tr("发送报告") }}</h2><p class="mt-2 text-sm opacity-60">{{ tr("选择邮件收件人或已启用的通知渠道，发送当前归档版本。发送失败可能自动重试，重复发送可能产生重复消息。") }}</p><form class="mt-4" @submit.prevent="send"><h3 class="font-medium">{{ tr("邮件收件人") }}</h3><label v-for="user in recipients" :key="user.id" class="mt-3 flex items-center gap-2 text-sm"><input v-model="selectedRecipients" type="checkbox" class="checkbox checkbox-sm" :value="user.id" :disabled="!!report?.mail_image?.revoked_at" />{{ user.username }} · {{ user.email }}</label><p v-if="!recipients.length" class="text-sm opacity-60">{{ tr("没有可用管理员邮箱。") }}</p><h3 class="mt-4 font-medium">{{ tr("通知渠道") }}</h3><label v-for="channel in channels" :key="channel.id" class="mt-3 flex items-center gap-2 text-sm"><input v-model="selectedChannels" type="checkbox" class="checkbox checkbox-sm" :value="channel.id" />{{ channel.provider === 'feishu' ? tr("飞书") : 'Telegram' }} · {{ channel.name }}</label><p v-if="!channels.length" class="text-sm opacity-60">{{ tr("没有已启用的飞书或 Telegram 渠道。") }}</p><div class="modal-action"><button type="button" class="btn" @click="sendDialog.close()">{{ tr("取消") }}</button><button class="btn btn-neutral" :disabled="(!selectedRecipients.length && !selectedChannels.length) || actionLoading">{{ tr("确认发送") }}</button></div></form></div><form method="dialog" class="modal-backdrop"><button>{{ tr("关闭") }}</button></form></dialog>
   </div>
