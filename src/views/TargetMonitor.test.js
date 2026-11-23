@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { compileScript, parse } from 'vue/compiler-sfc'
 import { inboxSeverityClass } from '../utils/inbox.js'
 import {
@@ -62,12 +62,13 @@ function createPage({ routeQuery = {}, rulesData, putError } = {}) {
     delete: async (url, options) => { requests.push({ method: 'DELETE', url, data: options?.data }); return ok({}) },
   })
   let mount, dispose
+  const route = reactive({ query: { ...routeQuery } })
   const sandbox = {
     tr, ref, computed, watch,
     onMounted: callback => { mount = callback },
     onBeforeUnmount: callback => { dispose = callback },
     useId: () => 'target-monitor-test-field',
-    useRoute: () => ({ query: routeQuery }),
+    useRoute: () => route,
     useUnsavedChanges: () => ({ allowNextRouteLeave() {} }),
     inboxSeverityClass,
     changeDetailRows, changeKindLabel, intervalLabel, intervalPresets, monitorProfiles,
@@ -78,7 +79,7 @@ function createPage({ routeQuery = {}, rulesData, putError } = {}) {
   page.editor.value = dialog()
   page.historyDialog.value = dialog()
   page.confirmDialog.value = { ask: async () => true }
-  return { ...page, requests, mount: () => mount(), dispose: () => dispose() }
+  return { ...page, route, requests, mount: () => mount(), dispose: () => dispose() }
 }
 
 test('mount loads rules and the feature flag gates self-service management', async () => {
@@ -195,5 +196,17 @@ test('custom interval selection converts hours and the changes tab loads recent 
   assert.equal(page.activeTab.value, 'changes')
   assert.equal(page.recentChanges.value.length, 1)
   assert.ok(page.requests.some(request => request.url === '/api/target-monitor/changes'))
+  page.dispose()
+})
+
+test('query-only navigation on a mounted page opens the run deep link', async () => {
+  const page = createPage()
+  await page.mount()
+  assert.equal(page.historyDialog.value.open, false)
+  page.route.query = { run: 'run-9' }
+  await new Promise(resolve => setTimeout(resolve, 0))
+  assert.equal(page.historyDialog.value.open, true)
+  assert.equal(page.activeRun.value.id, 'run-9')
+  assert.ok(page.requests.some(request => request.url === '/api/target-monitor/runs/run-9/changes'))
   page.dispose()
 })

@@ -228,6 +228,11 @@ async function switchTab(tab) {
   if (tab === 'changes' && !recentChanges.value.length) await loadRecentChanges()
 }
 
+// 已停留在 /monitor 时点击监控通知仅变更 query，不会重跑 onMounted。
+watch(() => route.query?.run, async (run, previous) => {
+  if (run && run !== previous) await openDeepLink(String(run))
+})
+
 onMounted(async () => {
   await loadRules()
   if (disposed) return

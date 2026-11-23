@@ -106,3 +106,18 @@ test('receiving settings draft saves through the shared inbox preferences', asyn
   assert.equal(page.inbox.prefs.value.task, false)
   page.dispose()
 })
+
+test('unread-only view drops items marked read even without a link', async () => {
+  const page = createPage()
+  await page.mount()
+  page.unreadOnly.value = true
+  await new Promise(resolve => setTimeout(resolve, 0))
+  const item = page.items.value[0]
+  item.link = null
+  await page.openItem(item)
+  assert.deepEqual(plain(page.reads), [{ ids: ['n1'] }])
+  assert.equal(page.items.value.length, 1)
+  assert.equal(page.items.value[0].id, 'n2')
+  assert.deepEqual(page.pushes, [])
+  page.dispose()
+})

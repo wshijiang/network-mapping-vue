@@ -58,6 +58,8 @@ async function openItem(item) {
     if (!item.read_at) {
       await markRead({ ids: [item.id] })
       item.read_at = new Date().toISOString()
+      // 仅未读视图下，标记已读（含无深链的通知）后立即移出列表。
+      if (unreadOnly.value) items.value = items.value.filter(value => value.id !== item.id)
     }
     if (item.link) router.push(item.link)
   } catch (error) { notify('error', tr("标记已读失败"), errorText(error)) }
