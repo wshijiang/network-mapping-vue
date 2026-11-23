@@ -421,7 +421,7 @@ async function handleLogout() {
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("开放平台") }}</span>
             </router-link>
           </li>
-          <li v-if="isAdmin">
+          <li>
             <router-link active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;报告中心&quot;)" to="/reports">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("报告中心") }}</span>
