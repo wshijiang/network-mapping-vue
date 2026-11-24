@@ -147,12 +147,13 @@ onBeforeUnmount(() => controller.abort())
             <input v-model="form.s3" type="checkbox" class="checkbox checkbox-sm" :disabled="!s3Configured && !form.s3">
             {{ tr('S3 兼容对象存储') }}
           </label>
+          <RouterLink to="/data/export/settings/s3" class="btn btn-outline btn-xs">{{ tr('管理 S3 连接') }}</RouterLink>
           <button v-if="s3Configured" type="button" class="btn btn-outline btn-xs" :disabled="testing" @click="testStorage">
             <span v-if="testing" class="loading loading-spinner loading-xs"></span>
             {{ tr('测试连接') }}
           </button>
         </div>
-        <p v-if="!s3Configured" class="mt-2 text-sm opacity-70">{{ tr('请先在服务器配置 S3 连接。') }}</p>
+        <p v-if="!s3Configured" class="mt-2 text-sm opacity-70">{{ tr('启用前请先保存 S3 连接。') }}</p>
       </fieldset>
 
       <fieldset class="card card-border border-base-300 bg-base-100 p-4" :disabled="saving">

@@ -17,6 +17,7 @@ const router = createRouter({
     { path: '/data/import', component: () => import('../views/DataImport.vue'), meta: { title: '数据导入' } },
     { path: '/data/export', component: () => import('../views/DataExport.vue'), meta: { title: '数据导出' } },
     { path: '/data/export/settings', component: () => import('../views/DataExportSettings.vue'), meta: { title: '导出设置' } },
+    { path: '/data/export/settings/s3', component: () => import('../views/DataExportS3.vue'), meta: { title: 'S3 存储管理' } },
     { path: '/data/federation', component: () => import('../views/DataFederation.vue'), meta: { title: '联测' } },
     {
       path: '/analysis',
