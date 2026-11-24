@@ -4913,5 +4913,12 @@
   "由服务器转发 S3 下载": "Stream S3 downloads through the server",
   "清除连接前，请在导出设置中取消选择 S3。": "Deselect S3 in export settings before removing this connection.",
   "支持 HTTP、HTTPS、SOCKS5 和 SOCKS5H。": "Supports HTTP, HTTPS, SOCKS5, and SOCKS5H.",
-  "留空保留已保存的代理地址及凭据。": "Leave blank to keep the saved proxy address and credentials."
+  "留空保留已保存的代理地址及凭据。": "Leave blank to keep the saved proxy address and credentials.",
+  "保存的 S3 连接和凭据对新导出任务生效。": "Saved S3 connection settings and credentials apply to new exports.",
+  "S3 凭据": "S3 credentials",
+  "凭据来源": "Credential source",
+  "服务器 AWS 凭据链": "Server AWS credential chain",
+  "自定义 Access Key": "Custom access key",
+  "凭据已保存。留空保留当前凭据，更换时请同时填写两项密钥。": "Credentials are saved. Leave the fields blank to keep them, or enter both keys to replace them.",
+  "Session Token（可选）": "Session token (optional)"
 }

@@ -22,6 +22,13 @@ const alert = ref(null)
 const controller = new AbortController()
 const dirty = computed(() => !!form.value && JSON.stringify(form.value) !== saved.value)
 const proxyUrlRequired = computed(() => form.value?.proxy_mode === 'custom' && !current.value?.connection?.proxy_configured)
+const credentialsIncomplete = computed(() => {
+  const value = form.value
+  if (value?.credential_mode !== 'static') return false
+  const replacing = current.value?.connection?.credential_mode !== 'static'
+    || value.access_key_id || value.secret_access_key || value.session_token
+  return replacing && (!value.access_key_id.trim() || !value.secret_access_key.trim())
+})
 const canReset = computed(() => current.value?.overridden && (current.value.deployment_connection || !current.value.enabled))
 
 function apply(data) {
@@ -37,6 +44,10 @@ function apply(data) {
     proxy_download: connection?.proxy_download ?? false,
     proxy_mode: connection?.proxy_mode ?? 'system',
     proxy_url: '',
+    credential_mode: connection?.credential_mode ?? 'aws_chain',
+    access_key_id: '',
+    secret_access_key: '',
+    session_token: '',
   }
   saved.value = JSON.stringify(form.value)
   conflict.value = false
@@ -64,11 +75,11 @@ async function load() {
   }
 }
 
-async function publish(connection) {
+async function publish(connection, credentials = null) {
   busy.value = 'save'
   alert.value = null
   try {
-    const { data } = await http.put(endpoint, { expected_revision: current.value.revision, connection })
+    const { data } = await http.put(endpoint, { expected_revision: current.value.revision, connection, credentials })
     apply(data.data)
     alert.value = { type: 'success', title: tr('S3 连接设置已保存') }
     return true
@@ -90,16 +101,21 @@ async function publish(connection) {
 function save() {
   if (busy.value || loading.value || failed.value || conflict.value || !dirty.value ||
       !form.value.region.trim() || !form.value.bucket.trim() ||
-      (proxyUrlRequired.value && !form.value.proxy_url.trim())) return false
+      (proxyUrlRequired.value && !form.value.proxy_url.trim()) || credentialsIncomplete.value) return false
+  const { credential_mode, access_key_id, secret_access_key, session_token, ...connection } = form.value
+  const credentials = { mode: credential_mode }
+  if (credential_mode === 'static' && access_key_id && secret_access_key) {
+    credentials.values = { access_key_id: access_key_id.trim(), secret_access_key, session_token: session_token || null }
+  }
   return publish({
-    ...form.value,
-    region: form.value.region.trim(),
-    bucket: form.value.bucket.trim(),
-    prefix: form.value.prefix.trim(),
-    endpoint: form.value.endpoint.trim() || null,
-    download_endpoint: form.value.download_endpoint.trim() || null,
-    proxy_url: form.value.proxy_mode === 'custom' ? form.value.proxy_url.trim() || null : null,
-  })
+    ...connection,
+    region: connection.region.trim(),
+    bucket: connection.bucket.trim(),
+    prefix: connection.prefix.trim(),
+    endpoint: connection.endpoint.trim() || null,
+    download_endpoint: connection.download_endpoint.trim() || null,
+    proxy_url: connection.proxy_mode === 'custom' ? connection.proxy_url.trim() || null : null,
+  }, credentials)
 }
 
 async function reset() {
@@ -155,7 +171,7 @@ onBeforeUnmount(() => controller.abort())
       <fieldset class="card card-border border-base-300 bg-base-100 p-4" :disabled="!!busy">
         <h2 class="mb-2 font-semibold">{{ tr('S3 连接') }}</h2>
         <p class="mb-3 text-sm opacity-70">
-          {{ tr('服务器通过 AWS 凭据链访问 S3。保存的连接设置对新导出任务生效。') }}
+          {{ tr('保存的 S3 连接和凭据对新导出任务生效。') }}
         </p>
         <p v-if="current.connection && !current.overridden" class="mb-3 text-sm opacity-70">{{ tr('当前使用部署配置，保存后将使用自定义连接。') }}</p>
         <div class="grid gap-4 sm:grid-cols-2">
@@ -218,6 +234,35 @@ onBeforeUnmount(() => controller.abort())
           </fieldset>
         </div>
       </fieldset>
+      <fieldset class="card card-border border-base-300 bg-base-100 p-4" :disabled="!!busy">
+        <h2 class="mb-2 font-semibold">{{ tr('S3 凭据') }}</h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-credential-mode`">{{ tr('凭据来源') }}</label></legend>
+            <select :id="`${fieldId}-credential-mode`" v-model="form.credential_mode" class="select select-bordered select-sm w-full">
+              <option value="aws_chain">{{ tr('服务器 AWS 凭据链') }}</option>
+              <option value="static">{{ tr('自定义 Access Key') }}</option>
+            </select>
+          </fieldset>
+        </div>
+        <template v-if="form.credential_mode === 'static'">
+          <p v-if="current.connection?.credential_mode === 'static'" class="mt-2 text-sm opacity-70">{{ tr('凭据已保存。留空保留当前凭据，更换时请同时填写两项密钥。') }}</p>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <fieldset class="fieldset min-w-0 w-full">
+              <legend class="fieldset-legend"><label :for="`${fieldId}-access-key`">Access Key ID</label></legend>
+              <input :id="`${fieldId}-access-key`" v-model="form.access_key_id" type="password" autocomplete="new-password" maxlength="256" class="input input-sm w-full">
+            </fieldset>
+            <fieldset class="fieldset min-w-0 w-full">
+              <legend class="fieldset-legend"><label :for="`${fieldId}-secret-key`">Secret Access Key</label></legend>
+              <input :id="`${fieldId}-secret-key`" v-model="form.secret_access_key" type="password" autocomplete="new-password" maxlength="1024" class="input input-sm w-full">
+            </fieldset>
+            <fieldset class="fieldset min-w-0 w-full">
+              <legend class="fieldset-legend"><label :for="`${fieldId}-session-token`">{{ tr('Session Token（可选）') }}</label></legend>
+              <input :id="`${fieldId}-session-token`" v-model="form.session_token" type="password" autocomplete="new-password" maxlength="16384" class="input input-sm w-full">
+            </fieldset>
+          </div>
+        </template>
+      </fieldset>
       <p v-if="current.overridden && !canReset" class="text-sm opacity-70">{{ tr('清除连接前，请在导出设置中取消选择 S3。') }}</p>
       <div class="flex flex-wrap justify-end gap-2">
         <button type="button" class="btn btn-ghost btn-sm" :disabled="!!busy" @click="load">{{ tr('重新加载') }}</button>
@@ -226,7 +271,7 @@ onBeforeUnmount(() => controller.abort())
           <span v-if="busy === 'test'" class="loading loading-spinner loading-xs"></span>
           {{ tr('测试连接') }}
         </button>
-        <button type="submit" class="btn btn-neutral btn-sm" :disabled="!!busy || !dirty || conflict || !form.bucket.trim() || !form.region.trim() || (proxyUrlRequired && !form.proxy_url.trim())">
+        <button type="submit" class="btn btn-neutral btn-sm" :disabled="!!busy || !dirty || conflict || !form.bucket.trim() || !form.region.trim() || credentialsIncomplete || (proxyUrlRequired && !form.proxy_url.trim())">
           <span v-if="busy === 'save'" class="loading loading-spinner loading-xs"></span>
           {{ tr('保存设置') }}
         </button>
