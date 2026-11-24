@@ -4911,5 +4911,7 @@
   "浏览器下载地址": "Browser download endpoint",
   "使用路径式寻址": "Use path-style addressing",
   "由服务器转发 S3 下载": "Stream S3 downloads through the server",
-  "清除连接前，请在导出设置中取消选择 S3。": "Deselect S3 in export settings before removing this connection."
+  "清除连接前，请在导出设置中取消选择 S3。": "Deselect S3 in export settings before removing this connection.",
+  "支持 HTTP、HTTPS、SOCKS5 和 SOCKS5H。": "Supports HTTP, HTTPS, SOCKS5, and SOCKS5H.",
+  "留空保留已保存的代理地址及凭据。": "Leave blank to keep the saved proxy address and credentials."
 }

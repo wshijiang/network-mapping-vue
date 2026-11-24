@@ -21,6 +21,7 @@ const conflict = ref(false)
 const alert = ref(null)
 const controller = new AbortController()
 const dirty = computed(() => !!form.value && JSON.stringify(form.value) !== saved.value)
+const proxyUrlRequired = computed(() => form.value?.proxy_mode === 'custom' && !current.value?.connection?.proxy_configured)
 const canReset = computed(() => current.value?.overridden && (current.value.deployment_connection || !current.value.enabled))
 
 function apply(data) {
@@ -34,7 +35,8 @@ function apply(data) {
     path_style: connection?.path_style ?? false,
     download_endpoint: connection?.download_endpoint ?? '',
     proxy_download: connection?.proxy_download ?? false,
-    proxy_url: connection?.proxy_url ?? '',
+    proxy_mode: connection?.proxy_mode ?? 'system',
+    proxy_url: '',
   }
   saved.value = JSON.stringify(form.value)
   conflict.value = false
@@ -87,7 +89,8 @@ async function publish(connection) {
 
 function save() {
   if (busy.value || loading.value || failed.value || conflict.value || !dirty.value ||
-      !form.value.region.trim() || !form.value.bucket.trim()) return false
+      !form.value.region.trim() || !form.value.bucket.trim() ||
+      (proxyUrlRequired.value && !form.value.proxy_url.trim())) return false
   return publish({
     ...form.value,
     region: form.value.region.trim(),
@@ -95,7 +98,7 @@ function save() {
     prefix: form.value.prefix.trim(),
     endpoint: form.value.endpoint.trim() || null,
     download_endpoint: form.value.download_endpoint.trim() || null,
-    proxy_url: form.value.proxy_url.trim() || null,
+    proxy_url: form.value.proxy_mode === 'custom' ? form.value.proxy_url.trim() || null : null,
   })
 }
 
@@ -156,36 +159,63 @@ onBeforeUnmount(() => controller.abort())
         </p>
         <p v-if="current.connection && !current.overridden" class="mb-3 text-sm opacity-70">{{ tr('当前使用部署配置，保存后将使用自定义连接。') }}</p>
         <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label class="label mb-1" :for="`${fieldId}-endpoint`">{{ tr('S3 API 地址') }}</label>
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-endpoint`">{{ tr('S3 API 地址') }}</label></legend>
             <input :id="`${fieldId}-endpoint`" v-model="form.endpoint" type="url" class="input input-sm w-full" placeholder="https://s3.example.invalid">
             <p class="mt-1 text-xs opacity-70">{{ tr('使用 AWS S3 时可留空。') }}</p>
-          </div>
-          <div>
-            <label class="label mb-1" :for="`${fieldId}-region`">{{ tr('签名区域') }}</label>
+          </fieldset>
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-region`">{{ tr('签名区域') }}</label></legend>
             <input :id="`${fieldId}-region`" v-model="form.region" class="input input-sm w-full" required>
-          </div>
-          <div>
-            <label class="label mb-1" :for="`${fieldId}-bucket`">{{ tr('存储桶') }}</label>
+          </fieldset>
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-bucket`">{{ tr('存储桶') }}</label></legend>
             <input :id="`${fieldId}-bucket`" v-model="form.bucket" class="input input-sm w-full" required>
-          </div>
-          <div>
-            <label class="label mb-1" :for="`${fieldId}-prefix`">{{ tr('对象前缀') }}</label>
+          </fieldset>
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-prefix`">{{ tr('对象前缀') }}</label></legend>
             <input :id="`${fieldId}-prefix`" v-model="form.prefix" class="input input-sm w-full">
-          </div>
-          <div>
-            <label class="label mb-1" :for="`${fieldId}-proxy`">{{ tr('S3 出站代理地址') }}</label>
-            <input :id="`${fieldId}-proxy`" v-model="form.proxy_url" type="url" class="input input-sm w-full" placeholder="http://proxy.example.invalid:8080">
-            <p class="mt-1 text-xs opacity-70">{{ tr('可选。填写 HTTP(S) 代理，仅用于服务器访问 S3。') }}</p>
-          </div>
-          <div>
-            <label class="label mb-1" :for="`${fieldId}-download`">{{ tr('浏览器下载地址') }}</label>
+          </fieldset>
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-proxy-mode`">{{ tr('代理方式') }}</label></legend>
+            <select :id="`${fieldId}-proxy-mode`" v-model="form.proxy_mode" class="select select-bordered select-sm w-full">
+              <option value="system">{{ tr('跟随全局') }}</option>
+              <option value="direct">{{ tr('直连') }}</option>
+              <option value="custom">{{ tr('自定义') }}</option>
+            </select>
+          </fieldset>
+          <fieldset v-if="form.proxy_mode === 'custom'" class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-proxy`">{{ tr('S3 出站代理地址') }}</label></legend>
+            <input
+              :id="`${fieldId}-proxy`"
+              v-model="form.proxy_url"
+              type="password"
+              autocomplete="new-password"
+              class="input input-sm w-full"
+              :required="proxyUrlRequired"
+              :placeholder="current.connection?.proxy_endpoint || 'socks5h://proxy.example.invalid:1080'"
+            >
+            <p class="text-xs opacity-70">{{ tr('支持 HTTP、HTTPS、SOCKS5 和 SOCKS5H。') }}</p>
+            <p v-if="current.connection?.proxy_configured" class="text-xs opacity-70">{{ tr('留空保留已保存的代理地址及凭据。') }}</p>
+          </fieldset>
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-download`">{{ tr('浏览器下载地址') }}</label></legend>
             <input :id="`${fieldId}-download`" v-model="form.download_endpoint" type="url" class="input input-sm w-full" :disabled="form.proxy_download" placeholder="https://download.example.invalid">
-          </div>
+          </fieldset>
         </div>
-        <div class="mt-4 flex flex-wrap gap-4">
-          <label class="label gap-2 text-base-content"><input v-model="form.path_style" type="checkbox" class="checkbox checkbox-sm">{{ tr('使用路径式寻址') }}</label>
-          <label class="label gap-2 text-base-content"><input v-model="form.proxy_download" type="checkbox" class="checkbox checkbox-sm">{{ tr('由服务器转发 S3 下载') }}</label>
+        <div class="mt-4 grid grid-cols-2 gap-4">
+          <fieldset class="fieldset min-w-0">
+            <label class="flex items-center gap-2 text-sm">
+              <span>{{ tr('使用路径式寻址') }}</span>
+              <input v-model="form.path_style" type="checkbox" role="switch" class="toggle toggle-sm shrink-0">
+            </label>
+          </fieldset>
+          <fieldset class="fieldset min-w-0">
+            <label class="flex items-center gap-2 text-sm">
+              <span>{{ tr('由服务器转发 S3 下载') }}</span>
+              <input v-model="form.proxy_download" type="checkbox" role="switch" class="toggle toggle-sm shrink-0">
+            </label>
+          </fieldset>
         </div>
       </fieldset>
       <p v-if="current.overridden && !canReset" class="text-sm opacity-70">{{ tr('清除连接前，请在导出设置中取消选择 S3。') }}</p>
@@ -196,7 +226,7 @@ onBeforeUnmount(() => controller.abort())
           <span v-if="busy === 'test'" class="loading loading-spinner loading-xs"></span>
           {{ tr('测试连接') }}
         </button>
-        <button type="submit" class="btn btn-neutral btn-sm" :disabled="!!busy || !dirty || conflict || !form.bucket.trim() || !form.region.trim()">
+        <button type="submit" class="btn btn-neutral btn-sm" :disabled="!!busy || !dirty || conflict || !form.bucket.trim() || !form.region.trim() || (proxyUrlRequired && !form.proxy_url.trim())">
           <span v-if="busy === 'save'" class="loading loading-spinner loading-xs"></span>
           {{ tr('保存设置') }}
         </button>

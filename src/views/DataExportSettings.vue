@@ -138,15 +138,15 @@ onBeforeUnmount(() => controller.abort())
       <fieldset class="card card-border border-base-300 bg-base-100 p-4" :disabled="saving">
         <h2 class="mb-2 font-semibold">{{ tr('导出保存位置') }}</h2>
         <p class="mb-3 text-sm opacity-70">{{ tr('至少选择一个位置。保存位置和批大小仅对新任务生效。') }}</p>
-        <div class="flex flex-wrap items-center gap-4">
-          <label class="label gap-2 text-base-content">
-            <input v-model="form.local" type="checkbox" class="checkbox checkbox-sm">
-            {{ tr('服务器本地') }}
-          </label>
-          <label class="label gap-2 text-base-content">
-            <input v-model="form.s3" type="checkbox" class="checkbox checkbox-sm" :disabled="!s3Configured && !form.s3">
-            {{ tr('S3 兼容对象存储') }}
-          </label>
+        <div class="flex flex-wrap items-end gap-4">
+          <fieldset class="fieldset min-w-0">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-local`">{{ tr('服务器本地') }}</label></legend>
+            <input :id="`${fieldId}-local`" v-model="form.local" type="checkbox" class="checkbox checkbox-sm">
+          </fieldset>
+          <fieldset class="fieldset min-w-0">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-s3`">{{ tr('S3 兼容对象存储') }}</label></legend>
+            <input :id="`${fieldId}-s3`" v-model="form.s3" type="checkbox" class="checkbox checkbox-sm" :disabled="!s3Configured && !form.s3">
+          </fieldset>
           <RouterLink to="/data/export/settings/s3" class="btn btn-outline btn-xs">{{ tr('管理 S3 连接') }}</RouterLink>
           <button v-if="s3Configured" type="button" class="btn btn-outline btn-xs" :disabled="testing" @click="testStorage">
             <span v-if="testing" class="loading loading-spinner loading-xs"></span>
@@ -159,18 +159,18 @@ onBeforeUnmount(() => controller.abort())
       <fieldset class="card card-border border-base-300 bg-base-100 p-4" :disabled="saving">
         <h2 class="mb-3 font-semibold">{{ tr('导出性能') }}</h2>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <label class="label mb-1" :for="`${fieldId}-batch`">{{ tr('每批读取行数') }}</label>
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-batch`">{{ tr('每批读取行数') }}</label></legend>
             <input :id="`${fieldId}-batch`" v-model.number="form.batch_size" type="number" min="1" max="10000" required class="input input-sm w-full">
-          </div>
-          <div>
-            <label class="label mb-1" :for="`${fieldId}-workers`">{{ tr('同时运行的导出任务数') }}</label>
+          </fieldset>
+          <fieldset class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-workers`">{{ tr('同时运行的导出任务数') }}</label></legend>
             <input :id="`${fieldId}-workers`" v-model.number="form.workers" type="number" min="1" max="4" required class="input input-sm w-full">
-          </div>
-          <div v-if="form.s3">
-            <label class="label mb-1" :for="`${fieldId}-upload`">{{ tr('S3 分片上传并发数') }}</label>
+          </fieldset>
+          <fieldset v-if="form.s3" class="fieldset min-w-0 w-full">
+            <legend class="fieldset-legend"><label :for="`${fieldId}-upload`">{{ tr('S3 分片上传并发数') }}</label></legend>
             <input :id="`${fieldId}-upload`" v-model.number="form.upload_concurrency" type="number" min="1" max="8" required class="input input-sm w-full">
-          </div>
+          </fieldset>
         </div>
       </fieldset>
 
