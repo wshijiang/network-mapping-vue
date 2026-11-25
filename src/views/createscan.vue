@@ -17,7 +17,6 @@ const LEGACY_DRAFT_KEY = 'createscan_draft'
 // Mirrors the backend DEFAULT_SCAN_PORTS used when the port field is blank.
 const DEFAULT_SCAN_PORTS = '1-11000,11211,20000,27017,47808,11210,11300,11371,12174,13720,13721,16379,16992,16993,17185,19071,26379,27018,27019,28015,29015,34962-34964,37777,44818,50000,50090,51413,51820,60010,60030,61613,61616,62078,64738'
 const scanProfiles = [
-  { value: 'legacy', get title() { return tr('兼容扫描') }, ipOnly: true, scopedOnly: true },
   {value: 'udp_inventory', get title() { return tr("UDP 服务识别") }, get description() { return tr("仅向明确的 UDP 端口发送最小发现请求；最多 256 个地址、32 个端口，超时不判定端口状态。") }, ipOnly: true},
   {
     value: 'vulnerability_scan',
@@ -95,15 +94,19 @@ const targetSummary = computed(() => {
   return tr("已识别 {0}，共 {1} 个目标，{2}", [targetTypeLabel(result.type), result.targets.length, separator])
 })
 const availableProfiles = computed(() => scanProfiles.filter(profile => {
-  if (!scoped.value) return !profile.scopedOnly && (!isDnsTask.value || !profile.ipOnly)
+  if (!scoped.value) return !isDnsTask.value || !profile.ipOnly
   return (access.value.profiles || []).includes(profile.value)
     && (isDnsTask.value ? profile.value === 'dns_records' : !profile.domainOnly)
 }))
+const effectiveDefaultProfile = computed(() => scoped.value
+  ? availableProfiles.value[0]?.value ?? ''
+  : defaultScanProfile.value)
+scanProfile.value = effectiveDefaultProfile.value
 watch(availableProfiles, profiles => {
   if (scoped.value && !profiles.some(profile => profile.value === scanProfile.value)) {
-    scanProfile.value = profiles[0]?.value || ''
+    scanProfile.value = effectiveDefaultProfile.value
   }
-}, { immediate: true })
+})
 const selectedScanProfile = computed(() => scanProfiles.find((profile) => profile.value === scanProfile.value))
 const selectedScanProfileTitle = computed(() => selectedScanProfile.value?.title || tr("未选择"))
 const selectedScanProfileDescription = computed(() => (
@@ -185,7 +188,7 @@ const hasUnsavedChanges = computed(() => (
   || dispatchMode.value !== defaultDispatch.value
   || scannerIds.value.length > 0
   || Object.keys(serviceProbeOptions.value).length > 0
-  || scanProfile.value !== defaultScanProfile.value
+  || scanProfile.value !== effectiveDefaultProfile.value
   || dnsResolverMode.value !== 'system'
   || dnsResolvers.value.length > 0
   || selectedDnsResolverIds.value.length > 0
@@ -215,7 +218,7 @@ function resetForm() {
   modbusUnitId.value=1
   s7Tsap.value=258
   mqttVersion.value=4
-  scanProfile.value = scoped.value ? availableProfiles.value[0]?.value || '' : defaultScanProfile.value
+  scanProfile.value = effectiveDefaultProfile.value
   dnsResolverMode.value = 'system'
   dnsResolvers.value = []
   selectedDnsResolverIds.value = []

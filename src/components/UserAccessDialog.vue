@@ -158,7 +158,7 @@ defineExpose({ open })
         <div v-if="withScan" class="grid gap-2 sm:grid-cols-2">
           <label class="fieldset"><span class="fieldset-legend">{{ tr('授权 CIDR') }}</span><textarea v-model="form.targetCidrs" class="textarea textarea-bordered w-full font-mono" placeholder="192.0.2.0/24"></textarea></label>
           <label class="fieldset"><span class="fieldset-legend">{{ tr('授权域名') }}</span><textarea v-model="form.domains" class="textarea textarea-bordered w-full font-mono" placeholder="example.org"></textarea></label>
-          <label class="fieldset sm:col-span-2"><span class="fieldset-legend">{{ tr('授权扫描模式') }}</span><input v-model="form.profiles" class="input input-bordered w-full font-mono" placeholder="legacy, dns_records" required /></label>
+          <label class="fieldset sm:col-span-2"><span class="fieldset-legend">{{ tr('授权扫描模式') }}</span><input v-model="form.profiles" class="input input-bordered w-full font-mono" placeholder="port_only, dns_records" required /></label>
           <label class="fieldset"><span class="fieldset-legend">{{ tr('最高优先级') }}</span><input v-model.number="form.maxPriority" class="input input-bordered w-full" type="number" min="0" max="4" required /></label>
           <label class="fieldset"><span class="fieldset-legend">{{ tr('每任务最多目标数') }}</span><input v-model.number="form.maxTargets" class="input input-bordered w-full" type="number" min="1" max="65536" required /></label>
           <label class="fieldset sm:col-span-2"><span class="fieldset-legend">{{ tr('授权端口范围') }}</span><input v-model="form.portRanges" class="input input-bordered w-full font-mono" placeholder="53, 80, 443, 8000-8010" required /></label>

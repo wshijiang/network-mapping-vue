@@ -4900,6 +4900,5 @@
   "保存权限": "Save permissions",
   "当前账号未获授予此页面的权限。": "This account does not have access to this page.",
   "当前账号未获授予导出审计日志的权限。": "This account does not have permission to export audit logs.",
-  "兼容扫描": "Legacy scan",
   "授权端口范围": "Authorized port ranges"
 }
