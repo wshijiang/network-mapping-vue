@@ -4950,5 +4950,12 @@
   "服务器 AWS 凭据链": "Server AWS credential chain",
   "自定义 Access Key": "Custom access key",
   "凭据已保存。留空保留当前凭据，更换时请同时填写两项密钥。": "Credentials are saved. Leave the fields blank to keep them, or enter both keys to replace them.",
-  "Session Token（可选）": "Session token (optional)"
+  "Session Token（可选）": "Session token (optional)",
+  "分析图表快照": "Analysis chart snapshots",
+  "后台生成": "Build in background",
+  "读取已发布图表": "Read published charts",
+  "先后台生成，确认发布后再切换读取。读取仅在快照模式下生效。": "Build in the background first, then switch to reading after publication. Published chart reads require snapshot mode.",
+  "分析图表快照正在准备，请稍后刷新。": "Analysis chart snapshots are being prepared. Refresh in a moment.",
+  "已发布版本 #{0}，数据截至 {1}": "Published revision #{0}, data as of {1}",
+  "图表快照尚未就绪": "Chart snapshots are not ready yet"
 }
