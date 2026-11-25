@@ -14,7 +14,7 @@
 
   <div class="page-shell grid grid-cols-1 xl:grid-cols-2 gap-5">
     <h1 class="page-title -mb-1 xl:col-span-2">{{ tr("仪表盘") }}</h1>
-    <div class="card bg-base-100 card-border border-base-300 p-4">
+    <div v-if="isAdmin" class="card bg-base-100 card-border border-base-300 p-4">
       <div class="mb-3">
         <h3 class="font-semibold">{{ tr("服务器资源利用状态") }}</h3>
         <p class="text-xs opacity-60">{{ tr("使用率 / 空闲率（100% 堆叠）") }}</p>
@@ -33,7 +33,7 @@
     </div>
   </div>
 
-  <div class="px-5">
+  <div v-if="isAdmin" class="px-5">
     <SystemHistoryPanel @error="handleResourceHistoryError" />
   </div>
 
@@ -50,7 +50,7 @@
 
   <!-- 系统信息及扫描日志卡片 -->
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 p-5">
-    <div class="card bg-base-100 card-border border-base-300 p-4">
+    <div v-if="isAdmin" class="card bg-base-100 card-border border-base-300 p-4">
       <div class="mb-3">
         <h3 class="font-semibold">{{ tr("系统详细信息") }}</h3>
         <p class="text-xs opacity-60">{{ tr("主机、操作系统与网络接口") }}</p>
@@ -167,12 +167,13 @@ import { tr } from '../i18n/index.js'
 
 import { useChartTheme } from '@/composables/useChartTheme'
 import { formatDate as formatSystemDate, timeSettings } from '../i18n/time.js'
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import SystemHistoryPanel from '@/components/SystemHistoryPanel.vue'
 import { renderChartTooltip } from '@/utils/chartTooltip'
 import http from '@/utils/http'
 
+const isAdmin = inject('isAdmin')
 const ApexChart = defineAsyncComponent(() => import('vue3-apexcharts/core'))
 
 const alerts = ref([])
@@ -215,6 +216,7 @@ function formatPercent(value) {
 }
 
 async function fetchSystemData() {
+  if (!isAdmin?.value) return
   try {
     const response = await http.get('/api/data/system-data')
     if (response.data) {
@@ -236,6 +238,7 @@ async function fetchDashboardData() {
     const response = await http.get('/api/dashboard/overview')
     if (response.data?.success === true) {
       dashboardData.value = response.data.data
+      if (!isAdmin?.value) isFirstLoad.value = false
     }
   } catch (error) {
     console.error('fetch dashboard data failed', error)

@@ -1,7 +1,7 @@
 <script setup>
 import { tr } from '../i18n/index.js'
 
-import { computed, onMounted, ref, watch, useId } from 'vue'
+import { computed, inject, onMounted, ref, watch, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
@@ -10,6 +10,8 @@ import { parseScanTargets, targetTypeLabel } from '@/utils/scanTargets'
 import { automaticServiceRequirements, automaticProbeOptions, supportsRequiredServices } from '@/utils/serviceDetection'
 import { routingLocation, routingReason } from '@/utils/scanRouting'
 
+const access = inject('access')
+const scoped = computed(() => access?.value?.role === 2 && !access.value.legacy_user)
 const formFieldId = useId()
 const LEGACY_DRAFT_KEY = 'createscan_draft'
 // Mirrors the backend DEFAULT_SCAN_PORTS used when the port field is blank.
@@ -45,11 +47,13 @@ const scanProfiles = [
 const targetInput = ref('')
 const targetTouched = ref(false)
 const port = ref('')
-const level = ref(1)
+const initialPriority = computed(() => scoped.value ? Math.min(1, access.value.max_priority) : 1)
+const level = ref(initialPriority.value)
 const remark = ref('')
 const alerts = ref([])
 const submitting = ref(false)
-const dispatchMode = ref('automatic')
+const defaultDispatch = computed(() => scoped.value ? 'selected' : 'automatic')
+const dispatchMode = ref(defaultDispatch.value)
 const scannerIds = ref([])
 const scanners = ref([])
 const scannersLoading = ref(false)
@@ -74,7 +78,7 @@ const dnsResolvers = ref([])
 const dnsResolverPresets = ref([])
 const selectedDnsResolverIds = ref([])
 const defaultScanProfile = ref('vulnerability_scan')
-const scanSettingsLoading = ref(true)
+const scanSettingsLoading = ref(!scoped.value)
 const targetValidation = computed(() => parseScanTargets(targetInput.value))
 const targetType = computed(() => targetValidation.value.valid ? targetValidation.value.type : null)
 const isDnsTask = computed(() => targetType.value === 'domain')
@@ -89,6 +93,20 @@ const targetSummary = computed(() => {
   }[result.separator]
   return tr("已识别 {0}，共 {1} 个目标，{2}", [targetTypeLabel(result.type), result.targets.length, separator])
 })
+const availableProfiles = computed(() => scanProfiles.filter(profile => {
+  if (!scoped.value) return !isDnsTask.value || !profile.ipOnly
+  return (access.value.profiles || []).includes(profile.value)
+    && (isDnsTask.value ? profile.value === 'dns_records' : !profile.domainOnly)
+}))
+const effectiveDefaultProfile = computed(() => scoped.value
+  ? availableProfiles.value[0]?.value ?? ''
+  : defaultScanProfile.value)
+scanProfile.value = effectiveDefaultProfile.value
+watch(availableProfiles, profiles => {
+  if (scoped.value && !profiles.some(profile => profile.value === scanProfile.value)) {
+    scanProfile.value = effectiveDefaultProfile.value
+  }
+})
 const selectedScanProfile = computed(() => scanProfiles.find((profile) => profile.value === scanProfile.value))
 const selectedScanProfileTitle = computed(() => selectedScanProfile.value?.title || tr("未选择"))
 const selectedScanProfileDescription = computed(() => (
@@ -97,6 +115,9 @@ const selectedScanProfileDescription = computed(() => (
     : selectedScanProfile.value?.description || ''
 ))
 const scanRequiresPort = computed(() => scanProfile.value !== 'dns_records')
+const webContentOverride = computed(() => (
+  ['service_inventory', 'vulnerability_scan'].includes(scanProfile.value) ? webContentEnabled.value : undefined
+))
 const selectedDnsResolvers = computed(() => {
   if (dnsResolverMode.value === 'preset') {
     const selected = new Set(selectedDnsResolverIds.value)
@@ -148,6 +169,7 @@ watch([targetAddressFamily, scanProfile, dnsResolverMode, selectedDnsResolvers, 
 })
 
 watch(targetType, (value) => {
+  if (scoped.value) return
   if (value === 'domain') { if(scanProfile.value === 'udp_inventory') scanProfile.value=defaultScanProfile.value }
   if (value !== 'domain' && scanProfile.value === 'dns_records') {
     scanProfile.value = defaultScanProfile.value
@@ -164,12 +186,13 @@ const portInputRef = ref(null)
 const hasUnsavedChanges = computed(() => (
   targetInput.value.trim() !== ''
   || port.value.trim() !== ''
-  || level.value !== 1
+  || level.value !== initialPriority.value
   || remark.value.trim() !== ''
-  || dispatchMode.value !== 'automatic'
+  || dispatchMode.value !== defaultDispatch.value
   || scannerIds.value.length > 0
   || Object.keys(serviceProbeOptions.value).length > 0
-  || scanProfile.value !== defaultScanProfile.value
+  || scanProfile.value !== effectiveDefaultProfile.value
+  || webContentOverride.value === false
   || dnsResolverMode.value !== 'system'
   || dnsResolvers.value.length > 0
   || selectedDnsResolverIds.value.length > 0
@@ -189,9 +212,9 @@ function resetForm() {
   targetInput.value = ''
   targetTouched.value = false
   port.value = ''
-  level.value = 1
+  level.value = initialPriority.value
   remark.value = ''
-  dispatchMode.value = 'automatic'
+  dispatchMode.value = defaultDispatch.value
   scannerIds.value = []
   probeServerName.value=''
   dohPath.value='/dns-query'
@@ -199,7 +222,8 @@ function resetForm() {
   modbusUnitId.value=1
   s7Tsap.value=258
   mqttVersion.value=4
-  scanProfile.value = defaultScanProfile.value
+  scanProfile.value = effectiveDefaultProfile.value
+  webContentEnabled.value = true
   dnsResolverMode.value = 'system'
   dnsResolvers.value = []
   selectedDnsResolverIds.value = []
@@ -251,8 +275,10 @@ async function loadDnsResolverPresets() {
 onMounted(() => {
   localStorage.removeItem(LEGACY_DRAFT_KEY)
   loadScanners()
-  loadScanSettings()
-  loadDnsResolverPresets()
+  if (!scoped.value) {
+    loadScanSettings()
+    loadDnsResolverPresets()
+  }
 })
 
 function closeAlertById(id) {
@@ -287,7 +313,7 @@ async function previewPlacement() {
 }
 async function submitTask() {
   if (submitting.value) return false
-  if (scanSettingsLoading.value) return false
+  if (scanSettingsLoading.value || !scanProfile.value) return false
   targetTouched.value = true
   if (!targetInputRef.value?.reportValidity()) return false
   const validatedTargets = targetValidation.value
@@ -349,12 +375,12 @@ async function submitTask() {
                 port: Number(item.port) || 53, transport: item.transport
               }))
             : [],
-          web_content_enabled: ['service_inventory', 'vulnerability_scan'].includes(scanProfile.value) ? webContentEnabled.value : undefined
+          web_content_enabled: webContentOverride.value
         }
       : {
           required_services: requiredServices.value,
           service_probe_options:serviceProbeOptions.value,
-          web_content_enabled: ['service_inventory', 'vulnerability_scan'].includes(scanProfile.value) ? webContentEnabled.value : undefined,
+          web_content_enabled: webContentOverride.value,
           ip: validatedTargets.targets.join(','),
           port: port.value.trim(),
           level: Number(level.value),
@@ -456,7 +482,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
               <fieldset class="pt-1" :disabled="scanSettingsLoading">
                 <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
                   <label
-                    v-for="profile in scanProfiles.filter(p=>!isDnsTask || !p.ipOnly)"
+                    v-for="profile in availableProfiles"
                     :key="profile.value"
                     class="flex items-start gap-2 rounded-lg border border-transparent bg-base-200/50 p-3"
                     :class="[
@@ -520,8 +546,8 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
                   </div>
                   <select v-model="dnsResolverMode" class="select select-sm w-full sm:w-auto">
                     <option value="system">{{ tr("使用扫描器系统 DNS") }}</option>
-                    <option v-if="dnsResolverPresets.length" value="preset">{{ tr("选择常用 DNS 服务器") }}</option>
-                    <option value="specified">{{ tr("临时指定 DNS 服务器") }}</option>
+                    <option v-if="!scoped && dnsResolverPresets.length" value="preset">{{ tr("选择常用 DNS 服务器") }}</option>
+                    <option v-if="!scoped" value="specified">{{ tr("临时指定 DNS 服务器") }}</option>
                   </select>
                 </div>
                 <div v-if="dnsResolverMode === 'preset'" class="mt-3 grid gap-2 sm:grid-cols-2">
@@ -555,7 +581,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
                 <p v-if="isDnsTask" class="mb-2 text-xs text-base-content/60"> {{ tr("所选扫描器执行域名 DNS 阶段；解析地址生成的 IP 子任务继续按地址族和扫描能力调度。") }} </p>
                 <div class="grid gap-2 md:grid-cols-3">
                   <label class="flex cursor-pointer items-start gap-2 rounded-lg bg-base-200/50 p-3">
-                    <input v-model="dispatchMode" class="radio radio-sm mt-0.5" type="radio" value="automatic" />
+                    <input v-model="dispatchMode" class="radio radio-sm mt-0.5" type="radio" value="automatic" :disabled="scoped" />
                     <span><span class="block font-medium">{{ tr("自动分配") }}</span><span class="text-xs opacity-60">{{ tr("按地域、能力和历史反馈分配") }}</span></span>
                   </label>
                   <label class="flex cursor-pointer items-start gap-2 rounded-lg bg-base-200/50 p-3">
@@ -563,7 +589,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
                     <span><span class="block font-medium">{{ tr("指定扫描器") }}</span><span class="text-xs opacity-60">{{ tr("选择一台或多台分别执行") }}</span></span>
                   </label>
                   <label class="flex cursor-pointer items-start gap-2 rounded-lg bg-base-200/50 p-3">
-                    <input v-model="dispatchMode" class="radio radio-sm mt-0.5" type="radio" value="all" />
+                    <input v-model="dispatchMode" class="radio radio-sm mt-0.5" type="radio" value="all" :disabled="scoped" />
                     <span><span class="block font-medium">{{ tr("全部扫描器") }}</span><span class="text-xs opacity-60">{{ tr("所有已启用扫描器各执行一次，离线设备上线后执行") }}</span></span>
                   </label>
                 </div>
@@ -616,11 +642,11 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
         <fieldset class="fieldset min-w-0 w-full">
           <legend class="fieldset-legend"><label :for="`${formFieldId}-2`">{{ tr("优先级") }}</label></legend>
           <select :id="`${formFieldId}-2`" v-model.number="level" class="select w-full">
-            <option value="1">{{ tr("低级") }}</option>
+            <option v-if="!scoped || access.max_priority >= 1" value="1">{{ tr("低级") }}</option>
             <option value="0">{{ tr("最低（与系统自动生成扫描任务级别一致）") }}</option>
-            <option value="2">{{ tr("中级") }}</option>
-            <option value="3">{{ tr("高级") }}</option>
-            <option value="4">{{ tr("紧急") }}</option>
+            <option v-if="!scoped || access.max_priority >= 2" value="2">{{ tr("中级") }}</option>
+            <option v-if="!scoped || access.max_priority >= 3" value="3">{{ tr("高级") }}</option>
+            <option v-if="!scoped || access.max_priority >= 4" value="4">{{ tr("紧急") }}</option>
           </select>
         </fieldset>
 
@@ -637,7 +663,7 @@ useUnsavedChanges(hasUnsavedChanges, submitTask, confirmDialog)
       </div>
 
       <div class="flex justify-end mt-3">
-        <button id="task_submit" class="btn rounded-lg btn-neutral w-full md:w-auto" :disabled="submitting || scanSettingsLoading" @click="submitTask">
+        <button id="task_submit" class="btn rounded-lg btn-neutral w-full md:w-auto" :disabled="submitting || scanSettingsLoading || !scanProfile" @click="submitTask">
           {{ submitting ? tr("提交中...") : tr("提交") }}
         </button>
       </div>

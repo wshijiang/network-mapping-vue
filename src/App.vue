@@ -2,7 +2,7 @@
 import { tr } from './i18n/index.js'
 
 import { computed, onBeforeUnmount, onMounted, provide, readonly, ref, watch } from 'vue'
-import { RouterView, useRoute } from 'vue-router'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 import { Bell, BookOpenText, Radar } from '@lucide/vue'
 import { expireCookie } from './utils/csrf'
 import http from './utils/http'
@@ -15,15 +15,38 @@ import { inboxNotifications } from '@/composables/useInboxNotifications'
 import packageInfo from '../package.json'
 
 const route = useRoute()
+const router = useRouter()
 const navbarTitle = computed(() => tr(route.meta?.title || '仪表盘'))
 watch(navbarTitle, title => { document.title = `${title} · Network Mapping` }, { immediate: true })
 const logoutLoading = ref(false)
 const drawerOpen = ref(true)
 const activeSettingsTab = ref('system')
 const reLoginModalRef = ref(null)
-const isAdmin = ref(false)
+const access = ref(null)
+const isAdmin = computed(() => access.value?.role === 1)
+const unrestricted = computed(() => isAdmin.value || access.value?.legacy_user)
 provide('isAdmin', readonly(isAdmin))
 const inboxUnreadCount = inboxNotifications.unreadCount
+provide('access', readonly(access))
+watch([access, () => route.path], ([policy, path]) => {
+  if (path !== '/') return
+  if (policy?.read_audit && !policy.read_results) router.replace('/audit')
+  else if (policy?.create_scan && !policy.read_results) router.replace('/create_scan')
+})
+const canOpenPage = computed(() => {
+  const permissions = access.value
+  if (!permissions) return false
+  const path = route.path
+  if (path.startsWith('/scanner') && !isAdmin.value) return false
+  if (unrestricted.value) return true
+  if (path === '/user/info' || path === '/user/security') return true
+  if (path === '/audit') return permissions.read_audit
+  if (path === '/create_scan') return permissions.create_scan
+  if (path === '/' || path === '/task' || path.startsWith('/task/') || path.startsWith('/analysis/')) {
+    return permissions.read_results && path !== '/analysis/performance'
+  }
+  return false
+})
 const frontendVersion = packageInfo.version
 const serverVersion = ref('')
 const maintenanceStatus = ref(null)
@@ -77,15 +100,18 @@ async function loadServerVersion() {
 
 async function loadCurrentRole() {
   try {
-    const response = await http.get('/api/userinfo/get')
-    const currentUser = Array.isArray(response.data) ? response.data[0] : response.data
-    isAdmin.value = currentUser?.role === 1
+    const response = await http.get('/api/access')
+    access.value = response.data?.data || null
     if (isAdmin.value) await loadMaintenanceStatus()
-    inboxNotifications.start()
+    else maintenanceStatus.value = null
+    if (unrestricted.value) inboxNotifications.start()
+    else inboxNotifications.stop()
   } catch (error) {
     console.error('load current role failed', error)
-    isAdmin.value = false
-    inboxNotifications.stop()
+    if (error?.response?.status === 401) {
+      access.value = null
+      inboxNotifications.stop()
+    }
   }
 }
 
@@ -157,7 +183,7 @@ onMounted(() => {
   window.addEventListener('session-expired', onSessionExpired)
   loadCurrentRole()
   loadServerVersion()
-  maintenanceRefreshTimer = window.setInterval(loadMaintenanceStatus, 30000)
+  maintenanceRefreshTimer = window.setInterval(loadCurrentRole, 30000)
 })
 
 onBeforeUnmount(() => {
@@ -215,7 +241,7 @@ async function handleLogout() {
         <div class="px-4">{{ navbarTitle }}</div>
 
         <div class="ml-auto mr-2.5 flex items-center gap-2">
-          <NotificationBell />
+          <NotificationBell v-if="unrestricted" />
           <LanguageSelect />
           <ThemeToggle />
           <div class="p-2.5">
@@ -236,21 +262,24 @@ async function handleLogout() {
         </div>
       </div>
 
-      <router-view />
+      <router-view v-if="canOpenPage" />
+      <div v-else-if="access" class="page-shell">
+        <p class="alert alert-info">{{ tr('当前账号未获授予此页面的权限。') }}</p>
+      </div>
     </div>
 
     <div class="drawer-side is-drawer-close:overflow-visible rounded-tr-xl rounded-br-xl border-r-2 border-r-base-300">
       <label for="my-drawer-4" aria-label="close sidebar" class="drawer-overlay"></label>
       <div class="flex min-h-full flex-col items-start bg-base-100 is-drawer-close:w-14 is-drawer-open:w-52">
         <ul v-if="activeSettingsTab === 'system'" class="menu w-full grow">
-          <li>
+          <li v-if="access?.read_results">
             <router-link exact-active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;仪表盘&quot;)" to="/">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="my-1.5 inline-block size-4"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("仪表盘") }}</span>
             </router-link>
           </li>
 
-          <li>
+          <li v-if="access?.read_results">
             <a class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Search" target="_blank" href="/search.html">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round" stroke-width="2" fill="none" stroke="currentColor" class="my-1.5 inline-block size-4">
                 <circle cx="11" cy="11" r="8"></circle>
@@ -260,14 +289,14 @@ async function handleLogout() {
             </a>
           </li>
 
-          <li>
+          <li v-if="isAdmin">
             <router-link active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;扫描器&quot;)" to="/scanner">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M15 14h.01"/><path d="M9 6h6"/><path d="M9 10h6"/></svg>
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("扫描器") }}</span>
             </router-link>
           </li>
 
-          <li>
+          <li v-if="access?.read_results || access?.create_scan">
             <button
               type="button"
               class="is-drawer-close:tooltip is-drawer-close:tooltip-right bg-transparent hover:bg-base-200 focus-visible:bg-base-200"
@@ -296,12 +325,12 @@ async function handleLogout() {
             </button>
             <Transition name="sidebar-submenu">
               <ul v-if="taskMenuOpen" id="task-submenu" class="overflow-hidden py-1 is-drawer-close:hidden">
-                <li>
+                <li v-if="access?.read_results">
                   <router-link class="sidebar-submenu-item" exact-active-class="active" to="/task">
                     <span class="whitespace-nowrap">{{ tr("查看任务") }}</span>
                   </router-link>
                 </li>
-                <li>
+                <li v-if="access?.create_scan">
                   <router-link class="sidebar-submenu-item" exact-active-class="active" to="/create_scan">
                     <span class="whitespace-nowrap">{{ tr("创建任务") }}</span>
                   </router-link>
@@ -310,16 +339,16 @@ async function handleLogout() {
             </Transition>
           </li>
 
-          <li>
+          <li v-if="unrestricted">
             <router-link active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;目标监控&quot;)" to="/monitor">
               <Radar class="my-1.5 inline-block size-4" aria-hidden="true" />
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("目标监控") }}</span>
             </router-link>
           </li>
 
-          <li><router-link to="/domain-discovery" active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;域名发现&quot;)"><span class="my-1.5 inline-block size-4" aria-hidden="true">◎</span><span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("域名发现") }}</span></router-link></li>
+          <li v-if="unrestricted"><router-link to="/domain-discovery" active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;域名发现&quot;)"><span class="my-1.5 inline-block size-4" aria-hidden="true">◎</span><span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("域名发现") }}</span></router-link></li>
 
-          <li>
+          <li v-if="access?.read_results">
             <button
               type="button"
               class="is-drawer-close:tooltip is-drawer-close:tooltip-right bg-transparent hover:bg-base-200 focus-visible:bg-base-200"
@@ -367,7 +396,7 @@ async function handleLogout() {
             </Transition>
           </li>
 
-          <li>
+          <li v-if="access?.read_audit">
             <button
               type="button"
               class="is-drawer-close:tooltip is-drawer-close:tooltip-right bg-transparent hover:bg-base-200 focus-visible:bg-base-200"
@@ -396,7 +425,7 @@ async function handleLogout() {
             </button>
             <Transition name="sidebar-submenu">
               <ul v-if="logsMenuOpen" id="logs-submenu" class="overflow-hidden py-1 is-drawer-close:hidden">
-                <li>
+                <li v-if="access?.read_audit">
                   <router-link class="sidebar-submenu-item" exact-active-class="active" to="/audit">
                     <span class="whitespace-nowrap">{{ tr("审计日志") }}</span>
                   </router-link>
@@ -415,13 +444,13 @@ async function handleLogout() {
             </Transition>
           </li>
 
-          <li>
+          <li v-if="unrestricted">
             <router-link active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;开放平台&quot;)" to="/open-platform">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="my-1.5 inline-block size-4"><path d="m8 4-6 8 6 8M16 4l6 8-6 8M14 2l-4 20" /></svg>
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("开放平台") }}</span>
             </router-link>
           </li>
-          <li>
+          <li v-if="unrestricted">
             <router-link active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;报告中心&quot;)" to="/reports">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="my-1.5 inline-block size-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("报告中心") }}</span>
@@ -497,7 +526,7 @@ async function handleLogout() {
             </Transition>
           </li>
 
-          <li>
+          <li v-if="unrestricted">
             <router-link active-class="active" exact-active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;开源项目&quot;)" to="/open-source">
               <BookOpenText class="my-1.5 inline-block size-4" aria-hidden="true" />
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("开源项目") }}</span>
@@ -547,7 +576,7 @@ async function handleLogout() {
             </Transition>
           </li>
 
-          <li>
+          <li v-if="unrestricted">
             <button
               type="button"
               class="is-drawer-close:tooltip is-drawer-close:tooltip-right bg-transparent hover:bg-base-200 focus-visible:bg-base-200"
@@ -641,7 +670,7 @@ async function handleLogout() {
             </router-link>
           </li>
 
-          <li>
+          <li v-if="unrestricted">
             <router-link active-class="active" exact-active-class="active" class="is-drawer-close:tooltip is-drawer-close:tooltip-right" :data-tip="tr(&quot;站内通知&quot;)" to="/notifications">
               <Bell class="my-1.5 inline-block size-4" aria-hidden="true" />
               <span class="is-drawer-close:hidden whitespace-nowrap">{{ tr("站内通知") }}</span>

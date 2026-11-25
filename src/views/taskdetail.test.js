@@ -24,7 +24,7 @@ function createPage(responses) {
   const timers = new Map(), requests = []
   let dispose, nextTimer = 0
   const page = localizedVm(`${source}\n;({ loadTask, task })`, {
-    computed, ref, isProjectionPending, projectionMessage,
+    computed, ref, inject: () => ref(null), isProjectionPending, projectionMessage,
     useRoute: () => ({ params: { taskid: 'task-id' } }), useRouter: () => ({}),
     // Drive the first load explicitly so its asynchronous completion can be awaited.
     watch: () => {}, onBeforeUnmount: callback => { dispose = callback },

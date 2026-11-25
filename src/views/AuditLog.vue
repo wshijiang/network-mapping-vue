@@ -2,10 +2,14 @@
 import { tr } from '../i18n/index.js'
 
 import { formatDateTime as formatSystemDateTime, localToIso } from '../i18n/time.js'
-import { computed, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import http from '@/utils/http'
+import AccessVerification from '@/components/AccessVerification.vue'
+
+const verification = ref(null)
+const access = inject('access')
 
 const alerts = ref([])
 const events = ref([])
@@ -183,10 +187,18 @@ function changePage(nextPage) {
 async function exportCsv() {
   exporting.value = true
   try {
-    const response = await http.get('/api/audit/export', {
-      params: buildParams(false),
-      responseType: 'blob'
-    })
+    const download = () => http.post('/api/audit/export', null, { params: buildParams(false), responseType: 'blob' })
+    let response
+    try {
+      response = await download()
+    } catch (failure) {
+      const error = failure.response?.data instanceof Blob
+        ? JSON.parse(await failure.response.data.text()).error
+        : failure.response?.data?.error
+      if (error?.code !== 'step_up_required') throw failure
+      if (!await verification.value.verify()) return
+      response = await download()
+    }
     const url = URL.createObjectURL(response.data)
     const link = document.createElement('a')
     link.href = url
@@ -199,7 +211,7 @@ async function exportCsv() {
       'error',
       tr("审计日志导出失败"),
       error.response?.status === 403
-        ? tr("只有管理员可以导出审计日志。")
+        ? tr("当前账号未获授予导出审计日志的权限。")
         : tr("请检查网络连接或服务器运行状态。")
     )
   } finally {
@@ -235,7 +247,7 @@ onMounted(loadEvents)
         <h1 class="page-title">{{ tr("审计日志") }}</h1>
         <p class="mt-1 text-sm text-base-content/60">{{ tr("追踪关键身份认证、任务和扫描器管理操作。") }}</p>
       </div>
-      <button class="btn btn-outline btn-sm" :disabled="exporting || loading" @click="exportCsv">
+      <button v-if="access?.export_audit" class="btn btn-outline btn-sm" :disabled="exporting || loading" @click="exportCsv">
         {{ exporting ? tr("导出中…") : tr("导出 CSV") }}
       </button>
     </div>
@@ -350,4 +362,5 @@ onMounted(loadEvents)
       <button class="modal-backdrop" :aria-label="tr(&quot;关闭详情&quot;)" @click="selectedEvent = null"></button>
     </dialog>
   </main>
+  <AccessVerification ref="verification" />
 </template>
