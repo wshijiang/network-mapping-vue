@@ -18,7 +18,7 @@ function page() {
   const state = localizedVm(`${source}\n;({scanProfile, targetInput, port, scanSettingsLoading,
     targetInputRef, portInputRef, probeServerName, modbusUnitId, requiredServices,
     serviceProbeOptions, previewPlacement, submitTask})`, {
-    ...services, ...targets, computed, ref, watch, useId: () => 'scan-form',
+    ...services, ...targets, computed, ref, watch, inject: () => ref(null), useId: () => 'scan-form',
     onMounted: () => {}, useUnsavedChanges: () => {}, console,
     crypto: { randomUUID: () => 'test-id' },
     http: { post: async (url, payload) => {
