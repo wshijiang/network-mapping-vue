@@ -17,7 +17,7 @@ function page(access = null) {
   const requests = []
   const state = localizedVm(`${source}\n;({scanProfile, targetInput, port, scanSettingsLoading,
     targetInputRef, portInputRef, probeServerName, modbusUnitId, requiredServices,
-    serviceProbeOptions, previewPlacement, submitTask, hasUnsavedChanges, scannerIds})`, {
+    serviceProbeOptions, previewPlacement, submitTask, hasUnsavedChanges, scannerIds, webContentEnabled})`, {
     ...services, ...targets, computed, ref, watch, inject: () => ref(access), useId: () => 'scan-form',
     onMounted: () => {}, useUnsavedChanges: () => {}, console,
     crypto: { randomUUID: () => 'test-id' },
@@ -87,6 +87,25 @@ test('a scoped form with multiple allowed profiles starts at its clean default',
     role: 2, legacy_user: false, max_priority: 1, profiles: ['udp_inventory', 'vulnerability_scan'],
   })
   assert.equal(p.scanProfile.value, 'udp_inventory')
+  assert.equal(p.hasUnsavedChanges.value, false)
+})
+
+test('changing web enrichment marks the form dirty and submission restores its default', async () => {
+  const p = page({
+    role: 2, legacy_user: false, max_priority: 1, profiles: ['service_inventory'],
+  })
+  p.webContentEnabled.value = false
+  assert.equal(p.hasUnsavedChanges.value, true)
+
+  p.targetInput.value = '192.0.2.1'
+  await nextTick()
+  p.port.value = '443'
+  p.scannerIds.value = ['permitted-scanner']
+  assert.equal(await p.submitTask(), true)
+  await nextTick()
+
+  assert.equal(p.requests[0].payload.web_content_enabled, false)
+  assert.equal(p.webContentEnabled.value, true)
   assert.equal(p.hasUnsavedChanges.value, false)
 })
 

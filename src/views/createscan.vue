@@ -115,6 +115,9 @@ const selectedScanProfileDescription = computed(() => (
     : selectedScanProfile.value?.description || ''
 ))
 const scanRequiresPort = computed(() => scanProfile.value !== 'dns_records')
+const webContentOverride = computed(() => (
+  ['service_inventory', 'vulnerability_scan'].includes(scanProfile.value) ? webContentEnabled.value : undefined
+))
 const selectedDnsResolvers = computed(() => {
   if (dnsResolverMode.value === 'preset') {
     const selected = new Set(selectedDnsResolverIds.value)
@@ -189,6 +192,7 @@ const hasUnsavedChanges = computed(() => (
   || scannerIds.value.length > 0
   || Object.keys(serviceProbeOptions.value).length > 0
   || scanProfile.value !== effectiveDefaultProfile.value
+  || webContentOverride.value === false
   || dnsResolverMode.value !== 'system'
   || dnsResolvers.value.length > 0
   || selectedDnsResolverIds.value.length > 0
@@ -219,6 +223,7 @@ function resetForm() {
   s7Tsap.value=258
   mqttVersion.value=4
   scanProfile.value = effectiveDefaultProfile.value
+  webContentEnabled.value = true
   dnsResolverMode.value = 'system'
   dnsResolvers.value = []
   selectedDnsResolverIds.value = []
@@ -370,12 +375,12 @@ async function submitTask() {
                 port: Number(item.port) || 53, transport: item.transport
               }))
             : [],
-          web_content_enabled: ['service_inventory', 'vulnerability_scan'].includes(scanProfile.value) ? webContentEnabled.value : undefined
+          web_content_enabled: webContentOverride.value
         }
       : {
           required_services: requiredServices.value,
           service_probe_options:serviceProbeOptions.value,
-          web_content_enabled: ['service_inventory', 'vulnerability_scan'].includes(scanProfile.value) ? webContentEnabled.value : undefined,
+          web_content_enabled: webContentOverride.value,
           ip: validatedTargets.targets.join(','),
           port: port.value.trim(),
           level: Number(level.value),
