@@ -2,7 +2,7 @@
 import { tr } from '../i18n/index.js'
 
 import { formatDateTime } from '../i18n/time.js'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -21,6 +21,9 @@ import {
 
 const alerts = ref([])
 const confirmDialog = ref(null)
+const isAdmin = inject('isAdmin', ref(false))
+const downloadSelection = ref({})
+const downloading = ref(new Set())
 
 function pushAlert(type, title, description = '', timeout = 7000) {
   alerts.value.unshift({ id: crypto.randomUUID(), type, title, description, timeout })
@@ -156,20 +159,35 @@ function fieldCount(task) {
   return Array.isArray(task.fields) ? task.fields.length : 0
 }
 
+function availableSources(task) {
+  return task.download_sources ?? (canDownload(task.status) ? ['local'] : [])
+}
+
+function sourceLabel(source) {
+  return source === 's3' ? tr('S3 兼容对象存储') : tr('服务器本地')
+}
+
 async function downloadTask(task) {
+  const sources = availableSources(task)
+  const selection = downloadSelection.value[task.id]
+  const source = sources.includes(selection) ? selection : sources[0]
+  if (!source || downloading.value.has(task.id)) return
+  downloading.value.add(task.id)
   try {
-    const response = await http.get(`/api/data-export/tasks/${task.id}/download`, { responseType: 'blob' })
-    const disposition = response.headers?.['content-disposition'] || ''
-    const match = disposition.match(/filename="?([^";]+)"?/)
-    const url = URL.createObjectURL(response.data)
+    const endpoint = `/api/data-export/tasks/${task.id}`
+    let url = `${endpoint}/download`
+    if (task.download_sources) {
+      const { data } = await http.get(`${endpoint}/download-link`, { params: { source } })
+      url = data.data.url
+    }
     const link = document.createElement('a')
     link.href = url
-    link.download = match ? match[1] : `network-mapping-export-${task.id}.csv`
+    link.referrerPolicy = 'no-referrer'
     link.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
   } catch (error) {
-    console.error('download data-export file failed', error)
     pushAlert('error', tr('导出文件下载失败'), errorMessage(error, tr('请检查网络连接后重试。')))
+  } finally {
+    downloading.value.delete(task.id)
   }
 }
 
@@ -233,7 +251,10 @@ onBeforeUnmount(() => {
         <h1 class="page-title">{{ tr("数据导出") }}</h1>
         <p class="text-xs opacity-60">{{ tr("按搜索语句匹配资产数据，后台生成 CSV 文件后在此下载。") }}</p>
       </div>
-      <button class="btn btn-neutral btn-sm" @click="openCreate">{{ tr("新建导出") }}</button>
+      <div class="flex flex-wrap items-center gap-2">
+        <RouterLink v-if="isAdmin" to="/data/export/settings" class="btn btn-outline btn-sm">{{ tr('导出设置') }}</RouterLink>
+        <button class="btn btn-neutral btn-sm" @click="openCreate">{{ tr("新建导出") }}</button>
+      </div>
     </div>
 
     <div class="flex flex-col gap-5">
@@ -303,11 +324,24 @@ onBeforeUnmount(() => {
                   <div class="text-xs opacity-50">{{ formatRowStats(effectiveTask(task)).exported }} / {{ formatRowStats(effectiveTask(task)).total === null ? '?' : formatRowStats(effectiveTask(task)).total }}</div>
                 </td>
                 <td class="text-xs">{{ fieldCount(task) }}</td>
-                <td class="text-xs">{{ formatBytes(task.file_size) }}</td>
+                <td class="text-xs">
+                  <div>{{ formatBytes(task.file_size) }}</div>
+                  <div v-for="source in availableSources(task)" :key="source" class="opacity-60">{{ sourceLabel(source) }}</div>
+                  <div v-if="task.s3_failed" class="text-warning">{{ tr('S3 上传失败') }}</div>
+                </td>
                 <td class="whitespace-nowrap">{{ formatDate(task.created_at) }}</td>
                 <td>
                   <div class="flex flex-wrap gap-1">
-                    <button v-if="canDownload(task.status)" class="btn btn-ghost btn-xs" @click="downloadTask(task)">{{ tr("下载") }}</button>
+                    <select
+                      v-if="availableSources(task).length > 1"
+                      class="select select-xs w-auto"
+                      :aria-label="tr('下载来源')"
+                      :value="downloadSelection[task.id] || availableSources(task)[0]"
+                      @change="downloadSelection[task.id] = $event.target.value"
+                    >
+                      <option v-for="source in availableSources(task)" :key="source" :value="source">{{ sourceLabel(source) }}</option>
+                    </select>
+                    <button v-if="canDownload(task.status) && availableSources(task).length" class="btn btn-ghost btn-xs" :disabled="downloading.has(task.id)" @click="downloadTask(task)">{{ tr("下载") }}</button>
                     <button v-if="canCancel(task.status)" class="btn btn-ghost btn-xs" @click="cancelTask(task)">{{ tr("取消") }}</button>
                     <button v-if="canDelete(task.status)" class="btn btn-ghost btn-xs text-error" @click="deleteTask(task)">{{ tr("删除") }}</button>
                   </div>
