@@ -6,6 +6,7 @@ import { computed, onMounted, ref, useId } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import UserAccessDialog from '@/components/UserAccessDialog.vue'
 import http from '@/utils/http'
 
 const formFieldId = useId()
@@ -23,6 +24,18 @@ const createDialog = ref(null)
 const deleteDialog = ref(null)
 const loginDialog = ref(null)
 const allowlistDialog = ref(null)
+const accessDialog = ref(null)
+const roles = [
+  { id: 1, label: '管理员' },
+  { id: 2, label: '普通用户' },
+  { id: 3, label: '只读用户' },
+  { id: 4, label: '审计用户' },
+]
+
+function onAccessSaved() {
+  pushAlert('success', tr('权限已保存'))
+  loadUsers({ silent: true })
+}
 const deleteTarget = ref(null)
 const deleteConfirmation = ref('')
 const showPassword = ref(false)
@@ -378,7 +391,7 @@ onMounted(() => loadUsers({ page: 1 }))
       <form class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-[minmax(220px,1fr)_160px_160px_auto]" @submit.prevent="applyFilters">
         <input v-model="filters.query" class="input input-bordered w-full" :placeholder="tr(&quot;搜索用户名或邮箱&quot;)" />
         <select v-model="filters.role" class="select select-bordered w-full">
-          <option value="">{{ tr("全部角色") }}</option><option value="1">{{ tr("管理员") }}</option><option value="2">{{ tr("普通用户") }}</option>
+          <option value="">{{ tr("全部角色") }}</option><option v-for="role in roles" :key="role.id" :value="role.id">{{ tr(role.label) }}</option>
         </select>
         <select v-model="filters.status" class="select select-bordered w-full">
           <option value="all">{{ tr("未删除用户") }}</option><option value="active">{{ tr("正常") }}</option><option value="disabled">{{ tr("已禁用") }}</option><option value="locked">{{ tr("登录锁定") }}</option><option value="deleted">{{ tr("已删除") }}</option>
@@ -402,7 +415,7 @@ onMounted(() => loadUsers({ page: 1 }))
                 <div class="font-medium">{{ managedUser.username }} <span v-if="managedUser.isSelf" class="badge badge-outline badge-xs">{{ tr("当前账号") }}</span></div>
                 <div class="mt-1 max-w-52 truncate text-xs opacity-60">{{ managedUser.email || tr("未设置邮箱") }}</div>
               </td>
-              <td><span class="badge badge-outline">{{ managedUser.role === 1 ? tr("管理员") : tr("普通用户") }}</span></td>
+              <td><span class="badge badge-outline">{{ tr(roles.find(role => role.id === managedUser.role)?.label || "未知") }}</span></td>
               <td><span class="badge" :class="statusInfo(managedUser.status).class">{{ statusInfo(managedUser.status).label }}</span><div v-if="managedUser.enable2fa" class="mt-1 text-xs opacity-60">{{ tr("已启用 2FA") }}</div></td>
               <td><span class="font-medium">{{ managedUser.activeSessionCount }}</span><span class="ml-1 text-xs opacity-60">{{ tr("个有效会话") }}</span></td>
               <td><div>{{ formatTime(managedUser.lastLoginAt) }}</div><div class="mt-1 text-xs opacity-60">{{ managedUser.lastLoginIp || '--' }}</div></td>
@@ -411,6 +424,7 @@ onMounted(() => loadUsers({ page: 1 }))
                 <div class="flex flex-wrap justify-end gap-1">
                   <button class="btn btn-ghost btn-xs" @click="openLoginDialog(managedUser)">{{ tr("登录记录") }}</button>
                   <template v-if="managedUser.status !== 'deleted'">
+                    <button v-if="managedUser.role !== 1" class="btn btn-ghost btn-xs" @click="accessDialog.open(managedUser)">{{ tr('编辑权限') }}</button>
                     <button class="btn btn-ghost btn-xs" @click="openAllowlistDialog(managedUser)"> {{ tr("白名单") }}<span v-if="managedUser.loginIpAllowlistCount" class="badge badge-xs">{{ managedUser.loginIpAllowlistCount }}</span>
                     </button>
                     <button class="btn btn-ghost btn-xs" :disabled="managedUser.isSelf || actionUserId !== null || managedUser.activeSessionCount === 0" @click="kickUser(managedUser)">{{ tr("踢出") }}</button>
@@ -434,6 +448,8 @@ onMounted(() => loadUsers({ page: 1 }))
     </section>
   </div>
 
+  <UserAccessDialog ref="accessDialog" @saved="onAccessSaved" />
+
   <dialog ref="createDialog" class="modal" @close="createForm = emptyCreateForm()">
     <form class="modal-box w-[calc(100vw-2rem)] max-w-lg" @submit.prevent="createUser">
       <h3 class="text-lg font-semibold">{{ tr("创建用户") }}</h3>
@@ -442,7 +458,7 @@ onMounted(() => loadUsers({ page: 1 }))
         <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-1`">{{ tr("用户名") }}</label></legend><input :id="`${formFieldId}-1`" v-model="createForm.username" class="input input-bordered w-full" maxlength="64" autocomplete="off" required /></fieldset>
         <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-2`">{{ tr("邮箱") }}</label></legend><input :id="`${formFieldId}-2`" v-model="createForm.email" type="email" class="input input-bordered w-full" maxlength="320" :placeholder="tr(&quot;可选&quot;)" /></fieldset>
         <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-3`">{{ tr("初始密码") }}</label></legend><div class="join w-full"><input :id="`${formFieldId}-3`" v-model="createForm.password" :type="showPassword ? 'text' : 'password'" class="input input-bordered join-item grow" minlength="12" maxlength="256" autocomplete="new-password" required /><button type="button" class="btn join-item" @click="showPassword = !showPassword">{{ showPassword ? tr("隐藏") : tr("显示") }}</button></div><span class="label text-wrap text-xs opacity-60">{{ tr("12-256 个字符") }}</span></fieldset>
-        <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-4`">{{ tr("角色") }}</label></legend><select :id="`${formFieldId}-4`" v-model.number="createForm.role" class="select select-bordered w-full"><option :value="2">{{ tr("普通用户") }}</option><option :value="1">{{ tr("管理员") }}</option></select></fieldset>
+        <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-4`">{{ tr("角色") }}</label></legend><select :id="`${formFieldId}-4`" v-model.number="createForm.role" class="select select-bordered w-full"><option v-for="role in roles.slice(1)" :key="role.id" :value="role.id">{{ tr(role.label) }}</option></select></fieldset>
       </div>
       <div class="modal-action"><button type="button" class="btn" :disabled="creating" @click="closeCreateDialog">{{ tr("取消") }}</button><button type="submit" class="btn btn-neutral" :disabled="creating"><span v-if="creating" class="loading loading-spinner loading-xs"></span>{{ tr("创建") }}</button></div>
     </form>

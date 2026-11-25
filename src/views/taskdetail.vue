@@ -3,7 +3,7 @@ import { tr } from '../i18n/index.js'
 
 import ServiceLabel from '@/components/ServiceLabel.vue'
 import { formatDateTime as formatSystemDateTime } from '../i18n/time.js'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import http from '@/utils/http'
 import WebTechnologies from '@/components/WebTechnologies.vue'
@@ -21,6 +21,7 @@ import { formatLocation } from '@/utils/location'
 import { routingLocation, routingSummary } from '@/utils/scanRouting'
 import { isProjectionPending, projectionMessage } from '@/utils/projectionStatus'
 
+const access = inject('access')
 const route = useRoute()
 const router = useRouter()
 const taskId = computed(() => String(route.params.taskid || ''))
@@ -406,11 +407,11 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="flex flex-wrap items-center justify-start md:justify-end gap-2">
-        <button v-if="['pending', 'running'].includes(task?.task_status)" class="btn btn-error btn-outline btn-sm" :disabled="actionLoading || task?.cancel_requested" @click="cancelTask">
+        <button v-if="access?.cancel_scan && ['pending', 'running'].includes(task?.task_status)" class="btn btn-error btn-outline btn-sm" :disabled="actionLoading || task?.cancel_requested" @click="cancelTask">
           {{ task?.cancel_requested ? tr("正在取消") : tr("取消任务") }}
         </button>
-        <button v-if="['succeeded', 'failed', 'cancelled', 'partial'].includes(task?.task_status)" class="btn btn-outline btn-sm" :disabled="actionLoading" @click="retryTask">{{ tr("重新执行") }}</button>
-        <div v-if="!isDnsTask && ['succeeded', 'partial'].includes(task?.task_status)" class="dropdown dropdown-end">
+        <button v-if="access?.retry_scan && task?.retry_allowed && ['succeeded', 'failed', 'cancelled', 'partial'].includes(task?.task_status)" class="btn btn-outline btn-sm" :disabled="actionLoading" @click="retryTask">{{ tr("重新执行") }}</button>
+        <div v-if="access?.export_results && !isDnsTask && ['succeeded', 'partial'].includes(task?.task_status)" class="dropdown dropdown-end">
           <button tabindex="0" class="btn btn-outline btn-sm">{{ tr("导出结果") }}</button>
           <ul tabindex="0" class="dropdown-content menu z-10 mt-2 w-36 rounded-box border border-base-300 bg-base-100 p-2 shadow">
             <li><button @click="exportTask('csv')">CSV</button></li>

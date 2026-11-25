@@ -7,7 +7,10 @@ import AppAlert from '@/components/AppAlert.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
+import AccessVerification from '@/components/AccessVerification.vue'
 import { expireCookie } from '@/utils/csrf'
+
+const verification = ref(null)
 
 const formFieldId = useId()
 const isLoading = ref(true)
@@ -210,9 +213,15 @@ async function onToggleTwoFactor(event) {
   if (!checked) {
     const username = localStorage.getItem('username') || ''
     try {
-      const response = await http.post('/api/totp/unbind', { username }, {
-        validateStatus: () => true,
-      })
+      const unbind = () => http.post('/api/totp/unbind', { username }, { validateStatus: () => true })
+      let response = await unbind()
+      if (response.data?.error?.code === 'step_up_required') {
+        if (!await verification.value.verify()) {
+          twoFactorEnabled.value = true
+          return
+        }
+        response = await unbind()
+      }
 
       if (response.status === 200) {
         twoFactorEnabled.value = false
@@ -488,4 +497,5 @@ onMounted(() => {
       <button :disabled="passwordSaving">{{ tr("关闭") }}</button>
     </form>
   </dialog>
+  <AccessVerification ref="verification" />
 </template>

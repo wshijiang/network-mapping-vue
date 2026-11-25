@@ -61,7 +61,7 @@ function normalizeUserInfo(rawUserInfo) {
   return {
     username: rawUserInfo?.username || '',
     email: rawUserInfo?.email || '',
-    userType: rawUserInfo?.role === 1 ? tr("管理员") : tr("普通用户"),
+    userType: ({ 1: tr("管理员"), 2: tr("普通用户"), 3: tr("只读用户"), 4: tr("审计用户") })[rawUserInfo?.role] || tr("未知"),
     createdAt: rawUserInfo?.create_time,
     updatedAt: '--',
     lastLoginAt: rawUserInfo?.last_login_at,

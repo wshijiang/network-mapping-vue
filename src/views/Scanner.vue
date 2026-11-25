@@ -7,6 +7,9 @@ import AppAlert from '@/components/AppAlert.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import VersionUpdateBadge from '@/components/VersionUpdateBadge.vue'
 import http from '@/utils/http'
+import AccessVerification from '@/components/AccessVerification.vue'
+
+const verification = ref(null)
 
 const formFieldId = useId()
 const scannerForm = ref({
@@ -194,7 +197,14 @@ async function createScanner() {
     if (scannerForm.value.remark.trim()) payload.remark = scannerForm.value.remark.trim()
     if (scannerForm.value.tag.trim()) payload.tag = scannerForm.value.tag.trim()
 
-    const response = await http.post('/api/scanner/add', payload)
+    let response
+    try {
+      response = await http.post('/api/scanner/add', payload)
+    } catch (failure) {
+      if (failure?.response?.data?.error?.code !== 'step_up_required') throw failure
+      if (!await verification.value.verify()) return
+      response = await http.post('/api/scanner/add', payload)
+    }
     const result = response.data?.data
     if (response.data?.success === true && result?.scanner_id && result?.registration_token) {
       scannerResult.value = result
@@ -429,4 +439,5 @@ onBeforeUnmount(() => window.clearInterval(refreshTimer))
       </div>
     </div>
   </div>
+  <AccessVerification ref="verification" />
 </template>
