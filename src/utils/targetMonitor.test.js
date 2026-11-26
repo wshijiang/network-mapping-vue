@@ -78,3 +78,10 @@ test('targets summary truncates long target lists', () => {
   assert.equal(targetsSummary({ targets: ['a', 'b', 'c', 'd'] }), 'a、b、c 等 4 个目标')
   assert.equal(targetsSummary(null), '—')
 })
+
+test('new monitor rules use task defaults and retain explicit existing ports', () => {
+  assert.match(ruleForm().ports, /^1-11000,11211,/)
+  assert.ok(ruleForm().ports.endsWith(',62078,64738'))
+  assert.equal(ruleForm({ ports: '1-65535' }).ports, '1-65535')
+  assert.equal(ruleForm({ ports: '12345' }).ports, '12345')
+})

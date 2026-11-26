@@ -1,4 +1,5 @@
 <script setup>
+import { DEFAULT_SCAN_PORTS } from '@/utils/scanDefaults'
 import { tr } from '../i18n/index.js'
 
 import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
@@ -312,7 +313,7 @@ onBeforeUnmount(() => { disposed = true; ++sequence })
         <fieldset><legend class="mb-2 text-sm">{{ tr("目标类型") }}</legend><div class="flex flex-wrap gap-4"><label class="flex items-center gap-2 text-sm"><input v-model="form.target_type" :name="`${formFieldId}-target-type`" type="radio" value="ip" class="radio radio-sm" />{{ tr("IP / CIDR") }}</label><label class="flex items-center gap-2 text-sm"><input v-model="form.target_type" :name="`${formFieldId}-target-type`" type="radio" value="domain" class="radio radio-sm" />{{ tr("域名") }}</label></div></fieldset>
         <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-targets`">{{ tr("监控目标（每行一个或逗号分隔，最多 64 个）") }}</label></legend><textarea :id="`${formFieldId}-targets`" v-model="form.targets_text" class="textarea textarea-bordered w-full" rows="4" required :placeholder="form.target_type === 'domain' ? 'example.com' : '192.0.2.0/24'" /></fieldset>
         <template v-if="form.target_type === 'ip'">
-          <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-ports`">{{ tr("端口表达式") }}</label></legend><input :id="`${formFieldId}-ports`" v-model="form.ports" class="input input-bordered w-full" autocomplete="off" placeholder="1-65535" /></fieldset>
+          <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-ports`">{{ tr("端口表达式") }}</label></legend><input :id="`${formFieldId}-ports`" v-model="form.ports" class="input input-bordered w-full" autocomplete="off" :placeholder="DEFAULT_SCAN_PORTS" /></fieldset>
           <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-profile`">{{ tr("扫描模式") }}</label></legend><select :id="`${formFieldId}-profile`" v-model="form.scan_profile" class="select select-bordered w-full"><option v-for="profile in monitorProfiles" :key="profile.value" :value="profile.value">{{ profile.label }}</option></select></fieldset>
         </template>
         <p v-else class="text-xs opacity-60">{{ tr("域名规则固定使用“仅 DNS”模式，监控解析地址集合的变化。") }}</p>

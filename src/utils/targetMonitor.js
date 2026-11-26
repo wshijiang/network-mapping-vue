@@ -1,3 +1,4 @@
+import { DEFAULT_SCAN_PORTS } from './scanDefaults.js'
 import { tr } from '../i18n/index.js'
 import { isDomainTarget, parseScanTargets } from './scanTargets.js'
 
@@ -64,7 +65,7 @@ export function ruleForm(rule) {
     name: rule?.name || '',
     target_type: rule?.target_type || 'ip',
     targets_text: (rule?.targets || []).join('\n'),
-    ports: rule?.ports || '1-65535',
+    ports: rule?.ports || DEFAULT_SCAN_PORTS,
     scan_profile: rule?.scan_profile || 'service_inventory',
     interval_seconds: rule?.interval_seconds ?? 86400,
     recipient_ids: [...(rule?.recipient_ids || [])],

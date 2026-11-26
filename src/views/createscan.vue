@@ -6,6 +6,7 @@ import AppAlert from '@/components/AppAlert.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import http from '@/utils/http'
+import { DEFAULT_SCAN_PORTS } from '@/utils/scanDefaults'
 import { parseScanTargets, targetTypeLabel } from '@/utils/scanTargets'
 import { automaticServiceRequirements, automaticProbeOptions, supportsRequiredServices } from '@/utils/serviceDetection'
 import { routingLocation, routingReason } from '@/utils/scanRouting'
@@ -14,8 +15,6 @@ const access = inject('access')
 const scoped = computed(() => access?.value?.role === 2 && !access.value.legacy_user)
 const formFieldId = useId()
 const LEGACY_DRAFT_KEY = 'createscan_draft'
-// Mirrors the backend DEFAULT_SCAN_PORTS used when the port field is blank.
-const DEFAULT_SCAN_PORTS = '1-11000,11211,20000,27017,47808,11210,11300,11371,12174,13720,13721,16379,16992,16993,17185,19071,26379,27018,27019,28015,29015,34962-34964,37777,44818,50000,50090,51413,51820,60010,60030,61613,61616,62078,64738'
 const scanProfiles = [
   {value: 'udp_inventory', get title() { return tr("UDP 服务识别") }, get description() { return tr("仅向明确的 UDP 端口发送最小发现请求；最多 256 个地址、32 个端口，超时不判定端口状态。") }, ipOnly: true},
   {
