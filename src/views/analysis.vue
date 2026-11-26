@@ -32,25 +32,19 @@ const activeFilters = ref({ ...filters.value })
 const scannerList = ref([])
 const scannerLoading = ref(false)
 const alerts = ref([])
-const distributionData = ref({ items: [], other_count: 0, total: 0 })
-const heatmapItems = ref([])
-const distributionLoading = ref(false)
-const heatmapLoading = ref(false)
-const distributionFailed = ref(false)
-const heatmapFailed = ref(false)
-const distributionError = ref('')
-const heatmapError = ref('')
-const hasLoadedDistribution = ref(false)
-const hasLoadedHeatmap = ref(false)
-const lastUpdatedAt = ref(null)
-const snapshotDataAsOf = ref(null)
+function chartState(empty) {
+  return { empty, data: ref(empty), request: null, loading: ref(false), loaded: ref(false), error: ref(''), asOf: ref(null), updatedAt: ref(null) }
+}
+const distribution = chartState({ items: [], other_count: 0, total: 0 })
+const heatmap = chartState([])
+const { data: distributionData, loading: distributionLoading, loaded: hasLoadedDistribution, error: distributionError } = distribution
+const { data: heatmapItems, loading: heatmapLoading, loaded: hasLoadedHeatmap, error: heatmapError } = heatmap
 const heatmapChartContainer = ref(null)
 const heatmapChartHeight = ref(380)
 const hoveredHeatmapValue = ref(null)
 
-let analysisController = null
+let lastCommonKey = null
 let scannerController = null
-let requestVersion = 0
 let heatmapResizeObserver = null
 let heatmapResizeFrame = null
 
@@ -91,7 +85,8 @@ function buildCommonParams(snapshot) {
   const range = buildDateRange(snapshot.weeks)
   const params = {
     start_at: range.startAt,
-    end_at: range.endAt
+    end_at: range.endAt,
+    page_window: true
   }
   if (snapshot.scannerId) params.scanner_id = snapshot.scannerId
   if (snapshot.taskSource) params.task_source = snapshot.taskSource
@@ -121,6 +116,7 @@ function parseHeatmap(response) {
 function analysisErrorMessage(error) {
   const body = error?.response?.data
   const message = typeof body?.message === 'string' ? body.message : tr("无法从服务器获取统计数据，请稍后重试。")
+  if (body?.code === 'analytics_page_snapshot_pending') return tr("分析图表快照正在准备，请稍后刷新。")
   const progress = body?.progress
   if (progress?.last_error) {
     return tr("{0}\n失败执行：{1}；最近原因：{2}", [message, progress.failed_execution_id ?? '未知', progress.last_error])
@@ -152,85 +148,54 @@ async function loadScanners() {
   }
 }
 
-async function loadAnalysis() {
-  const version = ++requestVersion
-  analysisController?.abort()
-  analysisController = new AbortController()
+async function loadChart(state, path, params, parse, clear) {
+  state.request?.abort()
+  const request = new AbortController()
+  state.request = request
+  if (clear) {
+    state.loaded.value = false
+    state.data.value = state.empty
+  }
+  state.loading.value = true
+  state.error.value = ''
+  try {
+    const response = await http.get(path, { params, signal: request.signal })
+    if (request.signal.aborted) return
+    state.data.value = parse(response)
+    const asOf = response.data?.meta?.data_as_of
+    state.asOf.value = asOf ? new Date(asOf) : null
+    state.updatedAt.value = new Date()
+    state.loaded.value = true
+  } catch (error) {
+    if (request.signal.aborted || axios.isCancel(error)) return
+    state.loaded.value = false
+    state.data.value = state.empty
+    state.error.value = analysisErrorMessage(error)
+  } finally {
+    if (state.request === request) {
+      state.loading.value = false
+      state.request = null
+    }
+  }
+}
+
+function loadAnalysis() {
   const snapshot = { ...filters.value }
-  activeFilters.value = snapshot
   const commonParams = buildCommonParams(snapshot)
+  const commonKey = JSON.stringify([timeSettings.timezone, commonParams])
+  const commonChanged = commonKey !== lastCommonKey
+  const distributionChanged = activeFilters.value.dimension !== snapshot.dimension || activeFilters.value.topN !== snapshot.topN
+  activeFilters.value = snapshot
+  lastCommonKey = commonKey
 
-  distributionLoading.value = true
-  heatmapLoading.value = true
-  const results = await Promise.allSettled([
-    http.get('/api/analysis/distribution', {
-      params: {
-        ...commonParams,
-        dimension: snapshot.dimension,
-        limit: snapshot.topN
-      },
-      signal: analysisController.signal
-    }),
-    http.get('/api/analysis/discovery-heatmap', {
-      params: commonParams,
-      signal: analysisController.signal
-    })
-  ])
-
-  if (version !== requestVersion) return
-
-  const failedSections = []
-  const [distributionResult, heatmapResult] = results
-  if (distributionResult.status === 'fulfilled') {
-    try {
-      distributionData.value = parseDistribution(distributionResult.value)
-      const dataAsOf = distributionResult.value.data?.meta?.data_as_of
-      snapshotDataAsOf.value = dataAsOf ? new Date(dataAsOf) : null
-      distributionFailed.value = false
-      distributionError.value = ''
-      hasLoadedDistribution.value = true
-    } catch (error) {
-      console.error('parse distribution failed', error)
-      distributionFailed.value = true
-      distributionError.value = analysisErrorMessage(error)
-      failedSections.push(tr("服务分布"))
-    }
-  } else if (!axios.isCancel(distributionResult.reason)) {
-    console.error('load distribution failed', distributionResult.reason)
-    distributionFailed.value = true
-    distributionError.value = analysisErrorMessage(distributionResult.reason)
-    failedSections.push(tr("服务分布"))
+  loadChart(distribution, '/api/analysis/distribution', {
+    ...commonParams,
+    dimension: snapshot.dimension,
+    limit: snapshot.topN
+  }, parseDistribution, commonChanged || distributionChanged)
+  if (commonChanged || !distributionChanged) {
+    loadChart(heatmap, '/api/analysis/discovery-heatmap', commonParams, parseHeatmap, commonChanged)
   }
-
-  if (heatmapResult.status === 'fulfilled') {
-    try {
-      heatmapItems.value = parseHeatmap(heatmapResult.value)
-      heatmapFailed.value = false
-      heatmapError.value = ''
-      hasLoadedHeatmap.value = true
-    } catch (error) {
-      console.error('parse heatmap failed', error)
-      heatmapFailed.value = true
-      heatmapError.value = analysisErrorMessage(error)
-      failedSections.push(tr("发现 IP 热力图"))
-    }
-  } else if (!axios.isCancel(heatmapResult.reason)) {
-    console.error('load heatmap failed', heatmapResult.reason)
-    heatmapFailed.value = true
-    heatmapError.value = analysisErrorMessage(heatmapResult.reason)
-    failedSections.push(tr("发现 IP 热力图"))
-  }
-
-  if (failedSections.length > 0) {
-    const reasons = [...new Set([distributionError.value, heatmapError.value].filter(Boolean))]
-    pushAlert('error', tr("分析数据加载失败"), reasons.join('\n'))
-  } else {
-    lastUpdatedAt.value = new Date()
-  }
-
-  distributionLoading.value = false
-  heatmapLoading.value = false
-  analysisController = null
 }
 
 const distributionSegments = computed(() => {
@@ -392,11 +357,13 @@ function scheduleSquareHeatmapCells() {
 }
 
 const lastUpdatedLabel = computed(() => {
-  if (snapshotDataAsOf.value) {
-    return tr("统计截至 {0}", [formatSystemDateTime(snapshotDataAsOf.value)])
+  const loaded = [distribution, heatmap].filter((state) => state.loaded.value)
+  const watermarks = loaded.map((state) => state.asOf.value).filter(Boolean)
+  if (watermarks.length) {
+    return tr("统计截至 {0}", [formatSystemDateTime(new Date(Math.min(...watermarks)))])
   }
-  if (!lastUpdatedAt.value) return tr("尚未完成加载")
-  return tr("更新于 {0}", [formatSystemClock(lastUpdatedAt.value)])
+  if (!loaded.length) return tr("尚未完成加载")
+  return tr("更新于 {0}", [formatSystemClock(new Date(Math.min(...loaded.map((state) => state.updatedAt.value))))])
 })
 
 onMounted(() => {
@@ -407,6 +374,10 @@ onMounted(() => {
 })
 
 watch(() => timeSettings.timezone, () => loadAnalysis())
+watch(heatmapChartContainer, (element, previous) => {
+  if (previous) heatmapResizeObserver?.unobserve(previous)
+  if (element) heatmapResizeObserver?.observe(element)
+})
 
 watch([heatmapSeries, heatmapChartHeight, hasLoadedHeatmap], async () => {
   await nextTick()
@@ -414,8 +385,8 @@ watch([heatmapSeries, heatmapChartHeight, hasLoadedHeatmap], async () => {
 }, { flush: 'post' })
 
 onBeforeUnmount(() => {
-  requestVersion += 1
-  analysisController?.abort()
+  distribution.request?.abort()
+  heatmap.request?.abort()
   scannerController?.abort()
   heatmapResizeObserver?.disconnect()
   if (heatmapResizeFrame) cancelAnimationFrame(heatmapResizeFrame)
@@ -521,7 +492,7 @@ onBeforeUnmount(() => {
 
           <div v-if="distributionLoading && !hasLoadedDistribution" class="mt-4 skeleton h-80 w-full rounded-box"></div>
           <EmptyState
-            v-else-if="distributionFailed && !hasLoadedDistribution"
+            v-else-if="distributionError && !hasLoadedDistribution"
             class="mt-4"
             type="error"
             :title="tr(&quot;服务分布加载失败&quot;)"
@@ -562,7 +533,7 @@ onBeforeUnmount(() => {
 
           <div v-if="heatmapLoading && !hasLoadedHeatmap" class="mt-4 skeleton h-96 w-full rounded-box"></div>
           <EmptyState
-            v-else-if="heatmapFailed && !hasLoadedHeatmap"
+            v-else-if="heatmapError && !hasLoadedHeatmap"
             class="mt-4"
             type="error"
             :title="tr(&quot;热力图加载失败&quot;)"

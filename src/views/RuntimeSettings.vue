@@ -113,6 +113,7 @@ const historyLoading = ref(false)
 const conflicts = reactive({})
 const historyError = ref('')
 const cursorStatus = ref(null)
+const analyticsPageProgress = ref(null)
 const cursorLoading = ref(false)
 const cursorError = ref('')
 const cursorInputs = reactive({ ipv4: '', ipv6: '' })
@@ -270,6 +271,7 @@ async function loadNamespace(namespace, silent = false) {
     const data = response.data?.data
     if (!data?.document || !Number.isInteger(data.revision)) throw new Error('invalid runtime config response')
     applyDocument(namespace, data.document, data.revision)
+    if (namespace === 'analytics_snapshot') analyticsPageProgress.value = response.data?.page_progress || null
   } catch (error) {
     console.error(`load runtime config ${namespace} failed`, error)
     if (!silent) pushAlert('error', tr("运行策略加载失败"), `${namespaces.find((item) => item.key === namespace)?.title}：${error.response?.data?.message || tr("请检查服务端连接。")}`)
@@ -849,6 +851,20 @@ onMounted(loadAll)
                   <option v-for="mode in analyticsModes" :key="mode.value" :value="mode.value">{{ mode.label }}</option>
                 </select>
                 <p class="label whitespace-normal opacity-60">{{ analyticsModes.find((mode) => mode.value === settings.analytics_snapshot.mode)?.description }}</p>
+              </fieldset>
+            </section>
+            <section v-if="settings.analytics_snapshot.page_rollups !== undefined" class="space-y-3 rounded-lg border border-base-300 p-4">
+              <fieldset class="fieldset min-w-0">
+                <legend class="fieldset-legend"><label for="analytics-page-rollups">{{ tr("分析图表快照") }}</label></legend>
+                <select id="analytics-page-rollups" v-model="settings.analytics_snapshot.page_rollups" class="select select-bordered">
+                  <option value="off">{{ tr("关闭") }}</option>
+                  <option value="build">{{ tr("后台生成") }}</option>
+                  <option value="read">{{ tr("读取已发布图表") }}</option>
+                </select>
+                <p class="label whitespace-normal opacity-60">{{ tr("先后台生成，确认发布后再切换读取。读取仅在快照模式下生效。") }}</p>
+                <p v-if="settings.analytics_snapshot.page_rollups !== 'off'" class="text-xs opacity-70">
+                  {{ analyticsPageProgress?.ready ? tr("已发布版本 #{0}，数据截至 {1}", [analyticsPageProgress.revision, formatSystemDateTime(analyticsPageProgress.data_as_of)]) : tr("图表快照尚未就绪") }}
+                </p>
               </fieldset>
             </section>
             <section class="space-y-3 rounded-lg border border-base-300 p-4">
