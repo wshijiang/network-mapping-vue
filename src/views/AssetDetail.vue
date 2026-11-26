@@ -15,6 +15,7 @@ import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
 import ColumnSettingsModal from '@/components/ColumnSettingsModal.vue'
 import PortDetailPanel from '@/components/PortDetailPanel.vue'
+import C2ServiceFingerprint from '@/components/C2ServiceFingerprint.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useTableSort } from '@/composables/useTableSort'
@@ -52,6 +53,7 @@ const ports = ref([])
 const portsLoading = ref(false)
 const portsTotal = ref(0)
 const portsOffset = ref(0)
+const fingerprintFilter = ref('')
 const selectedPort = ref(null)
 const historyLoading = ref(false)
 const historyError = ref('')
@@ -406,17 +408,25 @@ async function loadPorts(offset) {
   errorMessage.value = ''
   try {
     const response = await http.get('/api/assets/ports', {
-      params: { ip: assetIp.value, limit: PORT_PAGE_SIZE, offset },
+      params: { ip: assetIp.value, limit: PORT_PAGE_SIZE, offset, fingerprint: fingerprintFilter.value || undefined },
     })
     const data = response.data?.data || {}
     ports.value = data.items || []
     portsTotal.value = Number(data.total) || 0
     portsOffset.value = offset
   } catch (error) {
+    ports.value = []
+    portsTotal.value = 0
+    portsOffset.value = 0
     errorMessage.value = error.response?.data?.message || tr("端口数据加载失败。")
   } finally {
     portsLoading.value = false
   }
+}
+
+function changeFingerprintFilter(event) {
+  fingerprintFilter.value = event.target.value
+  loadPorts(0)
 }
 
 async function loadHistory(offset = 0) {
@@ -641,6 +651,17 @@ onMounted(() => {
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-300 px-4 py-3">
             <h2 class="font-semibold"><span class="font-mono">{{ assetIp || '-' }}</span> {{ tr("的端口") }}</h2>
             <div class="flex items-center gap-1.5">
+              <select
+                class="select select-xs"
+                :aria-label="tr('按服务端指纹筛选')"
+                :value="fingerprintFilter"
+                :disabled="portsLoading"
+                @change="changeFingerprintFilter"
+              >
+                <option value="">{{ tr('全部指纹') }}</option>
+                <option value="cobalt_strike">Cobalt Strike</option>
+                <option value="asyncrat_family">AsyncRAT / DcRAT</option>
+              </select>
               <span class="text-sm opacity-60">{{ tr("共") }} {{ portsTotal }} {{ tr("条") }}</span>
               <button
                 type="button"
@@ -655,8 +676,8 @@ onMounted(() => {
             </div>
           </div>
           <div v-if="portsLoading" class="flex justify-center py-16"><span class="loading loading-spinner loading-lg"></span></div>
-          <div v-else-if="ports.length === 0" class="py-16 text-center opacity-60">{{ tr("暂无端口观察记录。") }}</div>
-          <div v-else class="overflow-x-auto">
+          <div v-else-if="ports.length === 0 && !errorMessage" class="py-16 text-center opacity-60">{{ fingerprintFilter ? tr('没有符合筛选条件的指纹。') : tr('暂无端口观察记录。') }}</div>
+          <div v-else-if="ports.length" class="overflow-x-auto">
             <table class="table table-fixed w-full min-w-[1080px]">
               <colgroup>
                 <col v-for="column in visiblePortColumns" :key="column.key" :style="{ width: `${PORT_COLUMN_WIDTHS[column.key]}px` }">
@@ -686,6 +707,8 @@ onMounted(() => {
                           <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" /></span></div>
                         </div>
                         <div v-if="port.service_stale" class="mt-1 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</div>
+                        <span v-if="port.c2_fingerprint?.status === 'matched' && !port.c2_fingerprint_stale" class="badge badge-warning badge-xs mt-1">{{ tr('指纹命中') }}</span>
+                        <span v-else-if="port.last_c2_fingerprint || (port.c2_fingerprint?.status === 'matched' && port.c2_fingerprint_stale)" class="badge badge-outline badge-xs mt-1">{{ tr('上次指纹命中') }}</span>
                       </td>
                       <td v-else-if="column.key === 'banner'" class="max-w-xs"><CellText :text="port.banner || '-'" /></td>
                       <td v-else-if="column.key === 'os'"><OsFingerprint compact :value="port.os" /></td>
@@ -777,7 +800,7 @@ onMounted(() => {
                 <td><a class="link font-mono text-xs" :href="`/task/${item.task_id}`">{{ item.task_id.slice(0, 8) }}</a></td>
                 <td>
                   <button
-                    v-if="item.banner || item.data"
+                    v-if="item.banner || item.data || item.c2_fingerprint"
                     type="button"
                     class="btn btn-ghost btn-xs"
                     :aria-expanded="expandedHistoryItemId === item.id"
@@ -794,6 +817,7 @@ onMounted(() => {
                   <Transition name="history-detail">
                     <div v-show="expandedHistoryItemId === item.id" class="history-detail-transition">
                       <div class="max-h-72 overflow-auto p-4 text-xs">
+                        <C2ServiceFingerprint v-if="item.c2_fingerprint" class="mb-3" :value="item.c2_fingerprint" />
                         <section v-if="item.banner">
                           <h4 class="font-semibold">Banner</h4>
                           <pre class="mt-2 whitespace-pre-wrap break-all font-mono">{{ item.banner }}</pre>
