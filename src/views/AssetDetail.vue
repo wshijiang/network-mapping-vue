@@ -15,6 +15,7 @@ import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
 import ColumnSettingsModal from '@/components/ColumnSettingsModal.vue'
 import PortDetailPanel from '@/components/PortDetailPanel.vue'
+import C2ServiceFingerprint from '@/components/C2ServiceFingerprint.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useTableSort } from '@/composables/useTableSort'
@@ -777,7 +778,7 @@ onMounted(() => {
                 <td><a class="link font-mono text-xs" :href="`/task/${item.task_id}`">{{ item.task_id.slice(0, 8) }}</a></td>
                 <td>
                   <button
-                    v-if="item.banner || item.data"
+                    v-if="item.banner || item.data || item.c2_fingerprint"
                     type="button"
                     class="btn btn-ghost btn-xs"
                     :aria-expanded="expandedHistoryItemId === item.id"
@@ -794,6 +795,7 @@ onMounted(() => {
                   <Transition name="history-detail">
                     <div v-show="expandedHistoryItemId === item.id" class="history-detail-transition">
                       <div class="max-h-72 overflow-auto p-4 text-xs">
+                        <C2ServiceFingerprint v-if="item.c2_fingerprint" class="mb-3" :value="item.c2_fingerprint" />
                         <section v-if="item.banner">
                           <h4 class="font-semibold">Banner</h4>
                           <pre class="mt-2 whitespace-pre-wrap break-all font-mono">{{ item.banner }}</pre>
