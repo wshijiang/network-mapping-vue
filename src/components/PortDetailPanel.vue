@@ -62,7 +62,8 @@ const tls = computed(() => tlsSummary(props.port))
 const hasOs = computed(() => props.port.os && props.port.os.status && props.port.os.status !== 'unknown')
 const hasWeb = computed(() => ['identified', 'partial'].includes(props.port.web?.status))
 const hasWebAssets = computed(() => Boolean(props.port.favicon || props.port.icon_md5 || props.port.js_names?.length))
-const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length || tls.value || hasOs.value || hasWeb.value || hasWebAssets.value || props.port.banner || props.port.c2_fingerprint))
+const hasFingerprintMatch = computed(() => props.port.c2_fingerprint?.status === 'matched' || Boolean(props.port.last_c2_fingerprint))
+const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length || tls.value || hasOs.value || hasWeb.value || hasWebAssets.value || props.port.banner || hasFingerprintMatch.value))
 </script>
 
 <template>
@@ -80,13 +81,6 @@ const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length
       </dl>
       <p v-if="port.service_stale" class="mt-2 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</p>
     </section>
-
-    <C2ServiceFingerprint
-      v-if="port.c2_fingerprint"
-      :value="port.c2_fingerprint"
-      :previous="port.last_c2_fingerprint"
-      :stale="port.c2_fingerprint_stale"
-    />
 
     <section v-if="envelope" class="rounded-lg border border-base-300/60 bg-base-100 p-3">
       <h4 class="mb-2 text-xs font-semibold opacity-60">{{ tr("服务识别") }}</h4>
@@ -160,6 +154,13 @@ const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length
       <h4 class="mb-2 text-xs font-semibold opacity-60">Banner</h4>
       <pre class="max-h-48 overflow-auto whitespace-pre-wrap break-all font-mono text-xs">{{ port.banner }}</pre>
     </section>
+
+    <C2ServiceFingerprint
+      v-if="hasFingerprintMatch && port.c2_fingerprint"
+      :value="port.c2_fingerprint"
+      :previous="port.last_c2_fingerprint"
+      :stale="port.c2_fingerprint_stale"
+    />
 
     <p v-if="!hasAnything" class="text-sm opacity-60 md:col-span-2 xl:col-span-3">{{ tr("暂无可解析的识别证据。") }}</p>
   </div>

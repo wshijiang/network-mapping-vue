@@ -4971,8 +4971,5 @@
   "指纹规则版本 {0}": "Fingerprint rules v{0}",
   "由原始扫描记录按当前规则重算。": "Recomputed from the original scan using the current rules.",
   "原始证据路径": "Original evidence path",
-  "指纹研究来源": "Fingerprint research",
-  "按服务端指纹筛选": "Filter by server fingerprint",
-  "全部指纹": "All fingerprints",
-  "没有符合筛选条件的指纹。": "No fingerprints match the filter."
+  "指纹研究来源": "Fingerprint research"
 }
