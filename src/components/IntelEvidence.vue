@@ -8,6 +8,11 @@ import { formatDateTime } from '../i18n/time.js'
 const props = defineProps({ intel: { type: Object, default: null }, label: { type: String, get default() { return tr("情报") } } })
 const dialog = ref(null)
 const matches = computed(() => [...(props.intel?.matches || []), ...(props.intel?.expired_matches || []), ...[...(props.intel?.asn_context?.matches || []), ...(props.intel?.asn_context?.expired_matches || [])].map(match => ({ ...match, asnContext: true }))])
+const observationLabels = {
+  get http_request() { return tr('扫描请求 URL') },
+  get http_redirect() { return tr('响应声明的重定向 URL') },
+  get javascript_sha256() { return tr('JavaScript 文件 SHA-256') },
+}
 </script>
 
 <template>
@@ -21,6 +26,10 @@ const matches = computed(() => [...(props.intel?.matches || []), ...(props.intel
         <p class="mt-2 text-sm opacity-65">{{ tr("标记仅适用于下列 IOC 的精确范围。组织归因来自已接纳的具体报告；共享软件不会自动产生组织标签。过期证据保留供追溯，不贡献当前风险。") }}</p>
         <article v-for="match in matches" :key="match.id" class="mt-4 rounded border border-base-300 p-3 space-y-2 text-sm">
           <div class="flex flex-wrap gap-2"><span class="badge badge-outline">{{ match.type }}</span><code class="break-all">{{ match.value }}</code></div>
+          <p v-if="observationLabels[match.observation_basis]" class="flex flex-wrap items-center gap-2">
+            <span class="badge badge-ghost badge-sm">{{ observationLabels[match.observation_basis] }}</span>
+            <span v-if="intel.observed_at" class="opacity-65">{{ formatDateTime(intel.observed_at) }}</span>
+          </p>
           <p v-if="match.asnContext" class="text-warning">{{ tr("该证据针对资产所属 ASN，不表示此 IP 被报告直接列名，也不证明流量路径经过该 AS。") }}</p>
           <p>{{ match.source_name }} · {{ originLabel(match) }}</p>
           <p v-if="match.valid_until" :class="match.expired ? 'text-warning' : 'opacity-65'">{{ match.expired ? tr("已过期") : tr("有效期") }}：{{ formatDateTime(match.valid_until) }}</p>

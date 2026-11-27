@@ -22,5 +22,14 @@ test('ASN context is displayed separately from direct IP risk and safely renders
     assert.match(both,/IP 情报：恶意/);assert.match(both,/所属 ASN：恶意报告/)
     const old=await render({available:true,risk:null,matches:[],expired_matches:[],asn_context:{...context,risk:null,matches:[],expired_matches:[{...hit,expired:true}]}})
     assert.match(old,/所属 ASN：已过期/);assert.doesNotMatch(old,/所属 ASN：恶意报告/)
+    const web = await render({
+      available: true, risk: 'malicious', observed_at: 1795708800000,
+      matches: [{ id: 'redirect', type: 'url', value: 'https://example.test/', observation_basis: 'http_redirect', payload: { malware: 'QakBot' } }],
+      expired_matches: [{ id: 'script', type: 'sha256', value: 'a'.repeat(64), observation_basis: 'javascript_sha256', expired: true }],
+    })
+    assert.match(web, /响应声明的重定向 URL/)
+    assert.match(web, /JavaScript 文件 SHA-256/)
+    assert.match(web, /QakBot/)
+    assert.ok(!web.includes('href="https://example.test/'))
   } finally {await server.close()}
 })

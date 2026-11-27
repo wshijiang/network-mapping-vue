@@ -8,6 +8,7 @@ import OsFingerprint from '@/components/OsFingerprint.vue'
 import WebTechnologies from '@/components/WebTechnologies.vue'
 import AssetFavicon from '@/components/AssetFavicon.vue'
 import C2ServiceFingerprint from '@/components/C2ServiceFingerprint.vue'
+import IntelEvidence from '@/components/IntelEvidence.vue'
 
 // Parsed, sectioned expansion panel for an asset port row. Responsive block
 // grid; every block renders structured fields instead of raw probe JSON.
@@ -63,7 +64,11 @@ const hasOs = computed(() => props.port.os && props.port.os.status && props.port
 const hasWeb = computed(() => ['identified', 'partial'].includes(props.port.web?.status))
 const hasWebAssets = computed(() => Boolean(props.port.favicon || props.port.icon_md5 || props.port.js_names?.length))
 const hasFingerprintMatch = computed(() => props.port.c2_fingerprint?.status === 'matched' || Boolean(props.port.last_c2_fingerprint))
-const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length || tls.value || hasOs.value || hasWeb.value || hasWebAssets.value || props.port.banner || hasFingerprintMatch.value))
+const hasWebIntel = computed(() => {
+  const intel = props.port.web_intel
+  return Boolean(intel && (!intel.available || intel.risk || intel.expired_matches?.length))
+})
+const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length || tls.value || hasOs.value || hasWeb.value || hasWebAssets.value || props.port.banner || hasFingerprintMatch.value || hasWebIntel.value))
 </script>
 
 <template>
@@ -161,6 +166,10 @@ const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length
       :previous="port.last_c2_fingerprint"
       :stale="port.c2_fingerprint_stale"
     />
+
+    <section v-if="hasWebIntel" class="rounded-lg border border-base-300/60 bg-base-100 p-3">
+      <IntelEvidence :intel="port.web_intel" :label="tr('网页情报')" />
+    </section>
 
     <p v-if="!hasAnything" class="text-sm opacity-60 md:col-span-2 xl:col-span-3">{{ tr("暂无可解析的识别证据。") }}</p>
   </div>
