@@ -41,6 +41,7 @@ const form = reactive({
     connect_timeout_seconds: 5,
     target_timeout_seconds: 15,
     max_result_bytes: 65536,
+    jarm: { enabled: false, concurrency: 4, probe_timeout_seconds: 3, max_stage_seconds: 60 },
     web_content: {
       enabled: true,
       concurrency: 16,
@@ -82,10 +83,11 @@ const isDirty = computed(() => savedDocument.value && JSON.stringify(documentVal
 
 function applyData(data) {
   Object.assign(form.masscan, data.document.masscan)
-  // web_content 单独浅合并：旧服务端文档缺省该段时保留表单默认值。
-  const { web_content: webContent, ...serviceRest } = data.document.service_detection
+  // 嵌套配置单独合并；旧文档缺省 JARM 时始终回到关闭的默认值。
+  const { web_content: webContent, jarm, ...serviceRest } = data.document.service_detection
   Object.assign(form.service_detection, serviceRest)
   if (webContent) Object.assign(form.service_detection.web_content, webContent)
+  Object.assign(form.service_detection.jarm, { enabled: false, concurrency: 4, probe_timeout_seconds: 3, max_stage_seconds: 60 }, jarm || {})
   Object.assign(form.dns, data.document.dns)
   Object.assign(form.nuclei, data.document.nuclei)
   revision.value = data.revision
@@ -240,6 +242,18 @@ onMounted(loadConfiguration)
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-8`">{{ tr("目标超时（秒）") }}</label></legend><input :id="`${formFieldId}-8`" v-model.number="form.service_detection.target_timeout_seconds" type="number" min="1" max="300" class="input input-bordered w-full" /></fieldset>
             <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-9`">{{ tr("单结果上限（字节）") }}</label></legend><input :id="`${formFieldId}-9`" v-model.number="form.service_detection.max_result_bytes" type="number" min="1024" max="1048576" class="input input-bordered w-full" /></fieldset>
           </div>
+        </div>
+      </section>
+
+      <section class="card bg-base-100 card-border border-base-300 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div><h3 class="font-semibold">{{ tr('JARM 主动采集') }}</h3><p class="mt-1 text-xs opacity-60">{{ tr('默认关闭。仅对已有 TLS 握手证据的 TCP 端点额外建立 10 次连接；同时需要节点本地允许 JARM，且受单目标连接速率和任务预算约束。') }}</p></div>
+          <input v-model="form.service_detection.jarm.enabled" type="checkbox" class="toggle" :aria-label="tr('JARM 主动采集')" />
+        </div>
+        <div class="mt-4 grid gap-4 lg:grid-cols-3">
+          <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-jarm-concurrency`">{{ tr('并发端点上限') }}</label></legend><input :id="`${formFieldId}-jarm-concurrency`" v-model.number="form.service_detection.jarm.concurrency" type="number" min="1" max="32" class="input input-bordered w-full" /></fieldset>
+          <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-jarm-timeout`">{{ tr('单次握手超时（秒）') }}</label></legend><input :id="`${formFieldId}-jarm-timeout`" v-model.number="form.service_detection.jarm.probe_timeout_seconds" type="number" min="1" max="30" class="input input-bordered w-full" /></fieldset>
+          <fieldset class="fieldset min-w-0 w-full"><legend class="fieldset-legend"><label :for="`${formFieldId}-jarm-budget`">{{ tr('块级总预算（秒）') }}</label></legend><input :id="`${formFieldId}-jarm-budget`" v-model.number="form.service_detection.jarm.max_stage_seconds" type="number" min="1" max="3600" class="input input-bordered w-full" /></fieldset>
         </div>
       </section>
 

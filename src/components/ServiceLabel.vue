@@ -31,5 +31,5 @@ const evidence = computed(() => nativeEvidence(props.data))
   </details>
   <span v-else-if="['dns', 'vnc', 'dot', 'doh','modbus','enip','s7','opcua','mqtt','mqtts','bacnet','opcua_pubsub','enip_io'].includes(service)" class="badge badge-outline badge-sm">{{ serviceLabel(service) }}</span>
   <span v-else>{{ serviceLabel(service) }}</span>
-  <ServiceProducts v-if="products.length" class="mt-1" :products="products" :identification="identification" compact />
+  <ServiceProducts v-if="products.length || identification?.jarm?.fingerprint" class="mt-1" :products="products" :identification="identification" compact />
 </template>

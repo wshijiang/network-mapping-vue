@@ -29,6 +29,37 @@ test('service products preserve protocol labels and render candidates with scope
     assert.match(label, /疑似/)
     assert.match(label, /证据可能过期/)
     assert.doesNotMatch(label, /badge-error/)
+    const fingerprint = '41d41d41d41d41d41d41d41d41d41da0bfb9dc5a7a50dfa51c2a70be11dda8'
+    const methods = [
+      { id: 'jarm', name: 'JARM', principle: 'tls_server_response', active_probe: true, additional_probe: true, observed: true },
+      { id: 'tls_certificate', name: 'TLS Certificate', principle: 'certificate_metadata', active_probe: true, additional_probe: false, observed: false },
+      { id: 'http_fingerprint', name: 'HTTP Fingerprint', principle: 'http_response', active_probe: true, additional_probe: false, observed: false },
+      { id: 'protocol_fingerprint', name: 'Protocol Fingerprint', principle: 'application_protocol', active_probe: true, additional_probe: false, observed: false },
+    ]
+    const jarm = { status: 'success', fingerprint, expected_probes: 10, completed_probes: 10, sni: '<img src=x onerror=alert(1)>' }
+    const measured = { ...identification, detection_methods: methods, jarm }
+    const jarmHtml = await renderToString(createSSRApp(component, { identification: measured }))
+    for (const name of ['JARM', 'TLS Certificate', 'HTTP Fingerprint', 'Protocol Fingerprint']) assert.ok(jarmHtml.includes(name))
+    assert.match(jarmHtml, /检测方式与基本原理/)
+    assert.match(jarmHtml, /额外握手/)
+    assert.match(jarmHtml, /复用已有采集/)
+    assert.match(jarmHtml, /不能单独确认 C2 家族/)
+    assert.ok(jarmHtml.includes(fingerprint))
+    assert.doesNotMatch(jarmHtml, /<img|Cobalt Strike|QakBot/)
+    const jarmLabel = await renderToString(createSSRApp(service, { service: 'tls', identification: measured }))
+    assert.match(jarmLabel, /JARM/)
+    assert.match(jarmLabel, /tls/i)
+    const partial = await renderToString(createSSRApp(component, { identification: { ...measured, jarm: { ...jarm, fingerprint: null, status: 'partial', completed_probes: 9 } } }))
+    assert.match(partial, /JARM 采集不完整/)
+    assert.ok(!partial.includes(fingerprint))
+    const rejected = await renderToString(createSSRApp(component, { identification: { ...measured, jarm: { ...jarm, fingerprint: null, status: 'no_response' } } }))
+    assert.match(rejected, /未返回可用的 TLS ServerHello/)
+    i18n.global.locale.value = 'en'
+    const englishMethods = await renderToString(createSSRApp(component, { identification: measured }))
+    assert.match(englishMethods, /Detection methods and principles/)
+    assert.match(englishMethods, /Additional handshakes/)
+    assert.doesNotMatch(englishMethods, /[\u4e00-\u9fff]/)
+    i18n.global.locale.value = 'zh-CN'
     const old = await renderToString(createSSRApp(service, { service: 'https' }))
     assert.doesNotMatch(old, /Cobalt Strike/)
     const empty = await renderToString(createSSRApp(component, { products: [], identification: { ...identification, status: 'not_matched' } }))

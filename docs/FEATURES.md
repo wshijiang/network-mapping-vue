@@ -133,3 +133,12 @@ IP/CIDR 的“服务识别”与“全部”可选 DNS TCP、DoT、DoH、VNC、M
 QakBot 在完整详情中额外显示 daisyUI「历史证书启发式」徽标和复核说明，紧凑徽标的提示也说明该限制；不能将其视为已确认家族或当前恶意活动。来源和原始证据继续在现有折叠详情内显示，沿用明暗主题。
 
 高级搜索使用 `product = sliver`、`product = qakbot` 或 `product IN (sliver, qakbot)`。无需配置 IOC 来源；已有端点何时进入搜索、缺失证据的处理及规则依据见[服务端使用说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#sliver-与-qakbot-的候选边界)。
+
+
+### 检测方式与 JARM
+
+端口「产品识别」增加 daisyUI 检测方式表，分别说明 JARM、TLS Certificate、HTTP Fingerprint、Protocol Fingerprint 的主动采集、额外连接、采集情况和基本原理。每条产品证据标明实际采用的方式；方式清单不代表已经存在对应的 C2 产品规则。
+
+启用后的完整 JARM 以 62 位 TLS 配置指纹展示，服务列增加紧凑 JARM 徽标；不完整或全部拒绝显示采集状态，旧服务端没有这些字段时保留既有显示。JARM 可与产品候选并列查看，但不会单独生成家族或恶意结论。
+
+在「扫描器 → 配置 → JARM 主动采集」设置开关、并发端点（1–32）、单次握手超时（1–30 秒）和块级预算（1–3600 秒）。默认关闭；还需扫描节点本地 `[service_detection.jarm].enabled=true` 及配套新版 worker。对已有 TLS 证据的端点额外最多建立 10 次连接，并受每 IP 限速和任务预算约束。配置在下次任务生效。完整配置、采集边界、API 与旧数据说明见[服务端使用文档](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#检测方式与-jarm-主动采集)。
