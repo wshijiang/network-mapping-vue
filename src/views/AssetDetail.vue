@@ -458,8 +458,12 @@ function openHistory(port) {
   loadHistory(0)
 }
 
+function hasHistoryDetails(item) {
+  return Boolean(item.banner || item.data || item.c2_fingerprint || item.product_identification)
+}
+
 function toggleHistoryData(item) {
-  if (!item.banner && !item.data) return
+  if (!hasHistoryDetails(item)) return
   expandedHistoryItemId.value = expandedHistoryItemId.value === item.id ? null : item.id
 }
 
@@ -779,7 +783,7 @@ onMounted(() => {
                 <td><a class="link font-mono text-xs" :href="`/task/${item.task_id}`">{{ item.task_id.slice(0, 8) }}</a></td>
                 <td>
                   <button
-                    v-if="item.banner || item.data || item.c2_fingerprint"
+                    v-if="hasHistoryDetails(item)"
                     type="button"
                     class="btn btn-ghost btn-xs"
                     :aria-expanded="expandedHistoryItemId === item.id"

@@ -145,3 +145,5 @@ QakBot 在完整详情中额外显示 daisyUI「历史证书启发式」徽标�
 
 
 JARM 配置页与服务器 CLI 共用配置文档、修订和审计。CLI 可用 `network_mapping_server scanner-config show <ID>` 查看配置，使用 `scanner-config set-jarm <ID> --enabled true --concurrency 4 --probe-timeout-seconds 3 --max-stage-seconds 60` 修改；`--enabled false` 可暂停额外握手。只给出需要修改的字段即可，Web 发布时保留其他配置；修订冲突会重新加载最新文档。完整命令和参数边界见[服务端 Web/CLI 使用说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#通过-web-或服务器-cli-管理-jarm)。
+
+历史记录即使只保留产品元数据、没有 Banner 或原始数据，也可点击「查看」展开对应产品证据和采集状态。

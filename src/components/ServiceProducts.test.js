@@ -74,7 +74,7 @@ test('service products preserve protocol labels and render candidates with scope
       { id: 'qakbot', name: 'QakBot', assessment: 'suspected', basis: 'historical_certificate_heuristic', evidence: [] },
     ]
     const candidates = await renderToString(createSSRApp(component, { products: additions, identification: { ...identification, ruleset_revision: 2 } }))
-    assert.match(candidates.replace(/<!--[\s\S]*?-->/g, ''), /Sliver · Multiplayer/)
+    assert.match(candidates, /Sliver(?:\s|<!--[\s\S]*?-->)*·(?:\s|<!--[\s\S]*?-->)*Multiplayer/)
     assert.match(candidates, /QakBot/)
     assert.match(candidates, /历史证书启发式/)
     assert.match(candidates, /仅符合历史证书结构，家族归属需复核/)
