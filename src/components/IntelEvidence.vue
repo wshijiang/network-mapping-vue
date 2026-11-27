@@ -11,6 +11,7 @@ const matches = computed(() => [...(props.intel?.matches || []), ...(props.intel
 const observationLabels = {
   get http_request() { return tr('扫描请求 URL') },
   get http_redirect() { return tr('响应声明的重定向 URL') },
+  get http_body_sha256() { return tr('HTTP 响应正文 SHA-256') },
   get javascript_sha256() { return tr('JavaScript 文件 SHA-256') },
 }
 </script>

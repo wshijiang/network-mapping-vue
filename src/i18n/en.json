@@ -143,6 +143,7 @@
   "网页情报": "Web intelligence",
   "扫描请求 URL": "Scanned request URL",
   "响应声明的重定向 URL": "Redirect URL declared in the response",
+  "HTTP 响应正文 SHA-256": "HTTP response body SHA-256",
   "JavaScript 文件 SHA-256": "JavaScript file SHA-256",
   "最多可浏览前": "You can browse up to",
   "条结果。": " results.",
