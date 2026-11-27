@@ -4973,5 +4973,16 @@
   "威胁识别规则版本 {0}": "Threat detection rules v{0}",
   "由原始扫描记录按当前规则重算。": "Recomputed from the original scan using the current rules.",
   "原始证据路径": "Original evidence path",
-  "研究来源": "Research source"
+  "研究来源": "Research source",
+  "疑似产品": "Suspected product",
+  "疑似": "Suspected",
+  "服务声明": "Service declaration",
+  "产品识别": "Product identification",
+  "采集证据不完整": "Collected evidence is incomplete",
+  "未匹配已收录的产品规则": "No match for the available product rules",
+  "产品识别证据不足": "Insufficient evidence for product identification",
+  "识别依据": "Identification evidence",
+  "规则": "Rule",
+  "产品候选表示观察到相符的部署特征，尚未确认服务角色或恶意用途。": "A product candidate indicates matching deployment characteristics; its service role and malicious use have not been confirmed.",
+  "产品规则版本 {0}": "Product ruleset revision {0}"
 }

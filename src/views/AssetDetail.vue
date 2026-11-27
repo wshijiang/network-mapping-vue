@@ -15,6 +15,7 @@ import OsFingerprint from '@/components/OsFingerprint.vue'
 import CellText from '@/components/CellText.vue'
 import ColumnSettingsModal from '@/components/ColumnSettingsModal.vue'
 import PortDetailPanel from '@/components/PortDetailPanel.vue'
+import ServiceProducts from '@/components/ServiceProducts.vue'
 import C2ServiceFingerprint from '@/components/C2ServiceFingerprint.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useTheme } from '@/composables/useTheme'
@@ -684,7 +685,7 @@ onMounted(() => {
                       <td v-else-if="column.key === 'service'">
                         <div class="flex items-center gap-1.5">
                           <AssetFavicon v-if="port.favicon" :ip="summary.ip" :port="port.port" :protocol="port.protocol" :icon-md5="port.icon_md5" :size="16" />
-                          <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" /></span></div>
+                          <div>{{ port.protocol || '-' }}<span v-if="port.service"> · <ServiceLabel :service="port.service" :data="port.data" :products="port.products || []" :identification="port.product_identification" /></span><ServiceProducts v-else :products="port.products || []" :identification="port.product_identification" compact /></div>
                         </div>
                         <div v-if="port.service_stale" class="mt-1 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</div>
                       </td>
@@ -772,7 +773,7 @@ onMounted(() => {
                 <td class="whitespace-nowrap">{{ formatTime(item.observed_at) }}</td>
                 <td><span class="badge badge-outline">{{ item.kind === 'service' ? tr("服务") : tr("端口") }}</span></td>
                 <td>{{ item.state }}</td>
-                <td>{{ item.protocol || '-' }}<span v-if="item.service"> · <ServiceLabel :service="item.service" :data="item.data" /></span></td>
+                <td>{{ item.protocol || '-' }}<span v-if="item.service"> · <ServiceLabel :service="item.service" :data="item.data" :products="item.products || []" :identification="item.product_identification" /></span><ServiceProducts v-else :products="item.products || []" :identification="item.product_identification" compact /></td>
                 <td>{{ item.source }}</td>
                 <td>{{ item.scanner_name || '-' }}</td>
                 <td><a class="link font-mono text-xs" :href="`/task/${item.task_id}`">{{ item.task_id.slice(0, 8) }}</a></td>
@@ -795,7 +796,8 @@ onMounted(() => {
                   <Transition name="history-detail">
                     <div v-show="expandedHistoryItemId === item.id" class="history-detail-transition">
                       <div class="max-h-72 overflow-auto p-4 text-xs">
-                        <C2ServiceFingerprint v-if="item.c2_fingerprint" class="mb-3" :value="item.c2_fingerprint" />
+                        <ServiceProducts v-if="item.product_identification" class="mb-3" :products="item.products || []" :identification="item.product_identification" />
+                        <C2ServiceFingerprint v-else-if="item.c2_fingerprint" class="mb-3" :value="item.c2_fingerprint" />
                         <section v-if="item.banner">
                           <h4 class="font-semibold">Banner</h4>
                           <pre class="mt-2 whitespace-pre-wrap break-all font-mono">{{ item.banner }}</pre>

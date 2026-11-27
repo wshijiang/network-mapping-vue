@@ -115,3 +115,13 @@ IP/CIDR 的“服务识别”与“全部”可选 DNS TCP、DoT、DoH、VNC、M
 有扫描授权的普通用户进入 **创建任务**，可以选择授权的扫描模式和扫描器。只读用户在获得读取权限后可以查阅本人任务、资产和统计。审计用户通过 **日志 → 审计日志** 查看授权类别的事件，导出按钮需要单独授权。
 
 详细授权字段、CLI 和升级注意事项见[服务端权限管理指南](https://github.com/wshijiang/network-mapping/blob/main/docs/USER_ACCESS.md)。
+
+## 查看服务产品
+
+搜索结果和资产端口的「服务」列同时展示应用协议与产品，原有 `https`、`tls` 等协议名称不被产品名称替换。普通服务声明可展示版本；Cobalt Strike、AsyncRAT / DcRAT 的证书部署特征显示黄色「疑似」徽标，不能据此确认服务角色或恶意用途。
+
+展开资产端口，在「服务识别 → 产品识别」查看匹配规则、原始证据路径、观察时间及研究来源；详情沿用现有 daisyUI `badge`、`details` 和明暗主题。采集不完整、旧观察分别显示状态。端口历史弹窗按对应观察展示产品证据，不使用当前产品覆盖历史结果。来自扫描目标的内容按文本显示。
+
+高级搜索可使用 `product = cobalt_strike`、`product IN (cobalt_strike, asyncrat_family)`，或 `product = "nginx@1.26.2"`。产品识别独立于威胁情报，不需要先导入 IOC；未匹配不能解释为正常。存量产品进入搜索的回填步骤见[服务端说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#服务产品识别)。
+
+需要配套新版服务端返回 `products` 和 `product_identification`。缺少这些字段时，协议与现有识别展示保持可用，资产详情兼容旧版证书线索。产品候选不自动增加 IP 级恶意标签，旧标签仍需管理员复核。

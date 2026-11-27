@@ -3,7 +3,8 @@ import { tr } from '../i18n/index.js'
 
 import { computed } from 'vue'
 import { nativeEvidence, serviceLabel } from '@/utils/serviceDetection'
-const props = defineProps({ service: { type: String, default: null }, data: { type: Object, default: null } })
+import ServiceProducts from './ServiceProducts.vue'
+const props = defineProps({ service: { type: String, default: null }, data: { type: Object, default: null }, products: { type: Array, default: () => [] }, identification: { type: Object, default: null } })
 const evidence = computed(() => nativeEvidence(props.data))
 </script>
 
@@ -30,4 +31,5 @@ const evidence = computed(() => nativeEvidence(props.data))
   </details>
   <span v-else-if="['dns', 'vnc', 'dot', 'doh','modbus','enip','s7','opcua','mqtt','mqtts','bacnet','opcua_pubsub','enip_io'].includes(service)" class="badge badge-outline badge-sm">{{ serviceLabel(service) }}</span>
   <span v-else>{{ serviceLabel(service) }}</span>
+  <ServiceProducts v-if="products.length" class="mt-1" :products="products" :identification="identification" compact />
 </template>

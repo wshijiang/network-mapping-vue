@@ -137,7 +137,7 @@ function rowKey(item) {
               </td>
               <td v-else-if="column.key === 'port'">{{ item.port ?? '-' }}</td>
               <td v-else-if="column.key === 'protocol'">{{ item.protocol ?? '-' }}</td>
-              <td v-else-if="column.key === 'service'" class="service-cell"><ServiceLabel :service="item.service" :data="item.data" /></td>
+              <td v-else-if="column.key === 'service'" class="service-cell"><ServiceLabel :service="item.service" :data="item.data" :products="item.products || []" :identification="item.product_identification" /></td>
               <td v-else-if="column.key === 'banner'"><CellText :text="item.banner ?? '-'" /></td>
               <td v-else-if="column.key === 'os'"><OsFingerprint compact :value="item.os" /></td>
               <td v-else-if="column.key === 'tech'"><TechStackCell :web="item.web" /></td>
