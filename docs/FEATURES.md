@@ -140,7 +140,7 @@ QakBot 在完整详情中额外显示 daisyUI「历史证书启发式」徽标�
 
 ### Mythic 与 Empire 管理端
 
-配套服务端规则 v5 输出「Mythic · Web UI · 疑似」和「Empire · Starkiller · 疑似」。在「识别依据」中可查看匹配的页面结构和正文来源，候选限定到观察到的管理界面。高级搜索可使用 `product IN (mythic, empire)`。[服务端证据与覆盖范围](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#mythic-与-empire-管理端)
+配套服务端从内置规则 v5 起输出「Mythic · Web UI · 疑似」和「Empire · Starkiller · 疑似」。在「识别依据」中可查看匹配的页面结构和正文来源，候选限定到观察到的管理界面。高级搜索可使用 `product IN (mythic, empire)`。v6 支持服务端加载外部规则包，控制台按服务端实际返回的候选和规则修订号展示。[服务端证据与覆盖范围](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#mythic-与-empire-管理端) · [服务端规则包](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PRODUCT_RULES.md)
 
 ### 检测方式与 JARM
 
