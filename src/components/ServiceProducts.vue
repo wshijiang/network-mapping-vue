@@ -12,7 +12,7 @@ defineProps({
 
 <template>
   <div v-if="compact && products.length" class="flex flex-wrap gap-1">
-    <span v-for="product in products" :key="`${product.id}:${product.version || ''}`" class="badge badge-outline badge-sm max-w-full" :class="product.assessment === 'suspected' ? 'badge-warning' : 'badge-ghost'" :title="product.assessment === 'suspected' ? tr('疑似产品') : tr('服务声明')">
+    <span v-for="product in products" :key="`${product.id}:${product.version || ''}`" class="badge badge-outline badge-sm max-w-full" :class="product.assessment === 'suspected' ? 'badge-warning' : 'badge-ghost'" :title="product.basis === 'historical_certificate_heuristic' ? tr('仅符合历史证书结构，家族归属需复核。') : product.assessment === 'suspected' ? tr('疑似产品') : tr('服务声明')">
       <span class="truncate">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version"> {{ product.version }}</template><template v-if="product.assessment === 'suspected'"> · {{ tr('疑似') }}</template></span>
     </span>
     <span v-if="identification?.stale" class="badge badge-ghost badge-xs">{{ tr('证据可能过期') }}</span>
@@ -28,7 +28,9 @@ defineProps({
       <div class="flex flex-wrap items-center gap-2">
         <span class="font-semibold">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version"> {{ product.version }}</template></span>
         <span class="badge badge-outline badge-xs" :class="product.assessment === 'suspected' ? 'badge-warning' : 'badge-ghost'">{{ product.assessment === 'suspected' ? tr('疑似产品') : tr('服务声明') }}</span>
+        <span v-if="product.basis === 'historical_certificate_heuristic'" class="badge badge-ghost badge-xs">{{ tr('历史证书启发式') }}</span>
       </div>
+      <p v-if="product.basis === 'historical_certificate_heuristic'" class="opacity-70">{{ tr('仅符合历史证书结构，家族归属需复核。') }}</p>
       <details class="rounded-lg border border-base-300 bg-base-200/50 p-3">
         <summary class="cursor-pointer opacity-70">{{ tr('识别依据') }}</summary>
         <div v-for="(evidence, index) in product.evidence || []" :key="`${evidence.rule_id}:${index}`" class="mt-3 space-y-2">

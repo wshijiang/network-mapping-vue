@@ -37,5 +37,22 @@ test('service products preserve protocol labels and render candidates with scope
     i18n.global.locale.value = 'en'
     const english = await renderToString(createSSRApp(component, { products, identification }))
     assert.match(english, /Suspected product/)
+    i18n.global.locale.value = 'zh-CN'
+    const additions = [
+      { id: 'sliver', name: 'Sliver', component: 'Multiplayer', assessment: 'suspected', basis: 'certificate_template', evidence: [] },
+      { id: 'qakbot', name: 'QakBot', assessment: 'suspected', basis: 'historical_certificate_heuristic', evidence: [] },
+    ]
+    const candidates = await renderToString(createSSRApp(component, { products: additions, identification: { ...identification, ruleset_revision: 2 } }))
+    assert.match(candidates.replace(/<!--[\s\S]*?-->/g, ''), /Sliver · Multiplayer/)
+    assert.match(candidates, /QakBot/)
+    assert.match(candidates, /历史证书启发式/)
+    assert.match(candidates, /仅符合历史证书结构，家族归属需复核/)
+    assert.doesNotMatch(candidates, /badge-error/)
+    const compact = await renderToString(createSSRApp(component, { products: additions, compact: true }))
+    assert.match(compact, /QakBot/)
+    assert.match(compact, /title="仅符合历史证书结构，家族归属需复核。"/)
+    i18n.global.locale.value = 'en'
+    const englishHeuristic = await renderToString(createSSRApp(component, { products: additions, identification }))
+    assert.match(englishHeuristic, /Historical certificate heuristic/)
   } finally { await server.close() }
 })

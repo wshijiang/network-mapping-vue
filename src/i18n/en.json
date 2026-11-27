@@ -4984,5 +4984,7 @@
   "识别依据": "Identification evidence",
   "规则": "Rule",
   "产品候选表示观察到相符的部署特征，尚未确认服务角色或恶意用途。": "A product candidate indicates matching deployment characteristics; its service role and malicious use have not been confirmed.",
-  "产品规则版本 {0}": "Product ruleset revision {0}"
+  "产品规则版本 {0}": "Product ruleset revision {0}",
+  "历史证书启发式": "Historical certificate heuristic",
+  "仅符合历史证书结构，家族归属需复核。": "Only a historical certificate pattern matches; the family attribution requires review."
 }
