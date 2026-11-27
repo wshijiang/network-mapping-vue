@@ -118,13 +118,13 @@ IP/CIDR 的“服务识别”与“全部”可选 DNS TCP、DoT、DoH、VNC、M
 
 ## 查看服务产品
 
-已有服务协议、Web 技术栈和旧 C2 证书线索继续展示。本次新增通用的产品结果组件，在搜索结果和资产端口的「服务」列读取服务端 `products[]`，与 `https`、`tls` 等既有协议名并列显示。原有 Web 技术栈没有整体迁入产品列表，产品支持范围以[服务端产品表](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#当前支持与判断范围)为准。普通服务声明可展示版本；Cobalt Strike、AsyncRAT / DcRAT、Sliver Multiplayer 与 QakBot 的证书部署特征显示黄色「疑似」徽标，不能据此确认服务角色或恶意用途。
+搜索结果和资产端口的「服务」列将服务端 `products[]` 与 `https`、`tls` 等协议并列显示。普通服务声明可展示版本，证书或 HTTP 管理页候选显示黄色「疑似」徽标。候选用于核对端口上的部署特征。[服务端产品表](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#当前支持与判断范围)
 
 展开资产端口，在「服务识别 → 产品识别」查看匹配规则、原始证据路径、观察时间及研究来源；详情沿用现有 daisyUI `badge`、`details` 和明暗主题。采集不完整、旧观察分别显示状态。端口历史弹窗按对应观察展示产品证据，不使用当前产品覆盖历史结果。来自扫描目标的内容按文本显示。
 
 高级搜索可使用 `product = cobalt_strike`、`product IN (cobalt_strike, asyncrat_family)`，或 `product = "nginx@1.26.2"`。产品识别独立于威胁情报，不需要先导入 IOC；未匹配不能解释为正常。存量产品进入搜索的回填步骤见[服务端说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#服务产品识别)。
 
-`products[]` 是产品匹配列表，`product_identification` 是该次规则分析的状态和来源信息。`identified` 表示服务声明匹配，`suspected` 表示证书特征候选；`coverage=complete` 只针对当前相关观察，不保证覆盖所有产品或所有探针。`stale` 表示结果落后于较新观察或规则修订，不表示证书已经过期。
+`products[]` 是产品匹配列表，`product_identification` 是该次规则分析的状态和来源信息。`identified` 表示存在服务声明匹配且无疑似候选，`suspected` 表示至少有一条证书或 HTTP 管理页候选。`coverage=complete` 只针对当前相关观察。`stale` 表示结果落后于较新观察或规则修订。
 
 识别依据中的路径相对于该次原始观察的 `data` 对象；关键值是用于复核的摘要，不是完整抓包。研究来源说明规则依据，不能代替目标本身的观察。检测方式表中的「已采集」表示存在该类记录，可能是部分结果；JARM 区域的「完成探测」计数对应 `completed_probes`，包括明确拒绝或正常关闭，应结合采集状态和指纹查看。没有 JARM 记录也可能是取消或预算不足，不能单凭缺省值断言未尝试连接。
 
@@ -138,6 +138,9 @@ QakBot 在完整详情中额外显示 daisyUI「历史证书启发式」徽标�
 
 高级搜索使用 `product = sliver`、`product = qakbot` 或 `product IN (sliver, qakbot)`。无需配置 IOC 来源；已有端点何时进入搜索、缺失证据的处理及规则依据见[服务端使用说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#sliver-与-qakbot-的候选边界)。
 
+### Mythic 与 Empire 管理端
+
+配套服务端规则 v5 输出「Mythic · Web UI · 疑似」和「Empire · Starkiller · 疑似」。在「识别依据」中可查看匹配的页面结构和正文来源，候选限定到观察到的管理界面。高级搜索可使用 `product IN (mythic, empire)`。[服务端证据与覆盖范围](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#mythic-与-empire-管理端)
 
 ### 检测方式与 JARM
 

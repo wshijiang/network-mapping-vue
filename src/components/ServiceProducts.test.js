@@ -83,6 +83,21 @@ test('service products preserve protocol labels and render candidates with scope
     const compact = await renderToString(createSSRApp(component, { products: additions, compact: true }))
     assert.match(compact, /QakBot/)
     assert.match(compact, /title="仅符合历史证书结构，家族归属需复核。"/)
+    const management = [
+      {
+        id: 'mythic', name: 'Mythic', component: 'Web UI', assessment: 'suspected', basis: 'http_management_fingerprint',
+        evidence: [{
+          detection_method: 'http_fingerprint', probe: 'web_assets', rule_id: 'mythic_management_html',
+          field_path: '/evidence/1/result/landing/body', details: [['title', 'Mythic']],
+        }],
+      },
+      { id: 'empire', name: 'Empire', component: 'Starkiller', assessment: 'suspected', basis: 'http_management_fingerprint', evidence: [] },
+    ]
+    const managementDetails = await renderToString(createSSRApp(component, { products: management, identification: { ...identification, ruleset_revision: 5 } }))
+    for (const text of ['Mythic', 'Web UI', 'Empire', 'Starkiller', 'HTTP Fingerprint', '/evidence/1/result/landing/body']) {
+      assert.ok(managementDetails.includes(text))
+    }
+    assert.doesNotMatch(managementDetails, /历史证书启发式/)
     i18n.global.locale.value = 'en'
     const englishHeuristic = await renderToString(createSSRApp(component, { products: additions, identification }))
     assert.match(englishHeuristic, /Historical certificate heuristic/)
