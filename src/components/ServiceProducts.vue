@@ -41,7 +41,7 @@ defineProps({
       <p class="mt-2 opacity-60">{{ tr('主动探测指采集过程；证书和响应特征在本地分析。检测方式不代表已具备对应的 C2 产品规则。') }}</p>
     </details>
     <div v-if="identification.jarm" class="space-y-2 rounded-lg border border-base-300 p-3">
-      <div class="flex flex-wrap items-center gap-2"><span class="font-semibold">JARM</span><span class="badge badge-ghost badge-xs">{{ tr('主动采集') }}</span><span class="opacity-60">{{ tr('有效响应 {0}/{1}', [identification.jarm.completed_probes, identification.jarm.expected_probes]) }}</span></div>
+      <div class="flex flex-wrap items-center gap-2"><span class="font-semibold">JARM</span><span class="badge badge-ghost badge-xs">{{ tr('主动采集') }}</span><span class="opacity-60">{{ tr('完成探测 {0}/{1}', [identification.jarm.completed_probes, identification.jarm.expected_probes]) }}</span></div>
       <p v-if="identification.jarm.fingerprint" class="break-all font-mono">{{ identification.jarm.fingerprint }}</p>
       <p v-else class="opacity-70">{{ identification.jarm.status === 'no_response' ? tr('服务端未返回可用的 TLS ServerHello') : tr('JARM 采集不完整，未生成有效指纹') }}</p>
       <p class="opacity-60">{{ tr('JARM 表示 TLS 配置相似性，不能单独确认 C2 家族或恶意用途。') }}</p>

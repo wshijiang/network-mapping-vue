@@ -5001,7 +5001,7 @@
   "未采集": "Not collected",
   "主动探测指采集过程；证书和响应特征在本地分析。检测方式不代表已具备对应的 C2 产品规则。": "Active probing describes collection; certificates and response features are analyzed locally. A detection method does not imply corresponding C2 product rules are available.",
   "主动采集": "Active collection",
-  "有效响应 {0}/{1}": "Completed responses {0}/{1}",
+  "完成探测 {0}/{1}": "Completed probes {0}/{1}",
   "服务端未返回可用的 TLS ServerHello": "The server returned no usable TLS ServerHello",
   "JARM 采集不完整，未生成有效指纹": "JARM collection incomplete; no valid fingerprint generated",
   "JARM 表示 TLS 配置相似性，不能单独确认 C2 家族或恶意用途。": "JARM indicates TLS configuration similarity and cannot alone confirm a C2 family or malicious use.",
