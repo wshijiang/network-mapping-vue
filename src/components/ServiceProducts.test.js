@@ -13,9 +13,15 @@ test('service products preserve protocol labels and render candidates with scope
     i18n.global.locale.value = 'zh-CN'
     const { default: component } = await server.ssrLoadModule('/src/components/ServiceProducts.vue')
     const { default: service } = await server.ssrLoadModule('/src/components/ServiceLabel.vue')
+    const { default: portPanel } = await server.ssrLoadModule('/src/components/PortDetailPanel.vue')
     const products = [{ id: 'cobalt_strike', name: 'Cobalt Strike', component: 'Team Server', assessment: 'suspected', evidence: [{ probe: 'tls', rule_id: 'certificate', field_path: '/evidence/0/result', details: [['subject_dn', '<img src=x onerror=alert(1)>']], source_url: 'javascript:alert(1)' }] }]
     const identification = { status: 'suspected', coverage: 'partial', stale: true, observed_at: 1234, ruleset_revision: 1 }
     const html = await renderToString(createSSRApp(component, { products, identification }))
+    assert.match(html, /C2 产品识别/)
+    const candidateBadge = html.match(/<span class="([^"]+)">疑似产品<\/span>/)?.[1].split(' ') || []
+    for (const style of ['badge', 'badge-outline', 'badge-xs', 'badge-warning']) {
+      assert.ok(candidateBadge.includes(style))
+    }
     assert.match(html, /疑似产品/)
     assert.match(html, /采集证据不完整/)
     assert.match(html, /证据可能过期/)
@@ -41,6 +47,7 @@ test('service products preserve protocol labels and render candidates with scope
     const jarmHtml = await renderToString(createSSRApp(component, { identification: measured }))
     for (const name of ['JARM', 'TLS Certificate', 'HTTP Fingerprint', 'Protocol Fingerprint']) assert.ok(jarmHtml.includes(name))
     assert.match(jarmHtml, /检测方式与基本原理/)
+    assert.match(jarmHtml, /class="table table-xs table-zebra"/)
     assert.match(jarmHtml, /额外握手/)
     assert.match(jarmHtml, /复用已有采集/)
     assert.match(jarmHtml, /不能单独确认 C2 家族/)
@@ -63,10 +70,25 @@ test('service products preserve protocol labels and render candidates with scope
     const old = await renderToString(createSSRApp(service, { service: 'https' }))
     assert.doesNotMatch(old, /Cobalt Strike/)
     const empty = await renderToString(createSSRApp(component, { products: [], identification: { ...identification, status: 'not_matched' } }))
-    assert.match(empty, /未匹配已收录的产品规则/)
+    assert.match(empty, /未匹配已收录的 C2 规则/)
     assert.doesNotMatch(empty, /目标正常/)
+    const previous = {
+      status: 'matched', observed_at: 1234, ruleset_version: 1,
+      matches: [{ rule_id: 'legacy_c2', probe: 'tls', evidence_path: '/previous', evidence: [] }],
+    }
+    const port = { first_seen_at: 1234, last_seen_at: 2000, product_identification: identification }
+    const productOnly = await renderToString(createSSRApp(portPanel, { port }))
+    assert.match(productOnly, /C2 产品识别/)
+    assert.doesNotMatch(productOnly, /暂无可解析的识别证据/)
+    const historical = await renderToString(createSSRApp(portPanel, {
+      port: { ...port, c2_fingerprint: { status: 'insufficient_evidence' }, last_c2_fingerprint: previous },
+    }))
+    assert.match(historical, /上次观测到的威胁线索/)
+    assert.match(historical, /legacy_c2/)
+
     i18n.global.locale.value = 'en'
     const english = await renderToString(createSSRApp(component, { products, identification }))
+    assert.match(english, /C2 product identification/)
     assert.match(english, /Suspected product/)
     i18n.global.locale.value = 'zh-CN'
     const additions = [
