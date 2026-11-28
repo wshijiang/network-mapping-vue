@@ -14,14 +14,14 @@ defineProps({
 <template>
   <div v-if="compact && (products.length || identification?.jarm?.fingerprint)" class="flex min-w-0 flex-wrap gap-1">
     <span v-for="product in products" :key="`${product.id}:${product.version || ''}`" class="badge badge-outline badge-sm max-w-full" :class="product.assessment === 'suspected' ? 'badge-warning' : 'badge-ghost'" :title="product.basis === 'historical_certificate_heuristic' ? tr('仅符合历史证书结构，家族归属需复核。') : product.assessment === 'suspected' ? tr('疑似产品') : tr('服务声明')">
-      <span class="truncate">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version"> {{ product.version }}</template><template v-if="product.assessment === 'suspected'"> · {{ tr('疑似') }}</template></span>
+      <span class="truncate">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version">{{ " " + product.version }}</template><template v-if="product.assessment === 'suspected'"> · {{ tr('疑似') }}</template></span>
     </span>
     <span v-if="identification?.jarm?.fingerprint" class="badge badge-ghost badge-sm" :title="identification.jarm.fingerprint">JARM</span>
     <span v-if="identification?.stale" class="badge badge-ghost badge-xs">{{ tr('证据可能过期') }}</span>
   </div>
   <div v-else-if="!compact && identification" class="min-w-0 space-y-3 text-xs">
     <div class="flex flex-wrap items-center gap-2">
-      <h5 class="font-semibold opacity-60">{{ tr('C2 产品识别') }}</h5>
+      <h5 class="font-semibold opacity-60">{{ tr('产品识别') }}</h5>
       <span v-if="identification.coverage === 'partial'" class="badge badge-ghost badge-xs">{{ tr('采集证据不完整') }}</span>
       <span v-if="identification.stale" class="badge badge-warning badge-outline badge-xs">{{ tr('证据可能过期') }}</span>
     </div>
@@ -41,7 +41,7 @@ defineProps({
             <tbody>
               <tr v-for="method in identification.detection_methods" :key="method.id">
                 <th scope="row" class="whitespace-nowrap font-medium">{{ method.name }}</th>
-                <td>{{ method.active_probe ? tr('是') : tr('否') }} · {{ method.additional_probe ? tr('额外握手') : tr('复用已有采集') }}</td>
+                <td>{{ method.active_probe ? tr('是') : tr('否') }} · {{ method.additional_probe ? tr(method.id === 'http_fingerprint' ? '额外 HTTP 请求' : '额外握手') : tr('复用已有采集') }}</td>
                 <td><span class="badge badge-ghost badge-xs whitespace-nowrap">{{ method.observed ? tr('已采集') : tr('未采集') }}</span></td>
                 <td class="min-w-36">{{ methodPrinciple(method.principle) }}</td>
               </tr>
@@ -58,11 +58,12 @@ defineProps({
       <p class="opacity-60">{{ tr('JARM 表示 TLS 配置相似性，不能单独确认 C2 家族或恶意用途。') }}</p>
       <p v-if="identification.jarm.sni" class="break-all font-mono">SNI: {{ identification.jarm.sni }}</p>
     </div>
-    <p v-if="!products.length" class="opacity-70">{{ identification.status === 'not_matched' ? tr('未匹配已收录的 C2 规则') : tr('C2 产品识别证据不足') }}</p>
+    <p v-if="!products.length" class="opacity-70">{{ identification.status === 'not_matched' ? tr('未匹配已收录的产品规则') : tr('产品识别证据不足') }}</p>
     <article v-for="product in products" :key="`${product.id}:${product.version || ''}`" class="space-y-2">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="font-semibold">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version"> {{ product.version }}</template></span>
+        <span class="font-semibold">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version">{{ " " + product.version }}</template></span>
         <span class="badge badge-outline badge-xs" :class="product.assessment === 'suspected' ? 'badge-warning' : 'badge-ghost'">{{ product.assessment === 'suspected' ? tr('疑似产品') : tr('服务声明') }}</span>
+        <span v-if="product.category === 'mining_software'" class="badge badge-ghost badge-xs">{{ tr('挖矿软件') }}</span>
         <span v-if="product.basis === 'historical_certificate_heuristic'" class="badge badge-ghost badge-xs">{{ tr('历史证书启发式') }}</span>
       </div>
       <p v-if="product.basis === 'historical_certificate_heuristic'" class="opacity-70">{{ tr('仅符合历史证书结构，家族归属需复核。') }}</p>
