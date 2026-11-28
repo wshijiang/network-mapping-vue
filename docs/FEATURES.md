@@ -115,3 +115,44 @@ IP/CIDR 的“服务识别”与“全部”可选 DNS TCP、DoT、DoH、VNC、M
 有扫描授权的普通用户进入 **创建任务**，可以选择授权的扫描模式和扫描器。只读用户在获得读取权限后可以查阅本人任务、资产和统计。审计用户通过 **日志 → 审计日志** 查看授权类别的事件，导出按钮需要单独授权。
 
 详细授权字段、CLI 和升级注意事项见[服务端权限管理指南](https://github.com/wshijiang/network-mapping/blob/main/docs/USER_ACCESS.md)。
+
+## 查看服务产品
+
+搜索结果和资产端口的「服务」列将服务端 `products[]` 与 `https`、`tls` 等协议并列显示。普通服务声明可展示版本，证书或 HTTP 管理页候选显示黄色「疑似」徽标。候选用于核对端口上的部署特征。[服务端产品表](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#当前支持与判断范围)
+
+展开资产端口，在「服务识别 → 产品识别」查看匹配规则、原始证据路径、观察时间及研究来源；详情沿用现有 daisyUI `badge`、`details` 和明暗主题。采集不完整、旧观察分别显示状态。端口历史弹窗按对应观察展示产品证据，不使用当前产品覆盖历史结果。来自扫描目标的内容按文本显示。
+
+高级搜索可使用 `product = cobalt_strike`、`product IN (cobalt_strike, asyncrat_family)`，或 `product = "nginx@1.26.2"`。产品识别独立于威胁情报，不需要先导入 IOC；未匹配不能解释为正常。存量产品进入搜索的回填步骤见[服务端说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#服务产品识别)。
+
+`products[]` 是产品匹配列表，`product_identification` 是该次规则分析的状态和来源信息。`identified` 表示存在服务声明匹配且无疑似候选，`suspected` 表示至少有一条证书或 HTTP 管理页候选。`coverage=complete` 只针对当前相关观察。`stale` 表示结果落后于较新观察或规则修订。
+
+识别依据中的路径相对于该次原始观察的 `data` 对象；关键值是用于复核的摘要，不是完整抓包。研究来源说明规则依据，不能代替目标本身的观察。检测方式表中的「已采集」表示存在该类记录，可能是部分结果；JARM 区域的「完成探测」计数对应 `completed_probes`，包括明确拒绝或正常关闭，应结合采集状态和指纹查看。没有 JARM 记录也可能是取消或预算不足，不能单凭缺省值断言未尝试连接。
+
+需要配套新版服务端返回 `products` 和 `product_identification`。缺少这些字段时，协议与现有识别展示保持可用，资产详情兼容旧版证书线索。产品候选不自动增加 IP 级恶意标签，旧标签仍需管理员复核。
+
+### Sliver 与 QakBot
+
+配套服务端从产品规则 v2 起支持 `sliver` 和 `qakbot`，当前规则修订见服务端文档。Sliver 显示「Sliver · Multiplayer · 疑似」，表示默认多人管理端的证书候选，不代表已确认植入体通信监听器。
+
+QakBot 在完整详情中额外显示 daisyUI「历史证书启发式」徽标和复核说明，紧凑徽标的提示也说明该限制；不能将其视为已确认家族或当前恶意活动。来源和原始证据继续在现有折叠详情内显示，沿用明暗主题。
+
+高级搜索使用 `product = sliver`、`product = qakbot` 或 `product IN (sliver, qakbot)`。无需配置 IOC 来源；已有端点何时进入搜索、缺失证据的处理及规则依据见[服务端使用说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#sliver-与-qakbot-的候选边界)。
+
+### Mythic 与 Empire 管理端
+
+配套服务端从内置规则 v5 起输出「Mythic · Web UI · 疑似」和「Empire · Starkiller · 疑似」。在「识别依据」中可查看匹配的页面结构和正文来源，候选限定到观察到的管理界面。高级搜索可使用 `product IN (mythic, empire)`。v6 支持服务端加载外部规则包，控制台按服务端实际返回的候选和规则修订号展示。[服务端证据与覆盖范围](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#mythic-与-empire-管理端) · [服务端规则包](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PRODUCT_RULES.md)
+
+### 检测方式与 JARM
+
+端口「产品识别」增加 daisyUI 检测方式表，分别说明 JARM、TLS Certificate、HTTP Fingerprint、Protocol Fingerprint 的主动采集、额外连接、采集情况和基本原理。每条产品证据标明实际采用的方式；方式清单不代表已经存在对应的 C2 产品规则。
+
+实际得到可用 JARM 结果时，以 62 个十六进制字符展示 TLS 配置指纹，服务列增加紧凑 JARM 徽标；不完整或全部拒绝显示采集状态，旧服务端没有这些字段时保留既有显示。JARM 可与产品候选并列查看，但不会单独生成家族或恶意结论。
+
+在「扫描器 → 配置 → JARM 主动采集」设置开关、并发端点（1–32）、单次握手超时（1–30 秒）和块级预算（1–3600 秒）。默认关闭；还需扫描节点本地 `[service_detection.jarm].enabled=true` 及配套新版 worker。对已有 TLS 证据的端点额外最多建立 10 次连接，并受每 IP 限速和任务预算约束。JARM 每槽发送 ClientHello 并读取 ServerHello 或拒绝结果，不要求完成 10 次 TLS 会话。配置在下次任务生效。完整配置、采集边界、API 与旧数据说明见[服务端使用文档](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#检测方式与-jarm-主动采集)。
+
+
+JARM 配置页与服务器 CLI 共用配置文档、修订和审计。CLI 可用 `network_mapping_server scanner-config show <ID>` 查看配置，使用 `scanner-config set-jarm <ID> --enabled true --concurrency 4 --probe-timeout-seconds 3 --max-stage-seconds 60` 修改；`--enabled false` 可暂停额外握手。只给出需要修改的字段即可，Web 发布时保留其他配置；修订冲突会重新加载最新文档。完整命令和参数边界见[服务端 Web/CLI 使用说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#通过-web-或服务器-cli-管理-jarm)。
+
+历史记录即使只保留产品元数据、没有 Banner 或原始数据，也可点击「查看」展开对应产品证据和采集状态。
+
+重新加载缺少 `jarm` 配置段的旧服务端文档时，Web 表单恢复关闭的默认值，避免沿用此前编辑的开关。扫描节点面对旧服务端未下发该配置段时则保留本地配置；两者分别描述表单展示与节点执行逻辑。

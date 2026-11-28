@@ -419,7 +419,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="rounded-lg border border-base-300 p-3">
           <p class="font-medium">{{ tr("支持字段") }}</p>
-          <p class="mt-1 break-words font-mono text-xs opacity-70">ip, domain, asn, isp, org, country, city, tag, tag.id, tag.kind, tag.category, port, protocol, service, banner, os.family, os.distribution, os.version, os.confidence, os.status, os.score, tech, web.status, title, http.body, icon_md5, js_name, js_md5, tls.mode, tls.version, tls.cipher, tls.subject, tls.issuer, tls.san, tls.serial, tls.not_before, tls.not_after, tls.fingerprint, tls.self_signed, source, scanner, first_seen, last_seen</p>
+          <p class="mt-1 break-words font-mono text-xs opacity-70">ip, domain, asn, isp, org, country, city, tag, tag.id, tag.kind, tag.category, port, protocol, service, product, banner, os.family, os.distribution, os.version, os.confidence, os.status, os.score, tech, web.status, title, http.body, icon_md5, js_name, js_md5, tls.mode, tls.version, tls.cipher, tls.subject, tls.issuer, tls.san, tls.serial, tls.not_before, tls.not_after, tls.fingerprint, tls.self_signed, source, scanner, first_seen, last_seen</p>
         </div>
       </div>
 
