@@ -1,20 +1,45 @@
 <script setup>
+import { computed } from 'vue'
 import { methodName, methodPrinciple } from '../utils/detectionMethods.js'
 import { tr } from '../i18n/index.js'
 import { formatDateTime } from '../i18n/time.js'
 import { safeReference } from '../utils/threatIntel'
 
-defineProps({
+const props = defineProps({
   products: { type: Array, default: () => [] },
   identification: { type: Object, default: null },
   compact: Boolean,
+})
+
+const xmrigStatuses = {
+  matched: '摘要已匹配',
+  not_matched: '摘要声明了其他挖矿软件',
+  not_attempted: '未尝试采集',
+  unknown: '本次采集状态未知',
+  no_summary: '端点未提供摘要',
+  auth_required: '需要认证',
+  timeout: '摘要采集超时',
+  cancelled: '摘要采集已取消',
+  transport_error: '摘要连接失败',
+  http_error: '摘要请求失败',
+  response_too_large: '摘要超过响应大小限制',
+  budget_exceeded: '扫描结果空间不足',
+  invalid_response: '摘要格式无效',
+}
+const xmrigAttempt = computed(() => {
+  const attempt = props.identification?.xmrig_attempt
+  const observedAt = props.identification?.observed_at || 0
+  if ((!attempt || attempt.observed_at < observedAt) && props.products.some(product => product.id === 'xmrig' && product.observation?.stale)) {
+    return { status: 'unknown', observed_at: observedAt }
+  }
+  return Object.hasOwn(xmrigStatuses, attempt?.status) ? attempt : null
 })
 </script>
 
 <template>
   <div v-if="compact && (products.length || identification?.jarm?.fingerprint)" class="flex min-w-0 flex-wrap gap-1">
-    <span v-for="product in products" :key="`${product.id}:${product.version || ''}`" class="badge badge-outline badge-sm max-w-full" :class="product.assessment === 'suspected' ? 'badge-warning' : 'badge-ghost'" :title="product.basis === 'historical_certificate_heuristic' ? tr('仅符合历史证书结构，家族归属需复核。') : product.assessment === 'suspected' ? tr('疑似产品') : tr('服务声明')">
-      <span class="truncate">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version">{{ " " + product.version }}</template><template v-if="product.assessment === 'suspected'"> · {{ tr('疑似') }}</template></span>
+    <span v-for="product in products" :key="`${product.id}:${product.version || ''}`" class="badge badge-outline badge-sm max-w-full" :class="product.assessment === 'suspected' ? 'badge-warning' : 'badge-ghost'" :title="product.observation?.stale ? tr('历史证据') : product.basis === 'historical_certificate_heuristic' ? tr('仅符合历史证书结构，家族归属需复核。') : product.assessment === 'suspected' ? tr('疑似产品') : tr('服务声明')">
+      <span class="truncate">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version">{{ " " + product.version }}</template><template v-if="product.assessment === 'suspected'"> · {{ tr('疑似') }}</template><template v-if="product.observation?.stale"> · {{ tr('历史证据') }}</template></span>
     </span>
     <span v-if="identification?.jarm?.fingerprint" class="badge badge-ghost badge-sm" :title="identification.jarm.fingerprint">JARM</span>
     <span v-if="identification?.stale" class="badge badge-ghost badge-xs">{{ tr('证据可能过期') }}</span>
@@ -58,14 +83,23 @@ defineProps({
       <p class="opacity-60">{{ tr('JARM 表示 TLS 配置相似性，不能单独确认 C2 家族或恶意用途。') }}</p>
       <p v-if="identification.jarm.sni" class="break-all font-mono">SNI: {{ identification.jarm.sni }}</p>
     </div>
+    <div v-if="xmrigAttempt" class="flex flex-wrap items-center gap-2">
+      <span class="font-semibold">{{ tr('XMRig 摘要') }}</span>
+      <span class="badge badge-ghost badge-xs">{{ tr(xmrigStatuses[xmrigAttempt.status]) }}</span>
+      <span v-if="xmrigAttempt.status_code" class="opacity-60">HTTP {{ xmrigAttempt.status_code }}</span>
+      <span v-if="xmrigAttempt.host" class="break-all font-mono">{{ xmrigAttempt.host }}</span>
+      <span v-if="xmrigAttempt.observed_at > 0" class="opacity-60">{{ formatDateTime(xmrigAttempt.observed_at) }}</span>
+    </div>
     <p v-if="!products.length" class="opacity-70">{{ identification.status === 'not_matched' ? tr('未匹配已收录的产品规则') : tr('产品识别证据不足') }}</p>
     <article v-for="product in products" :key="`${product.id}:${product.version || ''}`" class="space-y-2">
       <div class="flex flex-wrap items-center gap-2">
         <span class="font-semibold">{{ product.name }}<template v-if="product.component"> · {{ product.component }}</template><template v-if="product.version">{{ " " + product.version }}</template></span>
         <span class="badge badge-outline badge-xs" :class="product.assessment === 'suspected' ? 'badge-warning' : 'badge-ghost'">{{ product.assessment === 'suspected' ? tr('疑似产品') : tr('服务声明') }}</span>
         <span v-if="product.category === 'mining_software'" class="badge badge-ghost badge-xs">{{ tr('挖矿软件') }}</span>
+        <span v-if="product.observation?.stale" class="badge badge-warning badge-outline badge-xs">{{ tr('历史证据') }}</span>
         <span v-if="product.basis === 'historical_certificate_heuristic'" class="badge badge-ghost badge-xs">{{ tr('历史证书启发式') }}</span>
       </div>
+      <p v-if="product.observation?.observed_at > 0" class="opacity-60">{{ tr('最后确认时间 {0}', [formatDateTime(product.observation.observed_at)]) }}</p>
       <p v-if="product.basis === 'historical_certificate_heuristic'" class="opacity-70">{{ tr('仅符合历史证书结构，家族归属需复核。') }}</p>
       <details v-if="product.evidence?.length">
         <summary class="cursor-pointer leading-6 opacity-70">{{ tr('识别依据') }}</summary>

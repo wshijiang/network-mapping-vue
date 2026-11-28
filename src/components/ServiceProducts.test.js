@@ -7,7 +7,7 @@ import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 test('service products preserve protocol labels and render candidates with scoped evidence', async () => {
-  const server = await createServer({ configFile: false, root: fileURLToPath(new URL('../../', import.meta.url)), plugins: [vue()], resolve: { alias: { '@': fileURLToPath(new URL('../', import.meta.url)) } }, server: { middlewareMode: true, hmr: false }, logLevel: 'silent' })
+  const server = await createServer({ configFile: false, root: fileURLToPath(new URL('../../', import.meta.url)), plugins: [vue()], resolve: { alias: { '@': fileURLToPath(new URL('../', import.meta.url)) } }, optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, hmr: false }, logLevel: 'silent' })
   try {
     const { i18n } = await server.ssrLoadModule('/src/i18n/index.js')
     i18n.global.locale.value = 'zh-CN'
@@ -114,6 +114,24 @@ test('service products preserve protocol labels and render candidates with scope
     assert.match(miner, / 6\.24\.0/)
     assert.match(miner, /挖矿软件/)
     assert.doesNotMatch(miner, /疑似产品/)
+
+    const retainedMiner = {
+      products: [{ id: 'xmrig', name: 'XMRig', version: '6.24.0',
+        category: 'mining_software', assessment: 'identified', basis: 'service_declaration',
+        observation: { observed_at: 1234, stale: true } }],
+      identification: { ...identification, stale: false, observed_at: 2000,
+        xmrig_attempt: { status: 'timeout', observed_at: 2000, host: 'inventory.example' } },
+    }
+    const retainedDetails = await renderToString(createSSRApp(component, retainedMiner))
+    assert.match(retainedDetails, /历史证据/)
+    assert.match(retainedDetails, /最后确认时间/)
+    assert.match(retainedDetails, /摘要采集超时/)
+    assert.match(retainedDetails, /inventory\.example/)
+    const retainedSearchLabel = await renderToString(createSSRApp(service, { service: 'https', ...retainedMiner }))
+    assert.match(retainedSearchLabel, /title="历史证据"/)
+    assert.match(retainedSearchLabel, /XMRig/)
+    assert.match(retainedSearchLabel, / 6\.24\.0/)
+    assert.match(retainedSearchLabel, / · 历史证据/)
 
     const management = [
       {
