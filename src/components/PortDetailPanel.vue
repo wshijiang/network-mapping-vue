@@ -64,7 +64,7 @@ const hasOs = computed(() => props.port.os && props.port.os.status && props.port
 const hasWeb = computed(() => ['identified', 'partial'].includes(props.port.web?.status))
 const hasWebAssets = computed(() => Boolean(props.port.favicon || props.port.icon_md5 || props.port.js_names?.length))
 const hasFingerprintMatch = computed(() => props.port.c2_fingerprint?.status === 'matched' || Boolean(props.port.last_c2_fingerprint))
-const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length || tls.value || hasOs.value || hasWeb.value || hasWebAssets.value || props.port.banner || hasFingerprintMatch.value))
+const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length || tls.value || hasOs.value || hasWeb.value || hasWebAssets.value || props.port.banner || props.port.product_identification || hasFingerprintMatch.value))
 </script>
 
 <template>
@@ -83,7 +83,7 @@ const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length
       <p v-if="port.service_stale" class="mt-2 text-xs text-warning">{{ tr("服务信息早于最近端口观察") }}</p>
     </section>
 
-    <section v-if="envelope || port.product_identification" class="rounded-lg border border-base-300/60 bg-base-100 p-3">
+    <section v-if="envelope || port.product_identification" class="min-w-0 rounded-lg border border-base-300/60 bg-base-100 p-3">
       <h4 class="mb-2 text-xs font-semibold opacity-60">{{ tr("服务识别") }}</h4>
       <dl v-if="envelope" class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
         <template v-if="envelope.probe"><dt class="opacity-60">{{ tr("选用探针") }}</dt><dd class="min-w-0 break-words">{{ serviceLabel(envelope.probe) }}</dd></template>
@@ -91,7 +91,7 @@ const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length
         <template v-if="envelope.confidence != null"><dt class="opacity-60">{{ tr("置信度") }}</dt><dd><span class="badge badge-sm" :class="envelope.confidence >= 80 ? 'badge-success' : envelope.confidence >= 50 ? 'badge-warning' : 'badge-ghost'">{{ envelope.confidence }}</span></dd></template>
         <template v-if="envelope.attempts != null"><dt class="opacity-60">{{ tr("尝试次数") }}</dt><dd>{{ envelope.attempts }}</dd></template>
       </dl>
-      <ServiceProducts class="mt-3" :products="port.products || []" :identification="port.product_identification" />
+      <ServiceProducts :class="{ 'mt-3': envelope }" :products="port.products || []" :identification="port.product_identification" />
     </section>
 
     <section v-for="block in blocks" :key="block.module" class="rounded-lg border border-base-300/60 bg-base-100 p-3">
@@ -158,7 +158,7 @@ const hasAnything = computed(() => Boolean(envelope.value || blocks.value.length
     </section>
 
     <C2ServiceFingerprint
-      v-if="!port.product_identification && hasFingerprintMatch && port.c2_fingerprint"
+      v-if="hasFingerprintMatch && port.c2_fingerprint && (!port.product_identification || port.last_c2_fingerprint)"
       :value="port.c2_fingerprint"
       :previous="port.last_c2_fingerprint"
       :stale="port.c2_fingerprint_stale"

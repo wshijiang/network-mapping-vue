@@ -116,19 +116,19 @@ IP/CIDR 的“服务识别”与“全部”可选 DNS TCP、DoT、DoH、VNC、M
 
 详细授权字段、CLI 和升级注意事项见[服务端权限管理指南](https://github.com/wshijiang/network-mapping/blob/main/docs/USER_ACCESS.md)。
 
-## 查看服务产品
+## 查看 C2 产品候选和挖矿软件
 
-搜索结果和资产端口的「服务」列将服务端 `products[]` 与 `https`、`tls` 等协议并列显示。普通服务声明可展示版本，证书或 HTTP 管理页候选显示黄色「疑似」徽标。候选用于核对端口上的部署特征。[服务端产品表](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#当前支持与判断范围)
+搜索结果和资产端口的「服务」列将服务端 `products[]` 与 `https`、`tls` 等协议并列显示。证书或 HTTP 管理页候选显示黄色「疑似」徽标，通用 Web 组件在「技术栈」列查看。候选用于核对端口上的部署特征。[服务端产品表](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#当前支持与判断范围)
 
-展开资产端口，在「服务识别 → 产品识别」查看匹配规则、原始证据路径、观察时间及研究来源；详情沿用现有 daisyUI `badge`、`details` 和明暗主题。采集不完整、旧观察分别显示状态。端口历史弹窗按对应观察展示产品证据，不使用当前产品覆盖历史结果。来自扫描目标的内容按文本显示。
+展开资产端口，在「服务识别 → 产品识别」查看匹配规则、原始证据路径、观察时间及研究来源；规则证据和检测方式可展开查看。采集不完整和过期观察以状态徽标显示，检测方式表可在窄屏上横向滚动。端口历史弹窗按对应观察展示产品证据，不使用当前产品覆盖历史结果。来自扫描目标的内容按文本显示。
 
-高级搜索可使用 `product = cobalt_strike`、`product IN (cobalt_strike, asyncrat_family)`，或 `product = "nginx@1.26.2"`。产品识别独立于威胁情报，不需要先导入 IOC；未匹配不能解释为正常。存量产品进入搜索的回填步骤见[服务端说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#服务产品识别)。
+高级搜索可使用 `product = cobalt_strike`、`product IN (cobalt_strike, asyncrat_family)`，普通 Web 技术沿用 `tech = nginx` 等查询。XMRig 以「挖矿软件」徽标显示，可用 `product = xmrig` 或 `product = "xmrig@6.24.0"` 搜索。产品识别独立于威胁情报，不需要先导入 IOC；未匹配不能解释为正常。旧索引中退役的普通软件条目会在查询时过滤，物理清理见[服务端重建说明](https://github.com/wshijiang/network-mapping/blob/main/docs/SERVICE_PROTOCOLS.md#服务产品识别)。
 
-`products[]` 是产品匹配列表，`product_identification` 是该次规则分析的状态和来源信息。`identified` 表示存在服务声明匹配且无疑似候选，`suspected` 表示至少有一条证书或 HTTP 管理页候选。`coverage=complete` 只针对当前相关观察。`stale` 表示结果落后于较新观察或规则修订。
+`products[]` 是产品匹配列表，`product_identification` 是该次规则分析的状态和来源信息。`suspected` 表示至少有一条 C2 候选。`identified` 表示匹配到 XMRig 服务声明且当前没有 C2 候选。`not_matched` 表示已有证据未命中规则。`insufficient_evidence` 表示证据不足。`coverage=complete` 只针对当前相关观察。`stale` 表示结果落后于较新观察或规则修订。
 
 识别依据中的路径相对于该次原始观察的 `data` 对象；关键值是用于复核的摘要，不是完整抓包。研究来源说明规则依据，不能代替目标本身的观察。检测方式表中的「已采集」表示存在该类记录，可能是部分结果；JARM 区域的「完成探测」计数对应 `completed_probes`，包括明确拒绝或正常关闭，应结合采集状态和指纹查看。没有 JARM 记录也可能是取消或预算不足，不能单凭缺省值断言未尝试连接。
 
-需要配套新版服务端返回 `products` 和 `product_identification`。缺少这些字段时，协议与现有识别展示保持可用，资产详情兼容旧版证书线索。产品候选不自动增加 IP 级恶意标签，旧标签仍需管理员复核。
+需要配套新版服务端返回 `products` 和 `product_identification`。缺少这些字段时，协议与现有识别展示保持可用，资产详情兼容旧版证书线索。服务端返回上次证书线索时，资产端口详情会单独标明其观察时间。产品候选不自动增加 IP 级恶意标签，旧标签仍需管理员复核。
 
 ### Sliver 与 QakBot
 
